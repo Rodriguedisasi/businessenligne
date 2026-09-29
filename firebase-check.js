@@ -64,10 +64,9 @@ const fail = m => { failed = true; ko(m); };
     step('3. Accès à la base Firestore');
     let firestore;
     try {
-        if (!admin.apps.length) admin.initializeApp({ credential: admin.credential.cert(cred) });
-        firestore = admin.firestore();
-        firestore.settings({ ignoreUndefinedProperties: true });
-        ok('SDK initialisé sur le projet ' + (admin.app().options.projectId || cred.project_id));
+        /* même construction que le serveur : la clé de service y compris */
+        firestore = fsdb.createFirestore();
+        ok('SDK initialisé sur le projet ' + (firestore.projectId || cred.project_id));
     } catch (e){
         fail('initialisation impossible : ' + e.message);
         return finish();

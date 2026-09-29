@@ -2,20 +2,24 @@
    BUSINESSENLIGNE — STOCKAGE DES PHOTOS
    ------------------------------------------------------------
    Les images publiées par les vendeurs passent par une seule et
-   même interface, deux moteurs possibles :
+   même interface, trois moteurs possibles :
 
-     disque local   uploads/ sur la machine (dev, poste local) ;
-     Cloud Storage  bucket Google, seul fiable en hébergement car
-                    le disque d'un conteneur est effacé à chaque
-                    déploiement.
+      disque local    uploads/ sur la machine (dev, poste local) ;
+      Cloud Storage   bucket Google, utile quand le projet dispose
+                      d'un compte de facturation ;
+      Firestore       la base du site, seul moteur restant en
+                      hébergement gratuit : le disque d'une fonction
+                      est effacé, la base ne l'est pas.
 
    Le moteur est choisi au premier accès : Cloud Storage dès qu'un
-   bucket est déclaré, disque local sinon. L'URL publique reste
-   /uploads/<fichier> dans les deux cas, donc rien ne change dans
+   bucket est déclaré, Firestore sinon si la base est déjà Firebase,
+   disque local en dernier recours. L'URL publique reste
+   /uploads/<fichier> dans tous les cas, donc rien ne change dans
    la base ni sur le site.
    ========================================================== */
 const fs   = require('fs');
 const path = require('path');
+const { PassThrough } = require('stream');
 
 /* Les photos vivent sur le disque persistant en hébergement :
    UPLOAD_DIR permet de les sortir du dossier de code déployé. */
@@ -53,15 +57,16 @@ const localBackend = {
 /* ---- Moteur : Cloud Storage ------------------------------- */
 function cloudBackend(bucket){
     let admin = null;
-    try { admin = require('firebase-admin'); }
+    try { admin = require('./admin-sdk'); }
     catch (e){ console.warn('[photos] firebase-admin absent — photos en disque local'); return null; }
+    if (!admin.isInstalled()){ console.warn('[photos] firebase-admin absent — photos en disque local'); return null; }
 
     try {
         /* Si la base Firestore a déjà démarré l'application admin, on la réutilise :
-           elle porte alors les identifiants de la clé de service. Sinon App Hosting
+           elle porte alors les identifiants de la clé de service. Sinon l'hébergeur
            fournit FIREBASE_CONFIG ou le jeton du compte de service du runtime. */
-        if (!admin.apps.length) admin.initializeApp();
-        const store = admin.storage().bucket(bucket);
+        if (!admin.isInitialized()) admin.initializeApp();
+        const store = admin.storage(admin.getApp()).bucket(bucket);
         const object = name => store.file(PREFIX + name);
 
         return {
@@ -84,15 +89,81 @@ function cloudBackend(bucket){
     }
 }
 
+/* ---- Moteur : Firestore (photos rangées dans la base) -------
+   Une photo est un document « photos/<nom> » qui décrit le fichier
+   (type MIME, nombre de morceaux) ; les morceaux vivent dans
+   « photoChunks/<nom>__<n> ». Le découpage est nécessaire parce que
+   Firestore refuse un document de plus de 1 Mo, alors que le site
+   accepte des images allant jusqu'à 3 Mo. */
+const CHUNK = 700000;   /* caractères base64 par document : large marge sous 1 Mo */
+
+function firestoreBackend(){
+    let store = null;
+    try { store = require('./db-firestore').createFirestore(); }
+    catch (e){ console.warn('[photos] Firestore indisponible (' + e.message + ')'); return null; }
+    if (!store) return null;
+
+    const manifest = name => store.collection('photos').doc(name);
+    const chunkRef = (name, i) => store.collection('photoChunks').doc(`${name}__${i}`);
+
+    return {
+        name: 'Firestore',
+        async put(name, buf, mime){
+            const b64 = Buffer.from(buf).toString('base64');
+            const parts = Math.max(1, Math.ceil(b64.length / CHUNK));
+
+            const batch = store.batch();
+            batch.set(manifest(name), {
+                mime: mime || 'application/octet-stream',
+                size: buf.length,
+                chunks: parts
+            });
+            for (let i = 0; i < parts; i++)
+                batch.set(chunkRef(name, i), { data: b64.slice(i * CHUNK, (i + 1) * CHUNK) });
+            await batch.commit();
+        },
+        async has(name){
+            const s = await manifest(name).get();
+            return s.exists;
+        },
+        /* Le reste du serveur s'attend à un flux renvoyé immédiatement :
+           la lecture Firestore étant asynchrone, on renvoie un flux vide
+           qu'on remplit dès que les morceaux sont arrivés. */
+        stream(name){
+            const out = new PassThrough();
+            (async () => {
+                try {
+                    const s = await manifest(name).get();
+                    if (!s.exists) throw Object.assign(new Error('Photo introuvable'), { code: 404 });
+                    const { chunks } = s.data();
+                    const parts = await Promise.all(
+                        Array.from({ length: chunks }, (_, i) => chunkRef(name, i).get()));
+                    out.end(Buffer.concat(parts.map(p => Buffer.from(p.data().data, 'base64'))));
+                } catch (e){
+                    out.destroy(e);
+                }
+            })();
+            return out;
+        }
+    };
+}
+
 /* Choix différé : le module peut être chargé avant que l'environnement
    soit prêt (variables FIREBASE_CONFIG lues plus tard). */
 let backend = null;
 function get(){
     if (backend) return backend;
-    if (String(process.env.STORAGE_DRIVER || 'auto').toLowerCase() !== 'local'){
-        const bucket = bucketName();
-        if (bucket) backend = cloudBackend(bucket) || localBackend;
-        else console.warn('[photos] aucun bucket déclaré (STORAGE_BUCKET) — photos en disque local');
+    const want = String(process.env.STORAGE_DRIVER || 'auto').toLowerCase();
+
+    if (want !== 'local'){
+        if (want !== 'firestore'){
+            const bucket = bucketName();
+            backend = bucket ? cloudBackend(bucket) : null;
+        }
+        /* Cloud Storage exige un compte de facturation : sans bucket, ou
+           sans firebase-admin utilisable, on range les photos dans la base. */
+        if (!backend && want !== 'cloud') backend = firestoreBackend();
+        if (!backend) console.warn('[photos] aucun stockage distant — photos en disque local');
     }
     if (!backend) backend = localBackend;
     if (backend === localBackend) fs.mkdirSync(UPLOAD_DIR, { recursive: true });

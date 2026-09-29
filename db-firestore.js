@@ -26,7 +26,7 @@ const path = require('path'); // recherche de ce fichier à la racine du projet
 /* ---- SDK Firebase côté serveur ----
    Optionnel : absent, le projet bascule simplement sur la base locale. */
 let admin = null;
-try { admin = require('firebase-admin'); } catch (e) { /* firebase-admin absent */ }
+try { admin = require('./admin-sdk'); } catch (e) { /* firebase-admin absent */ }
 
 const CREDENTIAL_FILES = ['service-account.json', 'firebase-service-account.json'];
 
@@ -96,7 +96,7 @@ function inspectCredentials(cred){
     return issues;
 }
 
-const isAvailable = () => !!admin && (!!findCredentials() || hasRuntimeCredentials());
+const isAvailable = () => admin.isInstalled() && (!!findCredentials() || hasRuntimeCredentials());
 
 /* Collections Firestore : documents dont l'id est numérique auto-incrémenté */
 const NUMERIC = new Set(['users', 'products', 'orders']);
@@ -119,8 +119,7 @@ function withId(table, doc){
 /* Firestore limite chaque lot à 500 opérations : on découpe. */
 const BATCH_LIMIT = 400;
 
-function makeFirestoreDriver(app){
-    const firestore = app.firestore();
+function makeFirestoreDriver(firestore){
     try { firestore.settings({ ignoreUndefinedProperties: true }); }
     catch (e){ /* instance déjà démarrée : réglage sans effet */ }
 
@@ -181,7 +180,7 @@ function makeFirestoreDriver(app){
 
     const driver = {
         driver: 'firestore',
-        projectId: app.options.projectId || '',
+        projectId: firestore.projectId || process.env.FIREBASE_PROJECT_ID || process.env.GOOGLE_CLOUD_PROJECT || '',
 
         async all(table, where = {}, opts = {}){
             const snap = await col(table).get();
@@ -266,17 +265,19 @@ function makeFirestoreDriver(app){
 /* ==========================================================
    INITIALISATION
    ========================================================== */
-function initFirestore(){
-    if (!admin) throw new Error('firebase-admin n\'est pas installé (npm install firebase-admin)');
+/* La base par défaut s'appelle « (default) » ; le nom reste configurable
+   pour un projet qui en héberge plusieurs. */
+const DATABASE_ID = () => process.env.FIRESTORE_DATABASE || '(default)';
+
+/* L'instance Firestore brute, prête à l'emploi. Elle est mémoïsée : une
+   seule connexion réseau pour tout le serveur, partagée par le pilote et
+   par le module de stockage des photos. */
+let instance = null;
+function createFirestore(){
+    if (instance) return instance;
+    if (!admin.isInstalled() && !admin.LEGACY) throw new Error('firebase-admin n\'est pas installé (npm install firebase-admin)');
+
     const credentials = findCredentials();
-    /* Hebergement Google : les identifiants viennent de l'environnement, pas
-       d'un fichier. initializeApp() sans argument suffit alors. */
-    if (!credentials){
-        if (hasRuntimeCredentials() && !admin.apps.length) admin.initializeApp();
-        else throw new Error(credProblem
-            ? 'Identifiants Firebase illisibles — ' + credProblem
-            : 'Aucun identifiant Firebase trouvé (service-account.json attendu)');
-    }
 
     if (credentials){
         const issues = inspectCredentials(credentials);
@@ -286,9 +287,30 @@ function initFirestore(){
         const cert = { ...credentials };
         if (cert.private_key.includes('\\n')) cert.private_key = cert.private_key.replace(/\\n/g, '\n');
 
-        if (!admin.apps.length) admin.initializeApp({ credential: admin.credential.cert(cert) });
+        instance = admin.firestore({
+            projectId: cert.project_id,
+            credentials: { client_email: cert.client_email, private_key: cert.private_key },
+            databaseId: DATABASE_ID()
+        });
+        return instance;
     }
-    return makeFirestoreDriver(admin.app());
+
+    /* Hebergement Google (App Hosting, Cloud Run…) : aucun fichier JSON, les
+       identifiants viennent du compte de service du runtime. Il faut seulement
+       désigner le projet, sinon le SDK ne sait pas où se connecter. */
+    if (hasRuntimeCredentials()){
+        instance = admin.firestore({
+            projectId: process.env.GOOGLE_CLOUD_PROJECT || process.env.GCLOUD_PROJECT || undefined,
+            databaseId: DATABASE_ID()
+        });
+        return instance;
+    }
+
+    throw new Error(credProblem
+        ? 'Identifiants Firebase illisibles — ' + credProblem
+        : 'Aucun identifiant Firebase trouvé (service-account.json attendu)');
 }
 
-module.exports = { initFirestore, isAvailable, findCredentials, hasRuntimeCredentials, inspectCredentials, REQUIRED_FIELDS, CREDENTIAL_FILES };
+const initFirestore = () => makeFirestoreDriver(createFirestore());
+
+module.exports = { initFirestore, createFirestore, isAvailable, findCredentials, hasRuntimeCredentials, inspectCredentials, REQUIRED_FIELDS, CREDENTIAL_FILES, DATABASE_ID };

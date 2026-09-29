@@ -717,29 +717,27 @@ Object.assign(DICT, {
          'Songo lako lembalimi kwenye moto oyo, na bope moninga.'],
 
     /* --- messages composés par javascript.js --- */
-    '{0} ajouté au panier':          ['{0} added to cart', '{0} imeongezwa kikapuni', '{0} eyeiswami koba'],
+    '{0} ajouté au panier':          ['{0} added to the cart', '{0} imeongezwa kwenye kikapuni', '{0} eyiswami kwenye koba'],
     '{0} résultats':                  ['{0} results', 'matokeo {0}', 'seyo {0}'],
     '{0} résultats dans {1}':         ['{0} results in {1}', 'matokeo {0} ndani ya {1}', 'seyo {0} kati ya {1}'],
     '{0} résultats pour « {1} »':    ['{0} results for "{1}"', 'matokeo {0} kwa "{1}"', 'seyo {0} kwa "{1}"'],
     '{0} résultats pour « {1} » dans {2}': ['{0} results for "{1}" in {2}', 'matokeo {0} kwa "{1}" ndani ya {2}', 'seyo {0} kwa "{1}" kati ya {2}'],
     'livré le {0}':                   ['delivered on {0}', 'imewasilishwa {0}', 'ekomama na {0}'],
-    'Commande {0} confirmée — {1}':  ['Order {0} confirmed — {1}', 'Agizo {0} limekubaliwa — {1}', 'Commande {0} ekaboli — {1}'],
-    '★ {0} sur 5 · {1} avis':         ['★ {0} out of 5 · {1} reviews', '★ {0} kati ya 5 · maoni {1}', '★ {0} kati ya 5 · mabote {1}'],
-    '({0} avis)':                     ['({0} reviews)', '(maoni {0})', '(mabote {0})'],
-    '{0} sur 5':                      ['{0} out of 5', '{0} kati ya 5', '{0} kati ya 5'],
+    'Commande {0} confirmée — {1}':  ['Order {0} confirmed — {1}', 'Agizo {0} limehakikiwa — {1}', 'Commande {0} ekondisami — {1}'],
+    '★ {0} sur 5 · {1} avis':         ['★ {0} out of 5 · {1} reviews', '★ {0} kati ya 5 · maoni {1}', '★ {0} na 5 · mazamanu {1}'],
+    '({0} avis)':                     ['({0} reviews)', '({0} maoni)', '({0} mazamanu)'],
+    '{0} sur 5':                      ['{0} out of 5', '{0} kati ya 5', '{0} na 5'],
     '{0} photo(s) dans la galerie':   ['{0} photos in the gallery', 'picha {0} kwenye galeria', 'bazani {0} kati ya galeri'],
     '{0} photo':                      ['{0} photo', 'picha {0}', 'bazani {0}'],
-    '{0} article(s) en stock':        ['{0} products in stock', 'bidhaa {0} zipo kwenye duka', 'vitungu {0} vipo kati ya duka'],
-    'Plus que {0} en stock':          ['Only {0} left in stock', 'Zimebaki {0} kwenye duka', 'Bado {0} bokoko kati ya duka'],
+    '{0} article(s) en stock':        ['{0} product(s) in stock', 'bidhaa {0} zipo stoo', 'vitungu {0} evipo koko'],
+    'Plus que {0} en stock':          ['Only {0} left in stock', 'Zimebaki {0} kwenye stoo', 'Only {0} esaliswami koko'],
     '{0} personnes':                  ['{0} people', 'watu {0}', 'bantu {0}'],
     '{0} personne':                   ['{0} person', 'mtu {0}', 'muntu {0}'],
     'publié le {0}':                  ['published on {0}', 'kilichapishwa {0}', 'ebana na {0}'],
     '{0} article(s) · {1}':           ['{0} product(s) · {1}', 'bidhaa {0} · {1}', 'vitungu {0} · {1}'],
     '{0} · article(s)':               ['{0} · product(s)', '{0} · bidhaa', '{0} · kitungu'],
     '♥ J\'aime · {0}':                ['♥ Likes · {0}', '♥ Mapendeleo · {0}', '♥ Mipendo · {0}'],
-    'ou 3x {0} sans frais':           ['or 3x {0} no fees', 'au 3x {0} bila gharama', 'kama 3x {0} bila mbongo'],
-    'Livraison <b>GRATUITE</b> le <b>{0}</b> à Lubumbashi':
-        ['Free delivery on <b>{0}</b> in Lubumbashi', 'Usafirishaji wa bure <b>{0}</b> Lubumbashi', 'Posi ya mahuri <b>{0}</b> Lubumbashi'],
+    'ou 3x {0} sans frais':           ['or 3x {0} interest-free', 'au 3x {0} bila riba', 'kama 3x {0} bila mbongo'],
     'Avenue de la Libération, Lubumbashi, RDC': ['Liberation Avenue, Lubumbashi, DRC', 'Avenue de la Libération, Lubumbashi, RDC', 'Avenue de la Libération, Lubumbashi, RDK'],
     'Le compte « {0} » n\'a pas les droits d\'administration.':
         ['The account "{0}" has no administrator rights.',
@@ -748,11 +746,6 @@ Object.assign(DICT, {
     'Article « {0} » supprimé.': ['Product "{0}" deleted.', 'Bidhaa "{0}" imefutwa.', 'Kitungu "{0}" kimefutwa.'],
     'Commande {0} — {1}': ['Order {0} — {1}', 'Agizo {0} — {1}', 'Commande {0} — {1}'],
     'Total : {0}': ['Total: {0}', 'Jumla: {0}', 'Total : {0}'],
-    '{0} ajouté au panier':            ['{0} added to the cart', '{0} imeongezwa kwenye kikapuni', '{0} eyiswami kwenye koba'],
-    '{0} personne':                   ['{0} person', 'mtu {0}', 'muntu {0}'],
-    '{0} personnes':                  ['{0} people', 'watu {0}', 'bantu {0}'],
-    '{0} article(s) en stock':        ['{0} product(s) in stock', 'bidhaa {0} zipo stoo', 'vitungu {0} evipo koko'],
-    'Plus que {0} en stock':          ['Only {0} left in stock', 'Zimebaki {0} kwenye stoo', 'Only {0} esaliswami koko'],
     'Rupture de stock':               ['Out of stock', 'Stoo imeisha', 'Ekalasi na koko'],
     'En stock':                       ['In stock', 'Ipo stoo', 'Epoyo koko'],
     'Livraison <b>GRATUITE</b> le <b>{0}</b> à Lubumbashi':
@@ -770,10 +763,6 @@ Object.assign(DICT, {
     'Meilleure vente':                ['Best seller', 'Zinazouzwa zaidi', 'Ezakitisoma'],
     "J'aime":                          ['Like', 'Penda', 'Konda'],
     'J\'aime':                         ['Likes', 'Mapendeleo', 'Mipendo'],
-    '{0} sur 5':                      ['{0} out of 5', '{0} kati ya 5', '{0} na 5'],
-    '({0} avis)':                     ['({0} reviews)', '({0} maoni)', '({0} mazamanu)'],
-    '★ {0} sur 5 · {1} avis':         ['★ {0} out of 5 · {1} reviews', '★ {0} kati ya 5 · maoni {1}', '★ {0} na 5 · mazamanu {1}'],
-    'ou 3x {0} sans frais':           ['or 3x {0} interest-free', 'au 3x {0} bila riba', 'kama 3x {0} bila mbongo'],
     'Boutique':                       ['Shop', 'Duka', 'Boutiki'],
     'Achat vérifié':                  ['Verified purchase', 'Ununuzi ulioidhibitishwa', 'Soko oyo ekosolwami'],
     'Avis vérifié le mois dernier':   ['Review verified last month', 'Maoni yaliyothibitishwa mwezi uliopita', 'Mopotamano ekosolwami kwa mwembe oyo elaloba'],
@@ -798,6 +787,10 @@ Object.assign(DICT, {
     'LIVRAISON PRIME': ['PRIME DELIVERY', 'USAFIRISHAJI WA PRIME', 'POSI YA PRIME'],
     '· au lieu de (-%)': ['· instead of (-%)', '· badala ya (-%)', '· kamba ya (-%)'],
     'Réinitialiser':                  ['Reset', 'Anza upya', 'Bongama'],
+    'Bonjour, {0}':                   ['Hello, {0}', 'Habari, {0}', 'Mbote, {0}'],
+    'Slide {0}':                       ['Slide {0}', 'Slaidi {0}', 'Kibenge {0}'],
+    'Bienvenue sur Prime ! Livraison offerte dès aujourd\'hui.':
+        ['Welcome to Prime! Free delivery from today.', 'Karibu Prime! Usafirishaji wa bure kuanzia leo.', 'Boyei bolingo na Prime! Posi ya mahuri kuanzia lelo.'],
     '{0} — administrateur':          ['{0} — administrator', '{0} — mwingenzi', '{0} — mongisi'],
     '{0} article(s) en rupture de stock': ['{0} product(s) out of stock', 'bidhaa {0} zimeisha stoo', 'vitungu {0} esaliswami koko'],
     '{0} article(s) en stock faible (≤ 3)': ['{0} low-stock product(s) (≤ 3)', 'bidhaa {0} zina stoo ndogo (≤ 3)', 'vitungu {0} vana koko ndogo (≤ 3)'],
@@ -852,8 +845,6 @@ Object.assign(DICT, {
    composés passent par t() avec des {0}. */
 Object.assign(DICT, {
     '🛒 Votre panier est vide': ['🛒 Your cart is empty', '🛒 Kikapu chako ni tupu', '🛒 Koba yako ezali na tata'],
-    'Commande {0} confirmée — {1}': ['Order {0} confirmed — {1}', 'Agizo {0} limehakikiwa — {1}', 'Commande {0} ekondisami — {1}'],
-    'Commande enregistrée localement.': ['Order saved locally.', 'Agizo limehifadhiwa ndani.', 'Commande ebambanzwe ndani.'],
     '📦 Livraison estimée sous 24 à 48h': ['📦 Estimated delivery within 24 to 48h', '📦 Usafirishaji unatarajiwa ndani ya masaa 24–48', '📦 Posi ekotambami ndani ya masaa 24–48'],
     '⚠️ J\'aime disponible uniquement avec le serveur (node server.js).':
         ['⚠️ Likes are only available with the server running (node server.js).',
@@ -862,10 +853,10 @@ Object.assign(DICT, {
     '❤️ Article ajouté à vos J\'aime': ['❤️ Product added to your likes', '❤️ Bidhaa imeongezwa kwenye mapendeleo yako', '❤️ Kitungu kimeyiswa kwenye mipendo yoko'],
     '👋 Vous êtes déconnecté.': ['👋 You are logged out.', '👋 Umetoka.', '👋 Umesonga.'],
     '⚠️ Merci de corriger les champs en rouge.': ['⚠️ Please correct the red fields.', '⚠️ Tafadhali sahihisha sehemu zilizo nyekundu.', '⚠️ Salamu bobongolisa ndani oyo ezali mbongo.'],
-    '🎉 Bienvenue ! Votre identifiant est « {0} ».':
-        ['🎉 Welcome! Your username is "{0}".', '🎉 Karibu! Jina lako la mtumiaji ni "{0}".', '🎉 Boyei bolingo! Esanza yoko ezali "{0}".'],
-    '🎉 Bienvenue {0} ! Votre boutique est créée.':
-        ['🎉 Welcome {0}! Your shop has been created.', '🎉 Karibu {0}! Duka lako limeundwa.', '🎉 Boyei bolingo {0}! Magazi yoko matengulwe.'],
+    'Bienvenue ! Votre identifiant est « {0} ».':
+        ['Welcome! Your username is "{0}".', 'Karibu! Jina lako la mtumiaji ni "{0}".', 'Boyei bolingo! Esanza yoko ezali "{0}".'],
+    'Bienvenue {0} ! Votre boutique est créée.':
+        ['Welcome {0}! Your shop has been created.', 'Karibu {0}! Duka lako limeundwa.', 'Boyei bolingo {0}! Magazi yoko matengulwe.'],
     '👋 Bonjour {0} !': ['👋 Hello {0}!', '👋 Habari {0}!', '👋 Mbote {0}!'],
     '👋 Déjà connecté en tant que {0}.': ['👋 Already logged in as {0}.', '👋 Umeingia kama {0}.', '👋 Bado ukote na {0}.'],
     '✅ Boutique mise à jour.': ['✅ Shop updated.', '✅ Duka limesasishwa.', '✅ Boutiki esungusswe.'],

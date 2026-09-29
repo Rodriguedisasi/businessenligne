@@ -643,6 +643,7 @@ function openModal(id){
     const p = PRODUCTS.find(x => String(x.id) === String(id));
     if (!p || !$('#modal')) return;
     const off = p.old ? Math.round((1 - p.price / p.old) * 100) : 0;
+    $('#modal').dataset.id = p.id;   /* pour redessiner la fiche au changement de langue */
     /* la fiche presente toutes les photos : elles se relaient seules */
     const mImg = $('#mImg');
     const stage = mImg ? (mImg.closest('.modal-img') || mImg) : null;
@@ -950,15 +951,15 @@ function refreshAccountUI(){
 
     if (u){
         if (name)   name.textContent = u.username;
-        if (action) action.textContent = 'Mon compte';
-        if (amName) amName.textContent = 'Bonjour, ' + u.username;
-        if (amLink){ amLink.textContent = 'Voir mon magasin'; amLink.href = 'magasin.html?u=' + u.username; }
+        if (action) action.textContent = t('Mon compte');
+        if (amName) amName.textContent = t('Bonjour, {0}', [u.username]);
+        if (amLink){ amLink.textContent = t('Voir mon magasin'); amLink.href = 'magasin.html?u=' + u.username; }
         if (logout) logout.hidden = false;
     } else {
-        if (name)   name.textContent = 'Identifiez-vous';
-        if (action) action.textContent = 'Créer un compte';
-        if (amName) amName.textContent = 'Connectez-vous à votre compte';
-        if (amLink){ amLink.textContent = 'Connexion / Inscription'; amLink.href = 'connexion.html'; }
+        if (name)   name.textContent = t('Identifiez-vous');
+        if (action) action.textContent = t('Créer un compte');
+        if (amName) amName.textContent = t('Connectez-vous à votre compte');
+        if (amLink){ amLink.textContent = t('Connexion / Inscription'); amLink.href = 'connexion.html'; }
         if (logout) logout.hidden = true;
     }
     const am = $('.account-menu');
@@ -971,7 +972,7 @@ function refreshAccountUI(){
         if (u && u.isAdmin){
             if (!link){
                 link = document.createElement('li');
-                link.innerHTML = '<a id="amAdmin" href="admin.html"><i class="fas fa-chart-line"></i> Tableau de surveillance</a>';
+                link.innerHTML = `<a id="amAdmin" href="admin.html"><i class="fas fa-chart-line"></i> ${t('Tableau de surveillance')}</a>`;
                 list.appendChild(link);
             }
         } else if (link){
@@ -2266,12 +2267,12 @@ async function initAdminPage(){
     async function refresh(){
         const d = await BE.overview();
         $('#adminKpis').innerHTML = [
-            K('fas fa-users', 'Comptes', nfmt(d.totals.users), `+${d.totals.newUsers7d} sur 7 jours`),
-            K('fas fa-store', 'Boutiques', nfmt(d.totals.users), `${d.totals.admins} administrateur(s)`, 'teal'),
-            K('fas fa-box', 'Articles', nfmt(d.totals.products), `${d.totals.lowStock + d.totals.outOfStock} en alerte`, 'blue'),
-            K('fas fa-heart', 'J\'aime', nfmt(d.totals.likes), 'tous membres confondus', 'pink'),
-            K('fas fa-receipt', 'Commandes', nfmt(d.totals.orders), `+${d.totals.orders7d} sur 7 jours`, 'blue'),
-            K('fas fa-coins', 'Chiffre d\'affaires', fmt(d.totals.revenue), `Panier moyen ${fmt(d.totals.avgBasket)}`, 'green')
+            K('fas fa-users', t('Comptes'), nfmt(d.totals.users), t('+{0} sur 7 jours', [nfmt(d.totals.newUsers7d)])),
+            K('fas fa-store', t('Boutiques'), nfmt(d.totals.users), t('{0} administrateur(s)', [nfmt(d.totals.admins)]), 'teal'),
+            K('fas fa-box', t('Articles'), nfmt(d.totals.products), t('{0} en alerte', [nfmt(d.totals.lowStock + d.totals.outOfStock)]), 'blue'),
+            K('fas fa-heart', t('J\'aime'), nfmt(d.totals.likes), t('tous membres confondus'), 'pink'),
+            K('fas fa-receipt', t('Commandes'), nfmt(d.totals.orders), t('+{0} sur 7 jours', [nfmt(d.totals.orders7d)]), 'blue'),
+            K('fas fa-coins', t('Chiffre d\'affaires'), fmt(d.totals.revenue), t('Panier moyen {0}', [fmt(d.totals.avgBasket)]), 'green')
         ].join('');
     }
 }
@@ -2398,13 +2399,42 @@ function initCommon(){
     }
 
     loadCart();
+    initLangChange();
+}
+
+/* Quand la langue change, le format des prix/dates change aussi :
+   on reconstruit le formateur puis on redessine ce qui est à l'écran.
+   Seul le rendu est rejoué — les écouteurs ne sont pas réattachés. */
+function initLangChange(){
+    window.addEventListener('be:lang', () => {
+        FC = new Intl.NumberFormat(BE_LOCALE);
+        renderCart();
+        refreshAccountUI();
+
+        const page = document.body.dataset.page || 'home';
+        if (page === 'cat'){
+            renderCat();
+            renderCatShops();
+        } else if (page === 'compte' && typeof refresh === 'function'){
+            refresh();
+        } else if (page === 'admin'){
+            initAdminPage();
+        } else {
+            renderReviews();
+            renderAll();
+        }
+        if ($('#modal').classList.contains('open')){
+            const id = $('#modal').dataset.id;
+            if (id) openModal(id);
+        }
+    });
 }
 
 function initHome(){
     if (!$('#heroDots')) return;
     /* --- hero carousel --- */
     $('#heroDots').innerHTML = slides.map((_, i) =>
-        `<button aria-label="Slide ${i + 1}"></button>`).join('');
+        `<button aria-label="${t('Slide {0}', [String(i + 1)])}"></button>`).join('');
     const jump = i => { goSlide(i); heroStart(); };
     $$('#heroDots button').forEach((b, i) => b.onclick = () => jump(i));
     $('#heroPrev').onclick = () => jump(slide - 1);
@@ -2449,7 +2479,7 @@ function initHome(){
     });
 
     /* --- bouton Prime --- */
-    $('#primeBtn').onclick = () => toast('🎉 Bienvenue sur Prime ! Livraison offerte dès aujourd\'hui.');
+    $('#primeBtn').onclick = () => toast('🎉 ' + t('Bienvenue sur Prime ! Livraison offerte dès aujourd\'hui.'));
 
     /* --- compte à rebours --- */
     const end = Date.now() + 9 * 3600e3 + 24 * 60e3;
