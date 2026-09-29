@@ -17,3 +17,8 @@ uploads/
 node_modules/
 npm-debug.log*
 .DS_Store
+
+# Déploiement Vercel : public/ est reconstruit par build-static.js
+public/
+.vercel
+.firebase/

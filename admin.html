@@ -10,6 +10,8 @@
     <link rel="stylesheet" href="style.css">
     <!-- Thème (clair / sombre / couleur) : chargé dans le <head> pour éviter tout clignotement -->
     <script src="theme.js"></script>
+    <!-- Langue du site (français / english / kiswahili / lingala) : applyée avant le premier affichage -->
+    <script src="i18n.js"></script>
 </head>
 <body class="has-theme-btn" data-page="admin">
 
@@ -200,9 +202,9 @@
                             <label>Catégorie *</label>
                             <select id="aCat">
                                 <option value="">Choisir…</option>
-                                <option>Électronique</option><option>Mode</option><option>Maison</option>
-                                <option>Sport</option><option>Beauté</option><option>Enfants</option>
-                                <option>Livres</option>
+                                <option value="Électronique">Électronique</option><option value="Mode">Mode</option><option value="Maison">Maison</option>
+                                <option value="Sport">Sport</option><option value="Beauté">Beauté</option><option value="Enfants">Enfants</option>
+                                <option value="Livres">Livres</option>
                             </select>
                             <span class="err">Choisissez une catégorie.</span>
                         </div>
@@ -289,9 +291,9 @@
                         <input type="search" id="prodSearch" placeholder="Rechercher un article…">
                         <select id="prodCat">
                             <option value="Toutes">Toutes les catégories</option>
-                            <option>Électronique</option><option>Mode</option><option>Maison</option>
-                            <option>Sport</option><option>Beauté</option><option>Enfants</option>
-                            <option>Livres</option>
+                            <option value="Électronique">Électronique</option><option value="Mode">Mode</option><option value="Maison">Maison</option>
+                            <option value="Sport">Sport</option><option value="Beauté">Beauté</option><option value="Enfants">Enfants</option>
+                            <option value="Livres">Livres</option>
                         </select>
                     </div>
                 </div>

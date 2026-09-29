@@ -99,12 +99,26 @@ function get(){
     return backend;
 }
 
+/* Lecture complète en mémoire : utilisée par l'hébergement sans serveur
+   persistant (une fonction Vercel renvoie le fichier dans la réponse
+   plutôt que de le faire défiler). */
+function readAll(name){
+    return new Promise((resolve, reject) => {
+        const chunks = [];
+        get().stream(name)
+            .on('data', c => chunks.push(Buffer.isBuffer(c) ? c : Buffer.from(c)))
+            .on('error', reject)
+            .on('end', () => resolve(Buffer.concat(chunks)));
+    });
+}
+
 const photos = {
     get backend(){ return get().name; },
     bucket: bucketName,
     put: (name, buf, mime) => get().put(name, buf, mime),
     has: name => get().has(name),
-    stream: name => get().stream(name)
+    stream: name => get().stream(name),
+    read: readAll
 };
 
 module.exports = photos;

@@ -73,7 +73,7 @@ function applyTheme(opts){
 
 function accentName(){
     const a = THEME_ACCENTS.find(x => x.id === theme.accent);
-    return a ? a.name : 'Orange';
+    return a ? (typeof t === 'function' ? t(a.name) : a.name) : 'Orange';
 }
 
 /* --- le texte et l'icône des boutons de l'en-tête --- */
@@ -107,20 +107,21 @@ function buildPanel(){
     panel.setAttribute('role', 'dialog');
     panel.setAttribute('aria-label', 'Changer le thème du site');
     panel.innerHTML =
-        '<div class="theme-panel-head"><b>Apparence du site</b>' +
+        '<div class="theme-panel-head"><b data-i18n="Apparence du site">Apparence du site</b>' +
         '<button class="theme-close" type="button" data-theme-close aria-label="Fermer">' +
         '<i class="fas fa-xmark"></i></button></div>' +
-        '<div class="theme-label">Luminosité</div><div class="theme-modes">' +
+        '<div class="theme-label" data-i18n="Luminosité">Luminosité</div><div class="theme-modes">' +
         THEME_MODES.map(m =>
-            `<button type="button" data-mode-set="${m.id}"><i class="fas ${m.icon}"></i><span>${m.name}</span></button>`
+            `<button type="button" data-mode-set="${m.id}" data-i18n="${m.name}"><i class="fas ${m.icon}"></i><span>${m.name}</span></button>`
         ).join('') + '</div>' +
-        '<div class="theme-label">Couleur</div><div class="theme-swatches">' +
+        '<div class="theme-label" data-i18n="Couleur">Couleur</div><div class="theme-swatches">' +
         THEME_ACCENTS.map(a =>
             `<button type="button" data-accent-set="${a.id}" title="${a.name}">` +
             `<span class="ts-dots" style="--c1:${a.c1};--c2:${a.c2};--c3:${a.c3}"><i></i><i></i><i></i></span>` +
-            `<span class="ts-name">${a.name}</span></button>`
+            `<span class="ts-name" data-i18n="${a.name}">${a.name}</span></button>`
         ).join('') + '</div>' +
-        '<p class="theme-note">Votre choix est gardé sur cet appareil, sur toutes les pages.</p>';
+        '<p class="theme-note" data-i18n="Votre choix est gardé sur cet appareil, sur toutes les pages.">' +
+        'Votre choix est gardé sur cet appareil, sur toutes les pages.</p>';
 
     document.body.appendChild(backdrop);
     document.body.appendChild(panel);
@@ -194,6 +195,8 @@ const isPanelOpen = () => !!(panel && panel.classList.contains('open'));
 applyTheme();          /* avant le premier affichage */
 document.addEventListener('DOMContentLoaded', () => {
     paintThemeButtons();
+    /* le nom de la couleur suit la langue du site */
+    window.addEventListener('be:lang', () => { paintThemeButtons(); paintThemePanel(); });
 
     document.addEventListener('click', e => {
         const open = e.target.closest('[data-theme-open]');

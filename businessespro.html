@@ -395,7 +395,27 @@
                 box-shadow: 0 10px 20px rgba(0,0,0,0.1);
             }
         }
+        /* Sélecteur de langue (cette page a son propre style) */
+        .lang-pick{
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            margin-left: 18px;
+            font-size: 13px;
+        }
+        .lang-pick i{ color: #666; }
+        .lang-pick select{
+            font: inherit;
+            padding: 6px 10px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            background: #fff;
+            color: #222;
+            cursor: pointer;
+        }
     </style>
+    <!-- Langue du site (français / english / kiswahili / lingala) -->
+    <script src="i18n.js"></script>
 </head>
 <body>
 
@@ -403,6 +423,17 @@
     <div class="logo">
         <p><span>Business</span>enligne</p>  
     </div>
+    <!-- Sélecteur de langue : cette page a son propre style, on n'utilise donc
+         pas le panneau du site mais une liste déroulante simple. -->
+    <label class="lang-pick">
+        <i class="fas fa-globe"></i>
+        <select id="langSelect" aria-label="Langue">
+            <option value="fr">Français</option>
+            <option value="en">English</option>
+            <option value="sw">Kiswahili</option>
+            <option value="ln">Lingala</option>
+        </select>
+    </label>
     <ul class="menuu">
         <li><a href="#homme">Accueil</a></li>
         <li><a href="#menu_back">Appareils</a></li>
@@ -805,6 +836,13 @@
     // MutationObserver pour les produits chargés dynamiquement (si besoin)
     const observer = new MutationObserver(() => bindAddToCartButtons());
     observer.observe(document.body, { childList: true, subtree: true });
+
+    // ---------- Langue du site ----------
+    const langSelect = document.getElementById("langSelect");
+    if (langSelect && window.i18n) {
+        langSelect.value = window.i18n.lang;
+        langSelect.addEventListener("change", e => window.i18n.setLang(e.target.value));
+    }
 </script>
 </body>
 </html>

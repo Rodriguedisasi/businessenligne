@@ -1,4 +1,4 @@
-﻿/* ==========================================================
+/* ==========================================================
    BUSINESSENLIGNE  —  LOGIQUE (style Amazon)
    Catalogue + recherche + filtres + panier (LocalStorage)
    ========================================================== */
@@ -106,8 +106,12 @@ const REVIEWS = [
 ];
 
 /* ---------------- UTILS ---------------- */
-const FC = new Intl.NumberFormat('fr-FR');
+let FC = new Intl.NumberFormat(BE_LOCALE);
 const fmt = n => FC.format(Math.round(n)) + ' FC';
+/* Formatage des nombres et des dates dans la langue choisie (voir i18n.js). */
+const nf = () => new Intl.NumberFormat(BE_LOCALE);
+const nfmt = n => nf().format(n);
+const dj = (d, o) => new Date(d).toLocaleDateString(BE_LOCALE, o);
 const $  = s => document.querySelector(s);
 const $$ = s => Array.from(document.querySelectorAll(s));
 const imgOf = p => p.image ? p.image : `https://picsum.photos/seed/${p.seed}/420/420`;
@@ -154,15 +158,15 @@ function paintInfo(p){
     const rows = [
         ['Catégorie', p.cat],
         p.owner && p.owner.shopName ? ['Boutique', p.owner.shopName] : null,
-        ['Note', String(p.rating).replace('.', ',') + ' / 5 · ' + Number(p.reviews || 0).toLocaleString('fr-FR') + ' avis'],
-        ['J\'aime', Number(p.likes || 0) + (p.likes > 1 ? ' personnes' : ' personne')],
-        ['Photos', photos + (photos > 1 ? ' photos dans la galerie' : ' photo')],
+        ['Note', t('★ {0} sur 5 · {1} avis', [String(p.rating).replace('.', ','), nfmt(Number(p.reviews || 0))])],
+        [t("J'aime"), t(p.likes > 1 ? '{0} personnes' : '{0} personne', [Number(p.likes || 0)])],
+        ['Photos', t(photos > 1 ? '{0} photo(s) dans la galerie' : '{0} photo', [photos])],
         ['Disponibilité', p.stock > 0
-            ? (p.stock <= 10 ? 'Plus que ' + p.stock + ' en stock' : p.stock + ' articles en stock')
-            : 'Rupture de stock'],
-        ['Livraison', 'Gratuite, reçue sous 24 à 48 h à Lubumbashi'],
-        ['Paiement', 'Mobile Money, carte bancaire ou espèces à la livraison'],
-        p.prime ? ['Livraison Prime', 'Offerte et prioritaire'] : null
+            ? (p.stock <= 10 ? t('Plus que {0} en stock', [p.stock]) : t('{0} article(s) en stock', [p.stock]))
+            : t('Rupture de stock')],
+        ['Livraison', t('Gratuite, reçue sous 24 à 48 h à Lubumbashi')],
+        ['Paiement', t('Mobile Money, carte bancaire ou espèces à la livraison')],
+        p.prime ? ['Livraison Prime', t('Offerte et prioritaire')] : null
     ].filter(Boolean);
     const specs = detailsOf(p);
     infoBox.innerHTML =
@@ -189,11 +193,11 @@ function starsHTML(rating){
 function toast(msg, ms){
     const wrap = $('#toastWrap');
     if (!wrap) return;
-    const t = document.createElement('div');
-    t.className = 'toast';
-    t.textContent = msg;
-    wrap.appendChild(t);
-    setTimeout(() => t.remove(), ms || 2600);
+    const box = document.createElement('div');
+    box.className = 'toast';
+    box.textContent = t(msg);       /* le message est traduit (voir i18n.js) */
+    wrap.appendChild(box);
+    setTimeout(() => box.remove(), ms || 2600);
 }
 
 /* ==========================================================
@@ -394,30 +398,30 @@ document.addEventListener('visibilitychange', () => {
 /* ---------------- RENDU PRODUIT ---------------- */
 function cardHTML(p){
     const off = p.off || (p.old ? Math.round((1 - p.price / p.old) * 100) : 0);
-    const badge = p.badge === 'deal' ? `<span class="badge badge-deal">Promotion ${off}%</span>`
-        : p.badge === 'new' ? `<span class="badge badge-new">Nouveau</span>`
-        : p.badge === 'best' ? `<span class="badge badge-best">Meilleure vente</span>` : '';
+    const badge = p.badge === 'deal' ? `<span class="badge badge-deal">${t('Promotion')} ${off}%</span>`
+        : p.badge === 'new' ? `<span class="badge badge-new">${t('Nouveau')}</span>`
+        : p.badge === 'best' ? `<span class="badge badge-best">${t('Meilleure vente')}</span>` : '';
     const owner = p.owner && p.owner.username !== 'businessenligne'
         ? `<a class="owner-tag" href="magasin.html?u=${encodeURIComponent(p.owner.username)}" onclick="event.stopPropagation()">
                <i class="fas fa-store"></i> <b>${p.owner.shopName}</b>
            </a>` : '';
-    const like = `<button class="like-btn ${p.likedByMe ? 'on' : ''}" data-like="${p.id}" title="J'aime">
+    const like = `<button class="like-btn ${p.likedByMe ? 'on' : ''}" data-like="${p.id}" title="${t("J'aime")}">
             <i class="${p.likedByMe ? 'fas' : 'far'} fa-heart"></i>
-            <span class="like-nb">${p.likes || 0}</span>
+            <span class="like-nb">${nfmt(Number(p.likes || 0))}</span>
         </button>`;
     return `
     <article class="p-card" data-id="${p.id}">
         ${badge}
         <div class="p-img-wrap">${galleryHTML(photosOf(p), p.name)}</div>
-        <div class="p-rating">${starsHTML(p.rating)} <span class="n">${String(p.rating).replace('.', ',')}</span> <span class="c">(${p.reviews.toLocaleString('fr-FR')})</span></div>
+        <div class="p-rating">${starsHTML(p.rating)} <span class="n">${String(p.rating).replace('.', ',')}</span> <span class="c">(${nfmt(Number(p.reviews || 0))})</span></div>
         <h3 class="p-title">${p.name}</h3>
         <div class="p-price">${fmt(p.price)}${p.old ? `<span class="old">${fmt(p.old)}</span><span class="off">-${off}%</span>` : ''}</div>
-        <div class="p-extra">ou 3x ${fmt(Math.round(p.price / 3))} sans frais</div>
-        ${p.prime ? '<div class="p-prime"><i class="fas fa-check-circle"></i> LIVRAISON PRIME</div>' : ''}
+        <div class="p-extra">${t('ou 3x {0} sans frais', [fmt(Math.round(p.price / 3))])}</div>
+        ${p.prime ? `<div class="p-prime"><i class="fas fa-check-circle"></i> ${t('LIVRAISON PRIME')}</div>` : ''}
         ${owner}
-        <div class="p-stock ${p.stock <= 10 ? 'low' : ''}">${p.stock <= 10 ? `Plus que ${p.stock} en stock` : 'En stock'}</div>
+        <div class="p-stock ${p.stock <= 10 ? 'low' : ''}">${p.stock <= 10 ? t('Plus que {0} en stock', [p.stock]) : t('En stock')}</div>
         <div class="p-actions">
-            <button class="btn-add" data-add="${p.id}"><i class="fas fa-cart-plus"></i> Ajouter au panier</button>
+            <button class="btn-add" data-add="${p.id}"><i class="fas fa-cart-plus"></i> ${t('Ajouter au panier')}</button>
             ${like}
         </div>
     </article>`;
@@ -439,7 +443,7 @@ async function toggleLike(btn){
         p.likedByMe = d.liked;
         btn.classList.toggle('on', d.liked);
         btn.querySelector('i').className = d.liked ? 'fas fa-heart' : 'far fa-heart';
-        btn.querySelector('.like-nb').textContent = d.likes;
+        btn.querySelector('.like-nb').textContent = nfmt(Number(d.likes));
         toast(d.liked ? '❤️ Article ajouté à vos J\'aime' : 'J\'aime retiré');
     } catch (err){
         toast('❌ ' + err.message);
@@ -474,7 +478,7 @@ function filtered(){
 function renderChips(){
     $('#filterChips').innerHTML = CATEGORIES.map(c => {
         const active = state.cat === c.name ? ' active' : '';
-        return `<a href="${c.file}" class="chip${active}">${c.name}</a>`;
+        return `<a href="${c.file}" class="chip${active}">${t(c.name)}</a>`;
     }).join('');
 }
 
@@ -483,15 +487,21 @@ function renderGrid(){
     const grid = $('#grid');
     if (!list.length){
         grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1">
-            <i class="fas fa-search"></i><h3>Aucun résultat</h3>
-            <p>Essayez un autre mot-clé ou une autre catégorie.</p></div>`;
+            <i class="fas fa-search"></i><h3>${t('Aucun résultat')}</h3>
+            <p>${t('Essayez un autre mot-clé ou une autre catégorie.')}</p></div>`;
     } else {
         grid.innerHTML = list.map(cardHTML).join('');
     }
-    $('#resultInfo').textContent = list.length
-        ? `${list.length} résultat${list.length > 1 ? 's' : ''}${state.q ? ` pour « ${state.q} »` : ''}${state.cat !== 'Toutes' ? ` dans ${state.cat}` : ''}`
-        : 'Aucun article ne correspond à votre recherche.';
-    $('#catalogTitle').textContent = state.cat === 'Toutes' ? 'Tous les produits' : state.cat;
+    $('#resultInfo').textContent = !list.length
+        ? t('Aucun article ne correspond à votre recherche.')
+        : state.q && state.cat !== 'Toutes'
+            ? t('{0} résultats pour « {1} » dans {2}', [nfmt(list.length), state.q, t(state.cat)])
+            : state.q
+                ? t('{0} résultats pour « {1} »', [nfmt(list.length), state.q])
+                : state.cat !== 'Toutes'
+                    ? t('{0} résultats dans {1}', [nfmt(list.length), t(state.cat)])
+                    : t('{0} résultats', [nfmt(list.length)]);
+    $('#catalogTitle').textContent = state.cat === 'Toutes' ? t('Tous les produits') : t(state.cat);
     renderChips();
     initGalleries(grid);
 }
@@ -510,18 +520,18 @@ function renderAll(){
     row('fashionRow', PRODUCTS.filter(p => p.cat === 'Mode'));
     $('#catGrid').innerHTML = CATEGORIES.map(c =>
         `<a href="${c.file}" class="cat-card">
-            <img src="${c.img}" alt="${c.name}" loading="lazy">
-            <b>${c.name}</b><span>${catOf(c.name).length} articles</span>
+            <img src="${c.img}" alt="${t(c.name)}" loading="lazy">
+            <b>${t(c.name)}</b><span>${t('{0} articles', [nfmt(catOf(c.name).length)])}</span>
         </a>`).join('');
     $('#revGrid').innerHTML = REVIEWS.map(r =>
         `<div class="rev">
             <div class="rev-top">
                 <img src="${r.img}" alt="${r.n}">
-                <div><b>${r.n}</b><span>Achat vérifié</span></div>
+                <div><b>${r.n}</b><span>${t('Achat vérifié')}</span></div>
             </div>
             ${starsHTML(r.r)}
             <p style="margin-top:6px">${r.t}</p>
-            <div class="verified">Avis vérifié le mois dernier</div>
+            <div class="verified">${t('Avis vérifié le mois dernier')}</div>
         </div>`).join('');
     renderGrid();
 }
@@ -549,7 +559,7 @@ function addToCart(id, qty = 1, silent = false){
     else cart.push({ id, qty: Math.min(qty, 99) });
     saveCart();
     if (!silent){
-        toast(`${p.name} ajouté au panier`);
+        toast(t('{0} ajouté au panier', [p.name]));
         if ($('#cartDrawer')) openCart();
     }
 }
@@ -588,13 +598,13 @@ function renderCart(){
                 <img src="${imgOf(p)}" alt="${p.name}">
                 <div class="ci-body">
                     <div class="ci-title">${p.name}</div>
-                    <div class="ci-prime"><i class="fas fa-check-circle"></i> LIVRAISON PRIME</div>
+                    <div class="ci-prime"><i class="fas fa-check-circle"></i> ${t('LIVRAISON PRIME')}</div>
                     <div class="ci-price">${fmt(p.price)}</div>
                     <div class="qty">
                         <select data-qty="${p.id}">
-                            ${[1,2,3,4,5,6,7,8,9,10].map(n => `<option value="${n}" ${n === l.qty ? 'selected' : ''}>Qté : ${n}</option>`).join('')}
+                            ${[1,2,3,4,5,6,7,8,9,10].map(n => `<option value="${n}" ${n === l.qty ? 'selected' : ''}>${t('Qté :')} ${n}</option>`).join('')}
                         </select>
-                        <button class="del" data-del="${p.id}"><i class="fas fa-trash-alt"></i> Supprimer</button>
+                        <button class="del" data-del="${p.id}"><i class="fas fa-trash-alt"></i> ${t('Supprimer')}</button>
                     </div>
                 </div>
             </div>`;
@@ -605,8 +615,8 @@ function renderCart(){
     if (sub) sub.textContent = fmt(total);
     const ship = $('#cartShip');
     if (ship) ship.textContent = total === 0
-        ? 'Livraison calculée à l\'étape suivante'
-        : (total >= 150000 ? 'Livraison STANDARD offerte ✓' : 'Livraison STANDARD : 1 500 FC (offerte dès 150 000 FC)');
+        ? t('Livraison calculée à l\'étape suivante')
+        : t(total >= 150000 ? 'Livraison STANDARD offerte ✓' : 'Livraison STANDARD : 1 500 FC (offerte dès 150 000 FC)');
 }
 
 /* ---------------- OUVRIR / FERMER ---------------- */
@@ -651,8 +661,8 @@ function openModal(id){
     }
     const st = $('#mStars');
     st.outerHTML = starsHTML(p.rating).replace('class="stars"', 'class="stars" id="mStars"');
-    $('#mRating').textContent = String(p.rating).replace('.', ',') + ' sur 5';
-    $('#mCount').textContent = `(${p.reviews.toLocaleString('fr-FR')} avis)`;
+    $('#mRating').textContent = t('{0} sur 5', [String(p.rating).replace('.', ',')]);
+    $('#mCount').textContent = t('({0} avis)', [nfmt(Number(p.reviews || 0))]);
     $('#mTitle').textContent = p.name;
     $('#mPrice').innerHTML = `${fmt(p.price)}${p.old ? `<span class="old">${fmt(p.old)}</span><span class="off">-${off}%</span>` : ''}`;
     $('#mDesc').textContent = p.desc || '';
@@ -660,9 +670,9 @@ function openModal(id){
     paintInfo(p);
     $('#mList').innerHTML = featsOf(p).map(f => `<li><i class="fas fa-check"></i><span>${esc(f)}</span></li>`).join('');
     $('#mStock').innerHTML = p.stock <= 10
-        ? `<span style="color:#b12704">Plus que ${p.stock} en stock</span>`
-        : `<span style="color:#007600">En stock</span>`;
-    $('#mShip').innerHTML = `Livraison <b>GRATUITE</b> le <b>${new Date(Date.now() + 3 * 864e5).toLocaleDateString('fr-FR', { weekday:'long', day:'numeric', month:'long' })}</b> à Lubumbashi`;
+        ? `<span style="color:#b12704">${t('Plus que {0} en stock', [p.stock])}</span>`
+        : `<span style="color:#007600">${t('En stock')}</span>`;
+    $('#mShip').innerHTML = t('Livraison <b>GRATUITE</b> le <b>{0}</b> à Lubumbashi', [dj(Date.now() + 3 * 864e5, { weekday: 'long', day: 'numeric', month: 'long' })]);
     $('#mBuy').onclick = () => { addToCart(p.id, 1, true); closeAll(); checkout(); };
     $('#mAdd').onclick = () => { addToCart(p.id); closeAll(); };
     $('#modal').classList.add('open');
@@ -683,11 +693,11 @@ async function checkout(){
             cart = [];
             saveCart();
             closeAll();
-            toast(`✅ Commande ${o.ref} confirmée — ${fmt(o.total)}`);
+            toast('✅ ' + t('Commande {0} confirmée — {1}', [o.ref, fmt(o.total)]));
             setTimeout(() => toast('📦 Livraison estimée sous 24 à 48h'), 900);
             return;
         } catch (e){
-            toast('⚠️ ' + e.message + ' — commande enregistrée localement.');
+            toast('⚠️ ' + e.message + ' — ' + t('commande enregistrée localement.'));
         }
     }
 
@@ -708,7 +718,7 @@ async function checkout(){
     cart = [];
     saveCart();
     closeAll();
-    toast(`✅ Commande ${order.ref} confirmée — ${fmt(order.total)}`);
+    toast('✅ ' + t('Commande {0} confirmée — {1}', [order.ref, fmt(order.total)]));
     setTimeout(() => toast('📦 Livraison estimée sous 24 à 48h'), 900);
 }
 
@@ -778,20 +788,22 @@ function renderCat(){
     grid.innerHTML = list.length
         ? list.map(cardHTML).join('')
         : `<div class="empty-state" style="grid-column:1/-1">
-               <i class="fas fa-search"></i><h3>Aucun résultat</h3>
-               <p>Aucun article ne correspond à ces filtres.</p>
-               <p style="margin-top:12px"><a class="btn btn-outline" href="${location.pathname.split(/[\\/]/).pop()}">Réinitialiser</a></p>
+               <i class="fas fa-search"></i><h3>${t('Aucun résultat')}</h3>
+               <p>${t('Aucun article ne correspond à ces filtres.')}</p>
+               <p style="margin-top:12px"><a class="btn btn-outline" href="${location.pathname.split(/[\\/]/).pop()}">${t('Réinitialiser')}</a></p>
            </div>`;
     const total = cstate.cat === 'Toutes' ? PRODUCTS.length : catOf(cstate.cat).length;
-    $('#resCount').textContent = `1 sur 1 page pour ${cstate.cat === 'Toutes' ? '« tous les produits »' : '« ' + cstate.cat.toLowerCase() + ' »'} — ${list.length} résultat${list.length > 1 ? 's' : ''} sur ${total}`;
+    $('#resCount').textContent = cstate.cat === 'Toutes'
+        ? t('1 sur 1 page pour « tous les produits » — {0} résultats sur {1}', [nfmt(list.length), nfmt(total)])
+        : t('1 sur 1 page pour « {0} » — {1} résultats sur {2}', [t(cstate.cat).toLowerCase(), nfmt(list.length), nfmt(total)]);
     initGalleries(grid);
 
     const deal = list.find(p => p.old) || list[0];
     if (deal && $('#catDealTxt')){
         const off = deal.old ? Math.round((1 - deal.price / deal.old) * 100) : 0;
         $('#catDealTxt').textContent = deal.old
-            ? `${deal.name} — ${fmt(deal.price)} au lieu de ${fmt(deal.old)} (-${off}%)`
-            : `${deal.name} — ${fmt(deal.price)}`;
+            ? t('{0} — {1} au lieu de {2} (-{3}%)', [deal.name, fmt(deal.price), fmt(deal.old), String(off)])
+            : t('{0} — {1}', [deal.name, fmt(deal.price)]);
     }
 }
 
@@ -865,8 +877,8 @@ function shopCardHTML(s, cat){
         <span class="sc-body">
             <b>${esc(s.shopName || s.username)}</b>
             <span class="sc-meta"><i class="fas fa-map-marker-alt"></i> ${esc(s.shopCity || 'Lubumbashi')}</span>
-            <span class="sc-stats">${s.productCount} article${s.productCount > 1 ? 's' : ''}${s.likes ? ' · ' + s.likes + ' J\'aime' + (s.likes > 1 ? 's' : '') : ''}</span>
-            ${s.minPrice != null ? `<span class="sc-price">dès ${fmt(s.minPrice)}</span>` : ''}
+            <span class="sc-stats">${t('{0} articles', [nfmt(s.productCount)])}${s.likes ? ' · ' + t('{0} J\'aime', [nfmt(s.likes)]) : ''}</span>
+            ${s.minPrice != null ? `<span class="sc-price">${t('dès {0}', [fmt(s.minPrice)])}</span>` : ''}
         </span>
     </a>`;
 }
@@ -892,17 +904,16 @@ async function renderCatShops(){
 
         box.hidden = false;
         const total = shops.reduce((s, x) => s + x.productCount, 0);
-        $('#catShopsCount').innerHTML =
-            `${shops.length} boutique${shops.length > 1 ? 's' : ''} propose${shops.length > 1 ? 'nt' : ''} ` +
-            `${total} article${total > 1 ? 's' : ''} — cliquez sur une boutique pour voir ses photos et ses prix.`;
+        $('#catShopsCount').innerHTML = t('{0} boutiques proposent {1} articles — cliquez sur une boutique pour voir ses photos et ses prix.',
+            [nfmt(shops.length), nfmt(total)]);
 
         const shown = shops.slice(0, 12);
         grid.innerHTML = shown.map(s => shopCardHTML(s, cat)).join('') +
             (shops.length > shown.length
                 ? `<a class="shop-card shop-all" href="magasin.html${cat === 'Toutes' ? '' : '?cat=' + encodeURIComponent(cat)}">
                        <span class="sc-avatar"><i class="fas fa-store"></i></span>
-                       <span class="sc-body"><b>Voir les ${shops.length} boutiques</b>
-                       <span class="sc-meta">Tout le catalogue de la plateforme</span></span>
+                       <span class="sc-body"><b>${t('Voir les {0} boutiques', [nfmt(shops.length)])}</b>
+                       <span class="sc-meta">${t('Tout le catalogue de la plateforme')}</span></span>
                    </a>`
                 : '');
     } catch (e){
@@ -918,11 +929,11 @@ function renderReviews(){
         `<div class="rev">
             <div class="rev-top">
                 <img src="${r.img}" alt="${r.n}">
-                <div><b>${r.n}</b><span>Achat vérifié</span></div>
+                <div><b>${r.n}</b><span>${t('Achat vérifié')}</span></div>
             </div>
             ${starsHTML(r.r)}
             <p style="margin-top:6px">${r.t}</p>
-            <div class="verified">Avis vérifié le mois dernier</div>
+            <div class="verified">${t('Avis vérifié le mois dernier')}</div>
         </div>`).join('');
 }
 
@@ -1065,9 +1076,9 @@ function initAuthPage(){
                 phone: $('#phone').value.trim()
             });
             if (generated && generated.username)
-                toast('🎉 Bienvenue ! Votre identifiant est « ' + generated.username + ' ».', 6000);
+                toast('🎉 ' + t('Bienvenue ! Votre identifiant est « {0} ».', [generated.username]), 6000);
             else
-                toast('🎉 Bienvenue ' + user.username + ' ! Votre boutique est créée.', 4000);
+                toast('🎉 ' + t('Bienvenue {0} ! Votre boutique est créée.', [user.username]), 4000);
             setTimeout(() => { location.href = 'compte.html'; }, 1600);
         } catch (err){
             btn.disabled = false;
@@ -1174,7 +1185,7 @@ async function initAccountPage(){
     $('#shopLink').href = 'magasin.html?u=' + encodeURIComponent(me.username);
     $('#setUsername').textContent = '@' + me.username;
     $('#setEmail').textContent = me.email;
-    $('#setSince').textContent = new Date(me.createdAt).toLocaleDateString('fr-FR', { day:'numeric', month:'long', year:'numeric' });
+    $('#setSince').textContent = new Date(me.createdAt).toLocaleDateString(BE_LOCALE, { day:'numeric', month:'long', year:'numeric' });
 
     /* ---------- onglets ---------- */
     const TABS = ['boutique', 'articles', 'likes', 'commandes', 'reglages'];
@@ -1251,7 +1262,7 @@ async function initAccountPage(){
                     </div>
                     <div class="ir-meta">
                         <span style="color:#cc0c39;font-weight:700">♥ ${p.likes} J'aime</span> ·
-                        publié le ${new Date(p.createdAt).toLocaleDateString('fr-FR')}
+                        publié le ${new Date(p.createdAt).toLocaleDateString(BE_LOCALE)}
                     </div>
                     <div class="ir-actions">
                         <button class="btn btn-outline btn-sm" data-edit="${p.id}"><i class="fas fa-pen"></i> Modifier</button>
@@ -1322,7 +1333,7 @@ async function initAccountPage(){
             <div class="oc-top">
                 <div>
                     <div class="oc-ref">Commande ${o.ref}</div>
-                    <div class="oc-items">${o.items.length} article(s) · ${new Date(o.createdAt).toLocaleDateString('fr-FR', { day:'numeric', month:'long', year:'numeric' })}</div>
+                    <div class="oc-items">${o.items.length} article(s) · ${new Date(o.createdAt).toLocaleDateString(BE_LOCALE, { day:'numeric', month:'long', year:'numeric' })}</div>
                 </div>
                 <div style="text-align:right">
                     <div style="font-weight:700;font-size:17px">${fmt(o.total)}</div>
@@ -1799,7 +1810,6 @@ async function initShopPage(){
    TABLEAU DE SURVEILLANCE (ADMINISTRATION)
    ========================================================== */
 const STATUTS = ['Confirmée', 'En préparation', 'Expédiée', 'Livrée', 'Annulée'];
-const nf = new Intl.NumberFormat('fr-FR');
 
 async function initAdminPage(){
     refreshAccountUI();
@@ -1809,7 +1819,7 @@ async function initAdminPage(){
         showNoAccess('Vous devez être connecté pour accéder au tableau de surveillance.');
         return;
     }
-    $('#adminWho').textContent = `${me.shopName} — administrateur`;
+    $('#adminWho').textContent = t('{0} — administrateur', [me.shopName]);
 
     let data;
     try { data = await BE.overview(); }
@@ -1831,12 +1841,12 @@ async function initAdminPage(){
 
     /* ---------- alertes ---------- */
     const alerts = [];
-    if (T.outOfStock) alerts.push(['danger', `${T.outOfStock} article(s) en rupture de stock`, 'Ruptures']);
-    if (T.lowStock) alerts.push(['warn',   `${T.lowStock} article(s) en stock faible (≤ 3)`, 'Stock']);
-    if (T.banned)    alerts.push(['info',   `${T.banned} compte(s) suspendu(s)`, 'Modération']);
+    if (T.outOfStock) alerts.push(['danger', t('{0} article(s) en rupture de stock', [nfmt(T.outOfStock)]), t('Ruptures')]);
+    if (T.lowStock) alerts.push(['warn',   t('{0} article(s) en stock faible (≤ 3)', [nfmt(T.lowStock)]), t('Stock')]);
+    if (T.banned)    alerts.push(['info',   t('{0} compte(s) suspendu(s)', [nfmt(T.banned)]), t('Modération')]);
     $('#adminAlerts').innerHTML = alerts.length
         ? alerts.map(a => `<div class="admin-alert ${a[0]}"><i class="fas fa-circle-info"></i>${a[1]}<span>${a[2]}</span></div>`).join('')
-        : '<div class="admin-alert ok"><i class="fas fa-circle-check"></i>Tout est en ordre : aucun point de vigilance.</div>';
+        : `<div class="admin-alert ok"><i class="fas fa-circle-check"></i>${t('Tout est en ordre : aucun point de vigilance.')}</div>`;
 
     /* ---------- indicateurs ---------- */
     const K = (icon, label, value, hint, tone) =>
@@ -1847,18 +1857,18 @@ async function initAdminPage(){
             ${hint ? `<em>${hint}</em>` : ''}
          </div>`;
     $('#adminKpis').innerHTML = [
-        K('fas fa-users',      'Comptes',     nf.format(T.users),     `+${T.newUsers7d} sur 7 jours`),
-        K('fas fa-store',      'Boutiques',   nf.format(T.users),     `${T.admins} administrateur(s)`, 'teal'),
-        K('fas fa-box',        'Articles',    nf.format(T.products),  `${T.lowStock + T.outOfStock} en alerte`, 'blue'),
-        K('fas fa-heart',      'J\'aime',     nf.format(T.likes),     'tous membres confondus', 'pink'),
-        K('fas fa-receipt',    'Commandes',   nf.format(T.orders),    `+${T.orders7d} sur 7 jours`, 'blue'),
-        K('fas fa-coins',      'Chiffre d\'affaires', fmt(T.revenue), `Panier moyen ${fmt(T.avgBasket)}`, 'green')
+        K('fas fa-users',      t('Comptes'),   nfmt(T.users),     t('+{0} sur 7 jours', [nfmt(T.newUsers7d)])),
+        K('fas fa-store',      t('Boutiques'), nfmt(T.users),     t('{0} administrateur(s)', [nfmt(T.admins)]), 'teal'),
+        K('fas fa-box',        t('Articles'),  nfmt(T.products),  t('{0} en alerte', [nfmt(T.lowStock + T.outOfStock)]), 'blue'),
+        K('fas fa-heart',      t('J\'aime'),   nfmt(T.likes),     t('tous membres confondus'), 'pink'),
+        K('fas fa-receipt',    t('Commandes'), nfmt(T.orders),    t('+{0} sur 7 jours', [nfmt(T.orders7d)]), 'blue'),
+        K('fas fa-coins',      t('Chiffre d\'affaires'), fmt(T.revenue), t('Panier moyen {0}', [fmt(T.avgBasket)]), 'green')
     ].join('');
 
     /* ---------- graphique des 30 derniers jours ---------- */
     const days = data.days, max = Math.max(1, ...days.map(d => Math.max(d.orders, d.signups)));
     $('#chart').innerHTML = days.map(d => `
-        <div class="chart-col" title="${d.day} · ${d.orders} commande(s) · ${d.signups} inscription(s)">
+        <div class="chart-col" title="${d.day} · ${t('{0} commande(s) · {1} inscription(s)', [nfmt(d.orders), nfmt(d.signups)])}">
             <div class="chart-bar">
                 <i class="cb-orders" style="height:${(d.orders / max) * 100}%"></i>
                 <i class="cb-signups" style="height:${(d.signups / max) * 100}%"></i>
@@ -1871,9 +1881,9 @@ async function initAdminPage(){
     const maxCat = Math.max(1, ...data.categories.map(c => c.count));
     $('#catBars').innerHTML = data.categories.map(c => `
         <div class="bar-row">
-            <span>${c.name}</span>
+            <span>${t(c.name)}</span>
             <div class="bar"><i style="width:${(c.count / maxCat) * 100}%"></i></div>
-            <b>${c.count}</b>
+            <b>${nfmt(c.count)}</b>
         </div>`).join('');
 
     /* ---------- dernières inscriptions ---------- */
@@ -1883,31 +1893,31 @@ async function initAdminPage(){
     $('#newUsers').innerHTML = data.topShops.length
         ? data.topShops.map(u => `<a class="mini-row" href="magasin.html?u=${encodeURIComponent(u.username)}">
             <div class="avatar sm">${ava(u)}</div>
-            <div><b>${u.shopName}</b><span>@${u.username} · ${u.productCount} article(s)</span></div>
-            <em>${new Date(u.createdAt).toLocaleDateString('fr-FR')}</em>
+            <div><b>${u.shopName}</b><span>@${u.username} · ${t('{0} article(s)', [nfmt(u.productCount)])}</span></div>
+            <em>${dj(u.createdAt)}</em>
           </a>`).join('')
-        : '<p class="muted">Aucune inscription.</p>';
+        : `<p class="muted">${t('Aucune inscription.')}</p>`;
 
     /* ---------- stocks faibles ---------- */
     $('#lowStock').innerHTML = data.lowStockItems.length
         ? data.lowStockItems.map(p => `<div class="mini-row">
             <img src="${p.image || 'https://picsum.photos/seed/' + p.id + '/80/80'}" alt="">
             <div><b>${p.title}</b><span>${p.owner ? p.owner.shopName : ''}</span></div>
-            <em class="${p.stock === 0 ? 'tag-out' : 'tag-low'}">${p.stock === 0 ? 'Rupture' : p.stock + ' restants'}</em>
+            <em class="${p.stock === 0 ? 'tag-out' : 'tag-low'}">${p.stock === 0 ? t('Rupture') : t('{0} restants', [nfmt(p.stock)])}</em>
           </div>`).join('')
-        : '<p class="muted">Tous les stocks sont corrects.</p>';
+        : `<p class="muted">${t('Tous les stocks sont corrects.')}</p>`;
 
     /* ---------- top boutiques / top articles ---------- */
     $('#topShops').innerHTML = data.topShops.map(u => `<div class="mini-row">
         <div class="avatar sm">${ava(u)}</div>
-        <div><b>${u.shopName}</b><span>@${u.username} · ${u.likesReceived} J'aime</span></div>
-        <em>${u.productCount} art.</em>
+        <div><b>${u.shopName}</b><span>@${u.username} · ${t('{0} J\'aime', [nfmt(u.likesReceived)])}</span></div>
+        <em>${t('{0} art.', [nfmt(u.productCount)])}</em>
       </div>`).join('');
 
     $('#topProducts').innerHTML = data.topProducts.map(p => `<div class="mini-row">
         <img src="${p.image || 'https://picsum.photos/seed/' + p.id + '/80/80'}" alt="">
-        <div><b>${p.title}</b><span>${p.cat} · ${p.owner ? p.owner.shopName : ''}</span></div>
-        <em><i class="fas fa-heart" style="color:#cc0c39"></i> ${p.likes}</em>
+        <div><b>${p.title}</b><span>${t(p.cat)} · ${p.owner ? p.owner.shopName : ''}</span></div>
+        <em><i class="fas fa-heart" style="color:#cc0c39"></i> ${nfmt(p.likes)}</em>
       </div>`).join('');
 
     /* ======================================================
@@ -1956,7 +1966,7 @@ async function initAdminPage(){
             <td class="num">${u.sales || 0}</td>
             <td class="num"><b>${fmt(u.revenue)}</b></td>
             <td class="num muted">${fmt(u.spent)}</td>
-            <td class="muted">${new Date(u.createdAt).toLocaleDateString('fr-FR')}</td>
+            <td class="muted">${new Date(u.createdAt).toLocaleDateString(BE_LOCALE)}</td>
             <td class="cell-actions">
                 <a class="btn btn-outline btn-sm" href="magasin.html?u=${encodeURIComponent(u.username)}" title="Voir la boutique"><i class="fas fa-eye"></i></a>
                 <button class="btn btn-outline btn-sm" data-u-admin="${u.id}" title="${u.isAdmin ? 'Retirer le rôle admin' : 'Nommer administrateur'}"><i class="fas fa-shield-halved"></i></button>
@@ -2164,7 +2174,7 @@ async function initAdminPage(){
             <td class="num"><i class="fas fa-heart" style="color:#cc0c39"></i> ${p.likes}</td>
             <td>
                 ${p.published ? '<i class="tag-admin">Publié</i>' : '<i class="tag-out">Masqué</i>'}
-                <br><span class="muted" style="font-size:11px">${new Date(p.createdAt).toLocaleDateString('fr-FR')}</span>
+                <br><span class="muted" style="font-size:11px">${new Date(p.createdAt).toLocaleDateString(BE_LOCALE)}</span>
             </td>
             <td class="cell-actions">
                 <a class="btn btn-outline btn-sm" href="magasin.html?u=${encodeURIComponent(p.owner ? p.owner.username : '')}" title="Voir la boutique"><i class="fas fa-eye"></i></a>
@@ -2234,7 +2244,7 @@ async function initAdminPage(){
             <td>${o.buyer ? o.buyer.shopName + ' <span class="muted">@' + o.buyer.username + '</span>' : '<i class="muted">visiteur</i>'}</td>
             <td class="muted">${o.items.map(i => i.qty + ' × ' + i.title).join('<br>')}</td>
             <td class="num"><b>${fmt(o.total)}</b></td>
-            <td class="muted">${new Date(o.createdAt).toLocaleDateString('fr-FR', { day:'numeric', month:'short', year:'numeric' })}</td>
+            <td class="muted">${new Date(o.createdAt).toLocaleDateString(BE_LOCALE, { day:'numeric', month:'short', year:'numeric' })}</td>
             <td>
                 <select class="status-sel" data-o-status="${o.id}">
                     ${STATUTS.map(s => `<option${s === o.status ? ' selected' : ''}>${s}</option>`).join('')}
@@ -2256,11 +2266,11 @@ async function initAdminPage(){
     async function refresh(){
         const d = await BE.overview();
         $('#adminKpis').innerHTML = [
-            K('fas fa-users', 'Comptes', nf.format(d.totals.users), `+${d.totals.newUsers7d} sur 7 jours`),
-            K('fas fa-store', 'Boutiques', nf.format(d.totals.users), `${d.totals.admins} administrateur(s)`, 'teal'),
-            K('fas fa-box', 'Articles', nf.format(d.totals.products), `${d.totals.lowStock + d.totals.outOfStock} en alerte`, 'blue'),
-            K('fas fa-heart', 'J\'aime', nf.format(d.totals.likes), 'tous membres confondus', 'pink'),
-            K('fas fa-receipt', 'Commandes', nf.format(d.totals.orders), `+${d.totals.orders7d} sur 7 jours`, 'blue'),
+            K('fas fa-users', 'Comptes', nfmt(d.totals.users), `+${d.totals.newUsers7d} sur 7 jours`),
+            K('fas fa-store', 'Boutiques', nfmt(d.totals.users), `${d.totals.admins} administrateur(s)`, 'teal'),
+            K('fas fa-box', 'Articles', nfmt(d.totals.products), `${d.totals.lowStock + d.totals.outOfStock} en alerte`, 'blue'),
+            K('fas fa-heart', 'J\'aime', nfmt(d.totals.likes), 'tous membres confondus', 'pink'),
+            K('fas fa-receipt', 'Commandes', nfmt(d.totals.orders), `+${d.totals.orders7d} sur 7 jours`, 'blue'),
             K('fas fa-coins', 'Chiffre d\'affaires', fmt(d.totals.revenue), `Panier moyen ${fmt(d.totals.avgBasket)}`, 'green')
         ].join('');
     }

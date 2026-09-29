@@ -809,6 +809,23 @@ body.modal-open{overflow:hidden;}
 .theme-swatches button.on .ts-name{color:var(--txt);font-weight:700;}
 .theme-note{font-size:11px;color:var(--txt-3);margin-top:11px;}
 
+/* ================= SÉLECTEUR DE LANGUE =================
+   Le panneau est posé dans <body> par i18n.js, avec la même mécanique
+   que celui du thème : bulle sur grand écran, feuille du bas sinon. */
+.lang-sub{font-size:11.5px;color:var(--txt-3);margin:-6px 0 10px;}
+.lang-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px;}
+.lang-item{
+    display:flex;align-items:center;gap:8px;padding:9px 10px;text-align:left;
+    background:var(--bg-2);border:1px solid var(--line);border-radius:9px;
+    color:var(--txt);font-size:12.5px;font-weight:600;transition:.15s;
+}
+.lang-item:hover{border-color:var(--line-3);}
+.lang-item.on{background:var(--brand-soft-2);border-color:var(--brand);color:var(--txt);}
+.lang-flag{font-size:16px;line-height:1;}
+.lang-name{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.lang-tick{font-size:11px;color:var(--brand-dark);opacity:0;}
+.lang-item.on .lang-tick{opacity:1;}
+
 /* sur téléphone, le panneau devient une feuille du bas */
 @media (max-width:900px){
     .theme-backdrop{background:rgba(0,0,0,.5);}
@@ -818,6 +835,8 @@ body.modal-open{overflow:hidden;}
         transform:translateY(102%);
     }
     .theme-panel.open{transform:none;}
+    .lang-grid{grid-template-columns:1fr 1fr;gap:9px;}
+    .lang-item{padding:12px 11px;font-size:13.5px;}
     .theme-swatches{grid-template-columns:repeat(5,1fr);}
     .theme-swatches button{padding:9px 2px 7px;}
     .theme-swatches .ts-name{font-size:10px;}

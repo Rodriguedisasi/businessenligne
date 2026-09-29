@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
@@ -10,6 +10,8 @@
     <link rel="stylesheet" href="style.css">
     <!-- Thème (clair / sombre / couleur) : chargé dans le <head> pour éviter tout clignotement -->
     <script src="theme.js"></script>
+    <!-- Langue du site (français / english / kiswahili / lingala) : applyée avant le premier affichage -->
+    <script src="i18n.js"></script>
 </head>
 <body data-page="auth" class="auth-body has-theme-btn">
 
@@ -23,8 +25,11 @@
             <button class="h-item h-theme" type="button" data-theme-open aria-haspopup="dialog" aria-expanded="false">
                 <small><i class="fas fa-palette h-theme-ic"></i> Thème</small>
                 <b data-theme-label>Orange</b>
-            </button>
-            <span class="auth-redirect">Déjà inscrit ? <a href="#connexion" id="goLogin">Se connecter</a></span>
+                </button>
+        <button class="h-item h-lang" type="button" data-lang-open aria-haspopup="dialog" aria-expanded="false">
+            <small><i class="fas fa-globe"></i> <span data-lang-code>FR</span></small>
+            <b data-lang-label>Langue</b>
+        </button>            <span class="auth-redirect">Déjà inscrit ? <a href="#connexion" id="goLogin">Se connecter</a></span>
             <a class="h-item h-cart" href="index.html#tous">
                 <small class="c-top">Panier</small>
                 <i class="fas fa-shopping-cart"></i>

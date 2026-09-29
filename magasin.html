@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
@@ -10,6 +10,8 @@
     <link rel="stylesheet" href="style.css">
     <!-- Thème (clair / sombre / couleur) : chargé dans le <head> pour éviter tout clignotement -->
     <script src="theme.js"></script>
+    <!-- Langue du site (français / english / kiswahili / lingala) : applyée avant le premier affichage -->
+    <script src="i18n.js"></script>
 </head>
 <body class="has-theme-btn" data-page="magasin">
 
@@ -22,8 +24,8 @@
         <form class="search-bar" id="searchForm" role="search">
             <select class="search-cat" id="searchCat" aria-label="Catégorie">
                 <option value="">Toutes les catégories</option>
-                <option>Électronique</option><option>Mode</option><option>Maison</option>
-                <option>Sport</option><option>Beauté</option><option>Enfants</option><option>Livres</option>
+                <option value="Électronique">Électronique</option><option value="Mode">Mode</option><option value="Maison">Maison</option>
+                <option value="Sport">Sport</option><option value="Beauté">Beauté</option><option value="Enfants">Enfants</option><option value="Livres">Livres</option>
             </select>
             <input class="search-input" id="searchInput" type="search" placeholder="Rechercher sur BusinessEnLigne" autocomplete="off">
             <button class="search-btn" type="submit" aria-label="Rechercher"><i class="fas fa-search"></i></button>
@@ -32,8 +34,11 @@
             <button class="h-item h-theme" type="button" data-theme-open aria-haspopup="dialog" aria-expanded="false">
                 <small><i class="fas fa-palette h-theme-ic"></i> Thème</small>
                 <b data-theme-label>Orange</b>
-            </button>
-            <div class="account-wrap">
+                </button>
+        <button class="h-item h-lang" type="button" data-lang-open aria-haspopup="dialog" aria-expanded="false">
+            <small><i class="fas fa-globe"></i> <span data-lang-code>FR</span></small>
+            <b data-lang-label>Langue</b>
+        </button>            <div class="account-wrap">
                 <button class="h-item h-account" id="accountBtn" aria-haspopup="true" aria-expanded="false">
                     <small>Bonjour, <b id="accName">Identifiez-vous</b></small>
                     <b><span id="accAction">Créer un compte</span> <i class="fas fa-caret-down"></i></b>

@@ -145,7 +145,7 @@ const PUBLIC_EXT = new Set([
 /* Les seuls scripts publiés : ce sont ceux que le navigateur télécharge.
    server.js, db.js, seed.js… ne le sont pas. Si vous ajoutez un script
    pour le navigateur, ajoutez-le ici. */
-const PUBLIC_JS = new Set(['api.js', 'javascript.js', 'theme.js']);
+const PUBLIC_JS = new Set(['api.js', 'javascript.js', 'theme.js', 'i18n.js']);
 
 /* Dossiers jamais accessibles, même si un fichier y a une extension publique. */
 const PRIVATE_DIRS = new Set(['data', 'node_modules', '.git', '.railway', 'functions']);
