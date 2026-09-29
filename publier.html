@@ -1,0 +1,218 @@
+﻿<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Publier un article — Mon Magasin — BusinessEnLigne</title>
+    <!-- Bibliothèque d'icônes Font Awesome (CDN) : fournit les polices d'icônes <i class="fas fa-..."></i> -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <!-- Feuille de style unique du site : mise en page, couleurs, composants, responsive -->
+    <link rel="stylesheet" href="style.css">
+    <!-- Thème (clair / sombre / couleur) : chargé dans le <head> pour éviter tout clignotement -->
+    <script src="theme.js"></script>
+</head>
+<body class="has-theme-btn" data-page="publier">
+
+<header class="header">
+    <div class="hdr-top">
+        <button class="menu-btn" id="menuBtn" aria-label="Menu"><i class="fas fa-bars"></i></button>
+        <a class="logo" href="index.html">
+            <span class="logo-top"><b class="lg-biz">business</b><span class="lg-on">enligne</span></span>
+        </a>
+        <div class="hdr-right">
+            <button class="h-item h-theme" type="button" data-theme-open aria-haspopup="dialog" aria-expanded="false">
+                <small><i class="fas fa-palette h-theme-ic"></i> Thème</small>
+                <b data-theme-label>Orange</b>
+            </button>
+            <div class="account-wrap">
+                <button class="h-item h-account" id="accountBtn" aria-haspopup="true" aria-expanded="false">
+                    <small>Bonjour, <b id="accName">…</b></small>
+                    <b><span id="accAction">Mon compte</span> <i class="fas fa-caret-down"></i></b>
+                </button>
+                <div class="account-menu" id="accountMenu">
+                    <div class="am-head">
+                        <i class="fas fa-user-circle"></i>
+                        <div><b id="amName">…</b><a href="connexion.html">Connexion / Inscription</a></div>
+                    </div>
+                    <ul>
+                        <li><a href="compte.html"><i class="fas fa-user"></i> Mon compte</a></li>
+                        <li><a href="compte.html#boutique"><i class="fas fa-store"></i> Mon magasin</a></li>
+                        <li><a href="publier.html"><i class="fas fa-square-plus"></i> Publier un article</a></li>
+                        <li><a href="compte.html#commandes"><i class="fas fa-box"></i> Mes commandes</a></li>
+                        <li><a href="compte.html#likes"><i class="fas fa-heart"></i> Mes J'aime</a></li>
+                    </ul>
+                    <button class="am-out" id="logoutBtn" type="button"><i class="fas fa-right-from-bracket"></i> Se déconnecter</button>
+                </div>
+            </div>
+            <a class="h-item h-cart" href="#" id="cartIcon">
+                <small class="c-top">Panier</small>
+                <i class="fas fa-shopping-cart"></i>
+                <span class="cart-count" id="cartItemCount">0</span>
+            </a>
+        </div>
+    </div>
+</header>
+
+<main class="container" style="padding-top:16px;padding-bottom:40px">
+
+    <div id="notLogged" class="box" hidden style="text-align:center;padding:40px 20px">
+        <i class="fas fa-user-lock" style="font-size:46px;color:#c7ccd1"></i>
+        <h2 style="font-size:22px;margin:12px 0 6px">Connectez-vous pour publier</h2>
+        <p style="color:var(--txt-2);margin-bottom:18px">La publication est réservée aux membres ayant un compte.</p>
+        <a class="btn btn-cta" href="connexion.html"><i class="fas fa-user-plus"></i> Créer mon compte</a>
+    </div>
+
+    <div id="logged" hidden>
+        <div class="box" style="margin-bottom:16px">
+            <div class="box-head">
+                <h3>Publier un article dans ma boutique</h3>
+                <a class="see-all" id="shopLink" href="#">Voir ma page publique <i class="fas fa-chevron-right"></i></a>
+            </div>
+            <p style="font-size:13px;color:var(--txt-2)">
+                Votre article sera immédiatement visible par tous les visiteurs sur
+                <b>BusinessEnLigne</b> et sur la page publique de votre magasin.
+            </p>
+        </div>
+
+        <div class="pub-layout">
+            <!-- ============ FORMULAIRE ============ -->
+            <div class="box">
+                <form id="publishForm" novalidate>
+                    <div class="f-row" id="v-title">
+                        <label>Titre de l'article *</label>
+                        <input type="text" id="vTitle" placeholder="Ex. Table en bois massif 6 places" maxlength="120">
+                        <span class="err">Le titre doit contenir au moins 3 caractères.</span>
+                    </div>
+
+                    <div class="auth-grid2">
+                        <div class="f-row" id="v-cat">
+                            <label>Catégorie *</label>
+                            <select id="vCat">
+                                <option value="">Choisir…</option>
+                                <option>Électronique</option>
+                                <option>Mode</option>
+                                <option>Maison</option>
+                                <option>Sport</option>
+                                <option>Beauté</option>
+                                <option>Enfants</option>
+                                <option>Livres</option>
+                            </select>
+                            <span class="err">Choisissez une catégorie.</span>
+                        </div>
+                        <div class="f-row" id="v-badge">
+                            <label>Étiquette</label>
+                            <select id="vBadge">
+                                <option value="">Aucune</option>
+                                <option value="new">Nouveau</option>
+                                <option value="best">Meilleure vente</option>
+                                <option value="deal">Promotion</option>
+                            </select>
+                            <span class="err">Étiquette invalide.</span>
+                        </div>
+                    </div>
+
+                    <div class="auth-grid2">
+                        <div class="f-row" id="v-price">
+                            <label>Prix de vente (FC) *</label>
+                            <input type="number" id="vPrice" placeholder="95000" min="1" step="100">
+                            <span class="err">Le prix doit être supérieur à 0.</span>
+                        </div>
+                        <div class="f-row" id="v-oldPrice">
+                            <label>Ancien prix (FC)</label>
+                            <input type="number" id="vOldPrice" placeholder="130000" min="1" step="100">
+                            <span class="err">Doit être supérieur au prix de vente.</span>
+                        </div>
+                    </div>
+
+                    <div class="auth-grid2">
+                        <div class="f-row" id="v-stock">
+                            <label>Stock</label>
+                            <input type="number" id="vStock" value="10" min="0" step="1">
+                            <span class="err">Stock invalide.</span>
+                        </div>
+                        <div class="f-row">
+                            <label>Options</label>
+                            <label class="check" style="margin:8px 0 0">
+                                <input type="checkbox" id="vPrime" checked>
+                                <span>Livraison Prime disponible</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="f-row" id="v-desc">
+                        <label>Description *</label>
+                        <textarea id="vDesc" rows="4" placeholder="Décrivez votre article : matière, dimensions, état, couleurs disponibles…"></textarea>
+                        <span class="err">Description trop courte (10 caractères minimum).</span>
+                    </div>
+
+                    <div class="f-row" id="v-details">
+                        <label>Détails de l'article <b id="detailCount" style="color:var(--txt-2);font-weight:600"></b></label>
+                        <p class="photo-hint" style="margin:0 0 8px">
+                            Une ligne par caractéristique : matière, couleur, dimensions, état, marque…
+                            Le nombre de lignes est libre.
+                        </p>
+                        <div class="detail-chips" id="detailChips"></div>
+                        <div class="detail-rows" id="detailRows"></div>
+                        <button type="button" class="btn btn-outline add-detail" id="addDetail">
+                            <i class="fas fa-plus"></i> Ajouter un détail
+                        </button>
+                        <span class="err">Chaque ligne de détail doit avoir un intitulé (ex. « Matière »).</span>
+                    </div>
+
+                    <div class="f-row" id="v-image">
+                        <label>Photos de l'article <b id="photoCount" style="color:var(--txt-2);font-weight:600"></b></label>
+                        <div class="drop-zone" id="dropZone">
+                            <i class="fas fa-cloud-arrow-alt"></i>
+                            <b>Cliquez ou glissez-déposez vos photos</b><br>
+                            <span>png, jpg, gif ou webp — 3 Mo maximum par photo</span>
+                            <input type="file" id="vFile" accept="image/png,image/jpeg,image/gif,image/webp" multiple hidden>
+                        </div>
+                        <div class="photo-grid" id="photoGrid"></div>
+                        <p class="photo-hint" id="photoHint"></p>
+                        <input type="url" id="vImageUrl" placeholder="…ou collez l'URL d'une image">
+                        <span class="err">Lien d'image invalide.</span>
+                        <div id="vOff" style="font-size:12.5px;color:#007600;font-weight:700"></div>
+                    </div>
+
+                    <button type="submit" class="btn btn-cta btn-block" id="publishBtn">
+                        <i class="fas fa-cloud-arrow-up"></i> Publier dans mon magasin
+                    </button>
+                </form>
+            </div>
+
+            <!-- ============ AIDE ============ -->
+            <aside class="pub-side">
+                <h4><i class="fas fa-lightbulb" style="color:#ff9900"></i> Comment ça marche</h4>
+                <ul>
+                    <li><i class="fas fa-check"></i><span>Remplissez le titre, la catégorie et le prix.</span></li>
+                    <li><i class="fas fa-check"></i><span>Ajoutez jusqu'à 8 photos : elles défileront seules sur votre article.</span></li>
+                    <li><i class="fas fa-check"></i><span>Autant de détails que vous voulez (matière, couleur, dimensions…) pour convaincre l'acheteur.</span></li>
+                    <li><i class="fas fa-check"></i><span>Cliquez sur « Publier » : l'article apparaît aussitôt sur votre page publique.</span></li>
+                    <li><i class="fas fa-check"></i><span>Les visiteurs peuvent aimer l'article et le mettre au panier.</span></li>
+                </ul>
+                <hr style="border:0;border-top:1px solid var(--line);margin:14px 0">
+                <h4>Aperçu de votre boutique</h4>
+                <p style="font-size:12.5px;color:var(--txt-2)">
+                    <b id="pvShop">—</b><br>
+                    <span id="pvCount">0 article publié</span>
+                </p>
+                <a class="btn btn-outline btn-block" id="pvLink" href="#"><i class="fas fa-store"></i> Ouvrir ma boutique</a>
+            </aside>
+        </div>
+    </div>
+</main>
+
+<footer>
+    <div class="foot-mid"><a class="logo" href="index.html"><span class="logo-top"><b class="lg-biz">business</b><span class="lg-on">enligne</span></span></a></div>
+    <div class="foot-bottom">© 2026 BusinessEnLigne | Réalisé par <b style="color:#fff">Rodrigue Disasi</b></div>
+</footer>
+
+<div class="overlay" id="overlay"></div>
+<div class="toast-wrap" id="toastWrap"></div>
+
+<!-- Couche réseau : parle au serveur (connexion, produits, commandes). Doit précéder javascript.js -->
+<script src="api.js"></script>
+<!-- Logique du site : catalogue, recherche, filtres, panier, fiches produit -->
+<script src="javascript.js"></script>
+</body>
+</html>

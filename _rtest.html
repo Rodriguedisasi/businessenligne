@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>PENDING</title>
+</head>
+<body>
+<iframe id="fr" src="index.html" style="width:320px;height:640px;border:0"></iframe>
+<pre id="out">PENDING</pre>
+<script>
+const WIDTHS = [320, 360, 414];
+const PAGES = ['index.html','electronique.html','tous.html','mode.html','magasin.html','compte.html','publier.html','connexion.html','admin.html'];
+const log = [];
+function done(){ document.title = 'RESULT'; document.getElementById('out').textContent = log.join('\n'); }
+
+async function measure(page, w){
+  const f = document.createElement('iframe');
+  f.style.cssText = 'width:'+w+'px;height:'+(w<360?640:780)+'px;border:0;position:absolute;left:-9999px;top:0';
+  f.src = page;
+  document.body.appendChild(f);
+  await new Promise(r => f.onload = r);
+  await new Promise(r => setTimeout(r, 1500));
+  try {
+    const d = f.contentDocument, win = f.contentWindow;
+    const de = d.documentElement;
+    const over = [];
+    const vw = de.clientWidth;
+    d.querySelectorAll('body *').forEach(el => {
+      const cs = win.getComputedStyle(el);
+      if (cs.position === 'fixed' || cs.display === 'none' || cs.visibility === 'hidden') return;
+      const r = el.getBoundingClientRect();
+      if (r.width === 0) return;
+      if (r.right > vw + 1.5 || r.left < -1.5) {
+        over.push((el.tagName+'.'+(el.className||'').toString().split(' ').filter(Boolean).join('.')).slice(0,60)
+          + ' L'+Math.round(r.left)+' R'+Math.round(r.right));
+      }
+    });
+    const q = s => d.querySelector(s);
+    const box = s => { const e=q(s); if(!e) return 'ABSENT'; const r=e.getBoundingClientRect(); return Math.round(r.width)+'x'+Math.round(r.height)+' @'+Math.round(r.left); };
+    const cs = s => { const e=q(s); return e ? Math.round(win.getComputedStyle(e).fontSize)+'px' : '-'; };
+    log.push('### '+page+' @'+w+'vw  scrollW='+de.scrollWidth+' clientW='+vw+' bodyScrollW='+d.body.scrollWidth);
+    log.push('    hdrTop='+box('.hdr-top')+' logo='+box('.logo')+' search='+box('.search-bar')+' acc='+box('.h-account')+' cart='+box('.h-cart')+' mnav='+box('.mnav'));
+    log.push('    pgrid cols='+(q('.p-grid')?win.getComputedStyle(q('.p-grid')).gridTemplateColumns:'-')+' card='+box('.p-card'));
+    log.push('    fonts: p-title='+cs('.p-title')+' p-price='+cs('.p-price')+' searchInput='+cs('.search-input')+' catSel='+cs('.search-cat'));
+    log.push('    fsToggle='+(q('.fs-toggle')?win.getComputedStyle(q('.fs-toggle')).display:'ABSENT')+' filtersSide='+(q('.filters-side')?win.getComputedStyle(q('.filters-side')).display:'ABSENT'));
+    log.push('    mnavDisplay='+(q('.mnav')?win.getComputedStyle(q('.mnav')).display:'ABSENT')+' bodyPadBottom='+win.getComputedStyle(d.body).paddingBottom);
+    log.push('    OVERFLOW('+over.length+'): '+(over.slice(0,8).join(' | ')||'none'));
+  } catch (e) { log.push('### '+page+' @'+w+' -> ERROR '+e.message); }
+  f.remove();
+}
+
+(async () => {
+  for (const p of PAGES) for (const w of WIDTHS) await measure(p, w);
+  done();
+})();
+</script>
+</body>
+</html>

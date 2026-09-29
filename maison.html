@@ -1,0 +1,357 @@
+﻿<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Maison & Cuisine — BusinessEnLigne</title>
+    <!-- Bibliothèque d'icônes Font Awesome (CDN) : fournit les polices d'icônes <i class="fas fa-..."></i> -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <!-- Feuille de style unique du site : mise en page, couleurs, composants, responsive -->
+    <link rel="stylesheet" href="style.css">
+    <!-- Thème (clair / sombre / couleur) : chargé dans le <head> pour éviter tout clignotement -->
+    <script src="theme.js"></script>
+</head>
+<body data-page="cat" data-cat="Maison">
+
+<!-- ============ HEADER ============ -->
+<header class="header">
+    <div class="hdr-top">
+        <button class="menu-btn" id="menuBtn" aria-label="Menu"><i class="fas fa-bars"></i></button>
+
+        <a class="logo" href="index.html">
+            <span class="logo-top"><b class="lg-biz">business</b><span class="lg-on">enligne</span></span>
+        </a>
+
+        <form class="search-bar" id="searchForm" role="search">
+            <select class="search-cat" id="searchCat" aria-label="Catégorie">
+                <option value="">Toutes les catégories</option>
+                <option>Électronique</option>
+                <option>Mode</option>
+                <option>Maison</option>
+                <option>Sport</option>
+                <option>Beauté</option>
+                <option>Enfants</option>
+                <option>Livres</option>
+            </select>
+            <input class="search-input" id="searchInput" type="search" placeholder="Rechercher sur BusinessEnLigne" autocomplete="off">
+            <button class="search-btn" type="submit" aria-label="Rechercher"><i class="fas fa-search"></i></button>
+        </form>
+
+        <div class="hdr-right">
+            <button class="h-item h-theme hide-md" type="button" data-theme-open aria-haspopup="dialog" aria-expanded="false">
+                <small><i class="fas fa-palette h-theme-ic"></i> Thème</small>
+                <b data-theme-label>Orange</b>
+            </button>
+            <button class="h-item hide-md" type="button"><small><i class="fas fa-globe"></i> FR</small><b>Langue</b></button>
+            <div class="account-wrap">
+                <button class="h-item h-account" id="accountBtn" aria-haspopup="true" aria-expanded="false">
+                    <small>Bonjour, <b id="accName">Identifiez-vous</b></small>
+                    <b><span id="accAction">Créer un compte</span> <i class="fas fa-caret-down"></i></b>
+                </button>
+                <div class="account-menu" id="accountMenu">
+                    <div class="am-head">
+                        <i class="fas fa-user-circle"></i>
+                        <div>
+                            <b id="amName">Connectez-vous à votre compte</b>
+                            <a href="connexion.html">Connexion / Inscription</a>
+                        </div>
+                    </div>
+                    <ul>
+                        <li><a href="compte.html"><i class="fas fa-user"></i> Mon compte</a></li>
+                        <li><a href="compte.html#boutique"><i class="fas fa-store"></i> Mon magasin</a></li>
+                        <li><a href="publier.html"><i class="fas fa-square-plus"></i> Publier un article</a></li>
+                        <li><a href="compte.html#commandes"><i class="fas fa-box"></i> Mes commandes</a></li>
+                        <li><a href="compte.html#likes"><i class="fas fa-heart"></i> Mes J'aime</a></li>
+                    </ul>
+                    <button class="am-out" id="logoutBtn" type="button" hidden>
+                        <i class="fas fa-right-from-bracket"></i> Se déconnecter
+                    </button>
+                </div>
+            </div>
+            <a class="h-item hide-md" href="compte.html#commandes"><small>Retours</small><b>et commandes <i class="fas fa-caret-down"></i></b></a>
+            <a class="h-item h-cart" href="#" id="cartIcon">
+                <small class="c-top">Panier</small>
+                <i class="fas fa-shopping-cart"></i>
+                <span class="cart-count" id="cartItemCount">0</span>
+            </a>
+        </div>
+    </div>
+
+    <nav class="nav-bar">
+        <a class="nav-all" href="index.html"><i class="fas fa-bars"></i> Tout</a>
+        <a href="tous.html">Tous les produits</a>
+        <a href="magasin.html"><i class="fas fa-store"></i> Magasins en ligne</a>
+        <a href="index.html#deals">Offres du jour</a>
+        <a href="electronique.html">Électronique</a>
+        <a href="mode.html">Mode</a>
+        <a href="maison.html">Maison &amp; Cuisine</a>
+        <a href="sport.html">Sport</a>
+        <a href="beaute.html">Beauté</a>
+        <a href="enfants.html">Enfants</a>
+        <a href="livres.html">Livres</a>
+        <a href="index.html#avis">Vos avis</a>
+        <a href="index.html#contact">Nous contacter</a>
+    </nav>
+</header>
+
+<!-- ============ MENU LATÉRAL ============ -->
+<aside class="side-menu" id="sideMenu">
+    <h3>Toutes les catégories</h3>
+    <ul>
+        <li><a href="electronique.html"><i class="fas fa-mobile-alt"></i> Électronique</a></li>
+        <li><a href="mode.html"><i class="fas fa-tshirt"></i> Mode &amp; Vêtements</a></li>
+        <li><a href="maison.html"><i class="fas fa-couch"></i> Maison &amp; Cuisine</a></li>
+        <li><a href="sport.html"><i class="fas fa-futbol"></i> Sport &amp; Loisirs</a></li>
+        <li><a href="beaute.html"><i class="fas fa-spa"></i> Beauté &amp; Santé</a></li>
+        <li><a href="enfants.html"><i class="fas fa-baby"></i> Enfants &amp; Bébé</a></li>
+        <li><a href="livres.html"><i class="fas fa-book"></i> Livres</a></li>
+        <li><a href="index.html#deals"><i class="fas fa-bolt"></i> Offres du jour</a></li>
+        <li><a href="index.html#contact"><i class="fas fa-headset"></i> Service client</a></li>
+        <li><button type="button" data-theme-open><i class="fas fa-palette"></i> Changer de thème</button></li>
+</ul>
+</aside>
+<div class="overlay" id="overlay"></div>
+
+<!-- ============ FIL D'ARIANE + BANNIÈRE ============ -->
+<div class="container">
+    <nav class="crumb">
+        <a href="index.html">Accueil</a> <span>&rsaquo;</span>
+        <a href="tous.html">Tous les produits</a> <span>&rsaquo;</span>
+        <b>Maison &amp; Cuisine</b>
+    </nav>
+</div>
+
+<div class="cat-hero">
+    <img src="https://picsum.photos/seed/mahero/1600/320" alt="Maison &amp; Cuisine">
+    <div class="cat-hero-txt">
+        <h1>Maison &amp; Cuisine</h1>
+        <p>Cuisine, décoration, linge de maison et rangement. Tout pour rendre votre intérieur plus confortable.</p>
+    </div>
+</div>
+
+<!-- ============ PAGE CATÉGORIE ============ -->
+<section class="section">
+    <div class="container">
+        <div class="perk-bar"><div class="pk"><i class="fas fa-truck"></i><div><b>Livraison offerte dès 150 000 FC</b><span>Livraison standard en 24 à 48h</span></div></div>
+      <div class="pk"><i class="fas fa-undo"></i><div><b>Retour gratuit sous 30 jours</b><span>Satisfait ou remboursé</span></div></div>
+      <div class="pk"><i class="fas fa-shield-alt"></i><div><b>Paiement 100 % sécurisé</b><span>Mobile Money, carte ou espèces</span></div></div></div>
+
+        <div class="cat-layout">
+            <!-- FILTRES -->
+            <aside class="filters-side">
+                <div class="fs-block">
+                    <h4>Trier par</h4>
+                    <ul class="fs-list">
+            <li><label><input type="radio" name="cSort" value="relevance" checked> <span>Pertinence</span></label></li>
+            <li><label><input type="radio" name="cSort" value="asc"> <span>Prix croissant</span></label></li>
+            <li><label><input type="radio" name="cSort" value="desc"> <span>Prix décroissant</span></label></li>
+            <li><label><input type="radio" name="cSort" value="note"> <span>Mieux notés</span></label></li>
+            <li><label><input type="radio" name="cSort" value="off"> <span>Meilleures remises</span></label></li>
+                    </ul>
+                </div>
+                <div class="fs-block">
+                    <h4>Prix</h4>
+                    <ul class="fs-list" id="priceList">
+                        <li><label><input type="radio" name="cPrice" value="all" checked> <span>Tous les prix</span></label></li>
+                        <li><label><input type="radio" name="cPrice" value="r1"> <span>Moins de 25 000 FC</span></label></li>
+                        <li><label><input type="radio" name="cPrice" value="r2"> <span>25 000 à 60 000 FC</span></label></li>
+                        <li><label><input type="radio" name="cPrice" value="r3"> <span>60 000 à 150 000 FC</span></label></li>
+                        <li><label><input type="radio" name="cPrice" value="r4"> <span>150 000 FC et plus</span></label></li>
+                    </ul>
+                </div>
+                <div class="fs-block">
+                    <h4>Options</h4>
+                    <ul class="fs-list">
+                        <li><label><input type="checkbox" id="fPrime"> <span>Livraison Prime</span></label></li>
+                        <li><label><input type="checkbox" id="fStock"> <span>En stock uniquement</span></label></li>
+                        <li><label><input type="checkbox" id="fPromo"> <span>En promotion</span></label></li>
+                    </ul>
+                </div>
+                <div class="fs-block">
+                    <h4>Note client</h4>
+                    <ul class="fs-list">
+            <li><label><input type="radio" name="cRate" value="all" checked> <span>Toutes les notes</span></label></li>
+            <li><label><input type="radio" name="cRate" value="r4"> <span>4 étoiles et plus</span></label></li>
+            <li><label><input type="radio" name="cRate" value="r45"> <span>4,5 étoiles et plus</span></label></li>
+            <li><label><input type="radio" name="cRate" value="r40"> <span>Moins de 4 étoiles</span></label></li>
+                    </ul>
+                </div>
+                <div class="fs-block">
+                    <a class="fs-reset" href="maison.html"><i class="fas fa-redo"></i> Réinitialiser les filtres</a>
+                </div>
+            </aside>
+
+            <!-- RÉSULTATS -->
+            <div class="results" id="resultats">
+                <div class="results-head">
+                    <div>
+                        <h1>Maison &amp; Cuisine</h1>
+                        <span id="resCount" class="res-count">Chargement…</span>
+                    </div>
+                    <label class="res-sort">Trier :
+                        <select id="catSort">
+                            <option value="relevance">Pertinence</option>
+                            <option value="asc">Prix croissant</option>
+                            <option value="desc">Prix décroissant</option>
+                            <option value="note">Mieux notés</option>
+                            <option value="off">Meilleures remises</option>
+                        </select>
+                    </label>
+                </div>
+
+                <div class="box mini-deal" id="catDeal">
+                    <div class="mini-deal-txt">
+                        <b><i class="fas fa-bolt" style="color:#ffd814"></i> Offre du jour dans cette catégorie</b>
+                        <span id="catDealTxt">jusqu'à -50% sur une sélection d'articles</span>
+                    </div>
+                    <button class="btn btn-cta" id="catDealBtn">Voir l'offre</button>
+                </div>
+
+                <div class="p-grid" id="catGrid"></div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ============ MAGASINS EN LIGNE DE LA CATÉGORIE ============ -->
+<!-- Boutiques qui ont déjà publié des articles dans cette catégorie.
+     Rempli par renderCatShops() dans javascript.js. -->
+<section class="section" id="catShops" hidden>
+    <div class="container">
+        <div class="box">
+            <div class="box-head">
+                <h3 id="catShopsTitle">Magasins en ligne</h3>
+                <a class="see-all" href="magasin.html">Toutes les boutiques <i class="fas fa-chevron-right"></i></a>
+            </div>
+            <p class="sh-intro" id="catShopsCount"></p>
+            <div class="shop-grid" id="catShopsGrid"></div>
+        </div>
+    </div>
+</section>
+
+<!-- ============ AUTRES CATÉGORIES ============ -->
+<section class="section">
+    <div class="container">
+        <div class="box">
+            <div class="box-head"><h3>Autres catégories à découvrir</h3><a class="see-all" href="tous.html">Tous les produits <i class="fas fa-chevron-right"></i></a></div>
+            <div class="cat-grid" id="catGridNav"></div>
+        </div>
+    </div>
+</section>
+
+<!-- ============ AVIS ============ -->
+<section class="section">
+    <div class="container">
+        <div class="box">
+            <div class="box-head"><h3>Ce que disent nos clients</h3><span class="see-all">4,6 / 5 sur 3 218 avis</span></div>
+            <div class="rev-grid" id="revGrid"></div>
+        </div>
+    </div>
+</section>
+
+<!-- ============ FOOTER ============ -->
+<footer>
+    <div class="foot-top">
+        <div class="foot-col">
+            <h4>Conditions</h4>
+            <ul>
+                <li><a href="#">Conditions générales de vente</a></li>
+                <li><a href="#">Conditions d'utilisation</a></li>
+                <li><a href="#">Politique de confidentialité</a></li>
+                <li><a href="#">Mentions légales</a></li>
+            </ul>
+        </div>
+        <div class="foot-col">
+            <h4>Besoin d'aide ?</h4>
+            <ul>
+                <li><a href="index.html#contact">Centre d'aide</a></li>
+                <li><a href="index.html#contact">Nous contacter</a></li>
+                <li><a href="#">Suivi de commande</a></li>
+                <li><a href="#">Retours et remboursements</a></li>
+            </ul>
+        </div>
+        <div class="foot-col">
+            <h4>Livraison &amp; paiement</h4>
+            <ul>
+                <li><a href="#">Modes de livraison</a></li>
+                <li><a href="#">Frais de port</a></li>
+                <li><a href="#">Moyens de paiement</a></li>
+                <li><a href="#">Mobile Money</a></li>
+            </ul>
+        </div>
+        <div class="foot-col">
+            <h4>Nos services</h4>
+            <ul>
+                <li><a href="index.html#deals">Ventes Flash</a></li>
+                <li><a href="#">Prime</a></li>
+                <li><a href="#">Programme vendeur</a></li>
+                <li><a href="#">Boutiques partenaires</a></li>
+            </ul>
+        </div>
+        <div class="foot-col">
+            <h4>Nos catégories</h4>
+            <ul>
+                <li><a href="electronique.html">Électronique</a></li>
+                <li><a href="mode.html">Mode</a></li>
+                <li><a href="maison.html">Maison &amp; Cuisine</a></li>
+                <li><a href="sport.html">Sport</a></li>
+                <li><a href="tous.html">Tous les produits</a></li>
+            </ul>
+        </div>
+    </div>
+    <div class="foot-mid">
+        <a class="logo" href="index.html"><span class="logo-top"><b class="lg-biz">business</b><span class="lg-on">enligne</span></span></a>
+        <button class="lang-btn"><i class="fas fa-globe"></i> Français</button>
+        <button class="lang-btn"><i class="fas fa-map-marker-alt"></i> Lubumbashi</button>
+    </div>
+    <div class="foot-bottom">
+        © 2026 BusinessEnLigne. Tous droits réservés. | Panier sauvegardé en base locale (LocalStorage) |
+        Réalisé par <b style="color:#fff">Rodrigue Disasi</b>
+    </div>
+</footer>
+
+<!-- ============ PANIER ============ -->
+<aside class="cart-drawer" id="cartDrawer">
+    <div class="cart-head">
+        <h2><i class="fas fa-shopping-cart"></i> Votre panier</h2>
+        <button id="closeCart" aria-label="Fermer"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="cart-body" id="cartBody"></div>
+    <div class="cart-foot">
+        <div class="cart-sub"><span>Sous-total</span><span id="cartSub">0 FC</span></div>
+        <div class="cart-ship" id="cartShip">Livraison calculée à l'étape suivante</div>
+        <button class="btn btn-cta" id="checkoutBtn">Passer la commande</button>
+    </div>
+</aside>
+
+<!-- ============ MODAL PRODUIT ============ -->
+<div class="modal" id="modal">
+    <div class="modal-card">
+        <button class="modal-close" id="modalClose" aria-label="Fermer"><i class="fas fa-times"></i></button>
+        <div class="modal-cols">
+            <div class="modal-img"><img id="mImg" src="" alt=""></div>
+            <div class="modal-info">
+                <span class="p-rating"><span class="stars" id="mStars"></span><span class="n" id="mRating"></span><span class="c" id="mCount"></span></span>
+                <h2 id="mTitle"></h2>
+                <div class="p-price" id="mPrice"></div>
+                <div class="p-extra" id="mDesc"></div>
+                <ul class="modal-list" id="mList"></ul>
+                <div class="buy-box">
+                    <div style="font-weight:700;margin-bottom:6px" id="mStock"></div>
+                    <div class="ship" id="mShip" style="margin-bottom:10px"></div>
+                    <button class="btn btn-buy" id="mBuy">Acheter maintenant</button>
+                    <button class="btn-add" id="mAdd"><i class="fas fa-cart-plus"></i> Ajouter au panier</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="toast-wrap" id="toastWrap"></div>
+
+<!-- Couche réseau : parle au serveur (connexion, produits, commandes). Doit précéder javascript.js -->
+<script src="api.js"></script>
+<!-- Logique du site : catalogue, recherche, filtres, panier, fiches produit -->
+<script src="javascript.js"></script>
+</body>
+</html>

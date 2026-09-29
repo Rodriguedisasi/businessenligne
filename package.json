@@ -1,0 +1,31 @@
+{
+  "name": "bisisnnepro",
+  "version": "1.0.0",
+  "description": "BusinessEnLigne — place de marche en ligne (boutiques et articles)",
+  "main": "server.js",
+  "engines": {
+    "node": ">=22.5.0"
+  },
+  "scripts": {
+    "test": "echo \"Aucun test automatisé — voir README-DEPLOIEMENT.md\" && exit 0",
+    "start": "node server.js",
+    "start:local": "set DB_DRIVER=local&& node server.js",
+    "start:firebase": "set DB_DRIVER=firebase&& node server.js",
+    "seed": "node seed.js",
+    "migrate": "node migrate.js",
+    "migrate:dry": "node migrate.js --dry-run",
+    "admin": "node make-admin.js",
+    "firebase:check": "node firebase-check.js",
+    "firebase:seed": "set DB_DRIVER=firebase&& node seed.js",
+    "firebase:migrate": "set DB_DRIVER=firebase&& node migrate.js",
+    "firebase:migrate:dry": "set DB_DRIVER=firebase&& node migrate.js --dry-run",
+    "firebase:admin": "set DB_DRIVER=firebase&& node make-admin.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "firebase-admin": "^14.5.0"
+  }
+}

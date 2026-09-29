@@ -1,0 +1,345 @@
+﻿<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tableau de surveillance — BusinessEnLigne</title>
+    <!-- Bibliothèque d'icônes Font Awesome (CDN) : fournit les polices d'icônes <i class="fas fa-..."></i> -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <!-- Feuille de style unique du site : mise en page, couleurs, composants, responsive -->
+    <link rel="stylesheet" href="style.css">
+    <!-- Thème (clair / sombre / couleur) : chargé dans le <head> pour éviter tout clignotement -->
+    <script src="theme.js"></script>
+</head>
+<body class="has-theme-btn" data-page="admin">
+
+<header class="header admin-header">
+    <div class="hdr-top">
+        <button class="menu-btn" id="menuBtn" aria-label="Menu"><i class="fas fa-bars"></i></button>
+        <a class="logo" href="index.html">
+            <span class="logo-top"><b class="lg-biz">business</b><span class="lg-on">enligne</span></span>
+        </a>
+        <div class="admin-title">
+            <i class="fas fa-chart-line"></i>
+            <div>
+                <b>Tableau de surveillance</b>
+                <span id="adminWho">—</span>
+            </div>
+        </div>
+        <div class="hdr-right">
+            <button class="h-item h-theme" type="button" data-theme-open aria-haspopup="dialog" aria-expanded="false">
+                <small><i class="fas fa-palette h-theme-ic"></i> Thème</small>
+                <b data-theme-label>Orange</b>
+            </button>
+            <a class="h-item h-plain" href="index.html"><small>Plateforme</small><b>Voir la boutique</b></a>
+            <div class="account-wrap">
+                <button class="h-item h-account" id="accountBtn" aria-haspopup="true" aria-expanded="false">
+                    <small>Bonjour, <b id="accName">…</b></small>
+                    <b><span id="accAction">Mon compte</span> <i class="fas fa-caret-down"></i></b>
+                </button>
+                <div class="account-menu" id="accountMenu">
+                    <div class="am-head">
+                        <i class="fas fa-user-circle"></i>
+                        <div><b id="amName">…</b><a href="connexion.html">Connexion / Inscription</a></div>
+                    </div>
+                    <ul>
+                        <li><a href="compte.html"><i class="fas fa-user"></i> Mon compte</a></li>
+                        <li><a href="compte.html#boutique"><i class="fas fa-store"></i> Mon magasin</a></li>
+                        <li><a href="publier.html"><i class="fas fa-square-plus"></i> Publier un article</a></li>
+                        <li><a href="admin.html"><i class="fas fa-shield-halved"></i> Administration</a></li>
+                    </ul>
+                    <button class="am-out" id="logoutBtn" type="button"><i class="fas fa-right-from-bracket"></i> Se déconnecter</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</header>
+
+<main class="container" style="padding-top:16px;padding-bottom:40px">
+
+    <!-- ============ ACCÈS REFUSÉ ============ -->
+    <div id="noAccess" class="box" hidden style="text-align:center;padding:50px 20px">
+        <i class="fas fa-lock" style="font-size:46px;color:#c7ccd1"></i>
+        <h2 style="font-size:22px;margin:12px 0 6px">Accès réservé à l'administration</h2>
+        <p id="noAccessMsg" style="color:var(--txt-2);margin-bottom:18px">
+            Ce tableau de surveillance est réservé aux administrateurs de la plateforme.
+        </p>
+        <p style="color:var(--txt-2);font-size:13px;margin-bottom:22px">
+            Pour donner les droits d'administration à votre propre compte, exécutez
+            <code>node make-admin.js votre@email</code> sur le serveur.
+        </p>
+        <a class="btn btn-cta" id="noAccessLink" href="connexion.html?next=admin.html">
+            <i class="fas fa-right-to-bracket"></i> Se connecter
+        </a>
+    </div>
+
+    <div id="dash" hidden>
+
+        <!-- ============ BANDEAU D'ALERTES ============ -->
+        <div class="admin-alerts" id="adminAlerts"></div>
+
+        <!-- ============ INDICATEURS ============ -->
+        <div class="admin-kpis" id="adminKpis"></div>
+
+        <!-- ============ GRAPHIQUE ============ -->
+        <div class="admin-grid">
+            <div class="box">
+                <div class="box-head">
+                    <h3>Activité des 30 derniers jours</h3>
+                    <span class="legend">
+                        <i style="background:#ff9900"></i> Commandes
+                        <i style="background:#146eb4"></i> Inscriptions
+                    </span>
+                </div>
+                <div class="chart" id="chart"></div>
+                <div class="chart-axis" id="chartAxis"></div>
+            </div>
+
+            <div class="box">
+                <div class="box-head"><h3>Catégories</h3></div>
+                <div id="catBars"></div>
+            </div>
+        </div>
+
+        <!-- ============ ONGLETS ============ -->
+        <nav class="acct-tabs admin-tabs" id="adminTabs">
+            <a href="#apercu"     class="active" data-atab="apercu">Vue d'ensemble</a>
+            <a href="#utilisateurs" data-atab="utilisateurs">Utilisateurs</a>
+            <a href="#articles"   data-atab="articles">Articles</a>
+            <a href="#commandes"  data-atab="commandes">Commandes</a>
+        </nav>
+
+        <!-- ---------- VUE D'ENSEMBLE ---------- -->
+        <section class="tab-panel" id="atab-apercu">
+            <div class="admin-grid">
+                <div class="box">
+                    <div class="box-head"><h3>Dernières inscriptions</h3></div>
+                    <div id="newUsers"></div>
+                </div>
+                <div class="box">
+                    <div class="box-head"><h3>Stocks faibles</h3></div>
+                    <div id="lowStock"></div>
+                </div>
+            </div>
+            <div class="admin-grid">
+                <div class="box">
+                    <div class="box-head"><h3>Boutiques les plus actives</h3></div>
+                    <div id="topShops"></div>
+                </div>
+                <div class="box">
+                    <div class="box-head"><h3>Articles les plus aimés</h3></div>
+                    <div id="topProducts"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ---------- UTILISATEURS ---------- -->
+        <section class="tab-panel" id="atab-utilisateurs" hidden>
+            <div class="box">
+                <div class="box-head">
+                    <h3>Tous les comptes <span class="see-all" id="usersCount"></span></h3>
+                    <div class="admin-tools">
+                        <input type="search" id="userSearch" placeholder="Rechercher un compte, un email, une ville…">
+                        <select id="userSort">
+                            <option value="recent">Plus récents</option>
+                            <option value="name">Nom de boutique</option>
+                            <option value="products">Articles publiés</option>
+                            <option value="revenue">Chiffre d'affaires (ventes)</option>
+                            <option value="likes">J'aime reçus</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="table-wrap">
+                    <table class="admin-table" id="usersTable">
+                        <thead>
+                            <tr>
+                                <th>Compte</th><th>Email</th><th>Ville</th>
+                                <th class="num">Articles</th><th class="num">J'aime</th>
+                                <th class="num">Ventes</th><th class="num">CA ventes</th>
+                                <th class="num">Achats</th>
+                                <th>Inscription</th><th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- ---------- ARTICLES ---------- -->
+        <section class="tab-panel" id="atab-articles" hidden>
+
+            <!-- ============ AJOUT / MODIFICATION D'UN ARTICLE ============ -->
+            <div class="box" id="admFormBox" style="margin-bottom:16px">
+                <div class="box-head">
+                    <h3 id="admFormTitle"><i class="fas fa-square-plus" style="color:#ff9900"></i> Ajouter un article publié</h3>
+                    <div class="admin-tools">
+                        <button type="button" class="btn btn-outline btn-sm" id="admFormToggle"><i class="fas fa-chevron-up"></i> Masquer le formulaire</button>
+                        <button type="button" class="btn btn-outline btn-sm" id="admFormCancel" hidden><i class="fas fa-xmark"></i> Annuler la modification</button>
+                    </div>
+                </div>
+                <form id="admForm" novalidate>
+                    <p class="photo-hint" style="margin:0 0 12px">
+                        Ajoutez jusqu'à 8 photos par article : elles se relaient seules toutes les 5 secondes sur la fiche.
+                        Le nombre de détails est libre — ils s'affichent dans le tableau « Détails de l'article ».
+                    </p>
+
+                    <div class="f-row" id="a-title">
+                        <label>Titre de l'article *</label>
+                        <input type="text" id="aTitle" placeholder="Ex. Table en bois massif 6 places" maxlength="120">
+                        <span class="err">Le titre doit contenir au moins 3 caractères.</span>
+                    </div>
+
+                    <div class="auth-grid2">
+                        <div class="f-row" id="a-owner">
+                            <label>Boutique propriétaire *</label>
+                            <select id="aOwner"></select>
+                            <span class="err">Choisissez la boutique qui reçoit l'article.</span>
+                        </div>
+                        <div class="f-row" id="a-cat">
+                            <label>Catégorie *</label>
+                            <select id="aCat">
+                                <option value="">Choisir…</option>
+                                <option>Électronique</option><option>Mode</option><option>Maison</option>
+                                <option>Sport</option><option>Beauté</option><option>Enfants</option>
+                                <option>Livres</option>
+                            </select>
+                            <span class="err">Choisissez une catégorie.</span>
+                        </div>
+                    </div>
+
+                    <div class="auth-grid2">
+                        <div class="f-row" id="a-price">
+                            <label>Prix de vente (FC) *</label>
+                            <input type="number" id="aPrice" placeholder="95000" min="1" step="100">
+                            <span class="err">Le prix doit être supérieur à 0.</span>
+                        </div>
+                        <div class="f-row" id="a-oldPrice">
+                            <label>Ancien prix (FC)</label>
+                            <input type="number" id="aOldPrice" placeholder="130000" min="1" step="100">
+                            <span class="err">Doit être supérieur au prix de vente.</span>
+                        </div>
+                    </div>
+
+                    <div class="auth-grid2">
+                        <div class="f-row" id="a-stock">
+                            <label>Stock</label>
+                            <input type="number" id="aStock" value="10" min="0" step="1">
+                            <span class="err">Stock invalide.</span>
+                        </div>
+                        <div class="f-row">
+                            <label>Étiquette &amp; options</label>
+                            <select id="aBadge">
+                                <option value="">Aucune étiquette</option>
+                                <option value="new">Nouveau</option>
+                                <option value="best">Meilleure vente</option>
+                                <option value="deal">Promotion</option>
+                            </select>
+                            <label class="check" style="margin:8px 0 0">
+                                <input type="checkbox" id="aPrime" checked>
+                                <span>Livraison Prime disponible</span>
+                            </label>
+                            <label class="check" style="margin:4px 0 0">
+                                <input type="checkbox" id="aPublished" checked>
+                                <span>Visible immédiatement sur le site</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="f-row" id="a-desc">
+                        <label>Description *</label>
+                        <textarea id="aDesc" rows="3" placeholder="Décrivez l'article : matière, dimensions, état, couleurs disponibles…"></textarea>
+                        <span class="err">Description trop courte (10 caractères minimum).</span>
+                    </div>
+
+                    <div class="f-row" id="a-details">
+                        <label>Détails de l'article <b id="aDetailCount" style="color:var(--txt-2);font-weight:600"></b></label>
+                        <div class="detail-chips" id="aChips"></div>
+                        <div class="detail-rows" id="aRows"></div>
+                        <button type="button" class="btn btn-outline add-detail" id="aAddDetail">
+                            <i class="fas fa-plus"></i> Ajouter un détail
+                        </button>
+                        <span class="err">Chaque ligne de détail doit avoir un intitulé (ex. « Matière »).</span>
+                    </div>
+
+                    <div class="f-row" id="a-image">
+                        <label>Photos de l'article <b id="aPhotoCount" style="color:var(--txt-2);font-weight:600"></b></label>
+                        <div class="drop-zone" id="aDrop">
+                            <i class="fas fa-cloud-arrow-alt"></i>
+                            <b>Cliquez ou glissez-déposez les photos</b><br>
+                            <span>png, jpg, gif ou webp — 3 Mo maximum par photo</span>
+                            <input type="file" id="aFile" accept="image/png,image/jpeg,image/gif,image/webp" multiple hidden>
+                        </div>
+                        <div class="photo-grid" id="aGrid"></div>
+                        <p class="photo-hint" id="aHint"></p>
+                        <input type="url" id="aUrl" placeholder="…ou collez l'URL d'une image">
+                        <span class="err">Lien d'image invalide.</span>
+                    </div>
+
+                    <button type="submit" class="btn btn-cta" id="aSave">
+                        <i class="fas fa-cloud-arrow-up"></i> Publier l'article
+                    </button>
+                </form>
+            </div>
+
+            <div class="box">
+                <div class="box-head">
+                    <h3>Tous les articles <span class="see-all" id="productsCount"></span></h3>
+                    <div class="admin-tools">
+                        <input type="search" id="prodSearch" placeholder="Rechercher un article…">
+                        <select id="prodCat">
+                            <option value="Toutes">Toutes les catégories</option>
+                            <option>Électronique</option><option>Mode</option><option>Maison</option>
+                            <option>Sport</option><option>Beauté</option><option>Enfants</option>
+                            <option>Livres</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="table-wrap">
+                    <table class="admin-table" id="productsTable">
+                        <thead>
+                            <tr>
+                                <th>Article</th><th>Boutique</th><th>Catégorie</th>
+                                <th class="num">Prix</th><th class="num">Stock</th>
+                                <th class="num">J'aime</th><th>Publié</th><th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- ---------- COMMANDES ---------- -->
+        <section class="tab-panel" id="atab-commandes" hidden>
+            <div class="box">
+                <div class="box-head">
+                    <h3>Toutes les commandes <span class="see-all" id="ordersCountAdmin"></span></h3>
+                </div>
+                <div class="table-wrap">
+                    <table class="admin-table" id="ordersTable">
+                        <thead>
+                            <tr><th>Référence</th><th>Acheteur</th><th>Articles</th>
+                                <th class="num">Total</th><th>Date</th><th>Statut</th></tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+    </div>
+</main>
+
+<footer>
+    <div class="foot-bottom">© 2026 BusinessEnLigne | Réalisé par <b style="color:#fff">Rodrigue Disasi</b></div>
+</footer>
+
+<div class="overlay" id="overlay"></div>
+<div class="toast-wrap" id="toastWrap"></div>
+
+<!-- Couche réseau : parle au serveur (connexion, produits, commandes). Doit précéder javascript.js -->
+<script src="api.js"></script>
+<!-- Logique du site : catalogue, recherche, filtres, panier, fiches produit -->
+<script src="javascript.js"></script>
+</body>
+</html>

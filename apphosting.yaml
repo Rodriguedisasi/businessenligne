@@ -1,0 +1,28 @@
+# Firebase App Hosting - BusinessEnLigne
+# Doc : https://firebase.google.com/docs/app-hosting/configure
+# Les variables definies ici peuvent etre remplacees (et ecrasees) depuis
+# la console : App Hosting > ton backend > Settings > Environment.
+
+scripts:
+  # Aucun framework n'est detecte dans ce projet : on impose le lancement.
+  # Seul le runCommand est force, les adaptations de build restent intactes.
+  runCommand: node server.js
+
+env:
+  # Production : le cookie de session est alors emis en Secure uniquement.
+  - variable: NODE_ENV
+    value: production
+
+  # Firestore plutot que les fichiers JSON locaux (ephemeres en hebergement).
+  # Sans ces identifiants explicites, db-firestore.js utilise les jetons
+  # fournis par le compte de service du runtime App Hosting.
+  - variable: DB_DRIVER
+    value: firebase
+
+  # Photos : Cloud Storage, car le disque du conteneur est efface a chaque
+  # deploiement. Renseigne ici le nom du bucket, par exemple :
+  #   - variable: STORAGE_BUCKET
+  #     value: mon-projet.firebasestorage.app
+  # Sans STORAGE_BUCKET, storage.js cherche le bucket dans FIREBASE_CONFIG puis
+  # tente <projet>.appspot.com ; s'il ne trouve rien, il retombe sur le disque
+  # local et le dit dans les journaux au demarrage.

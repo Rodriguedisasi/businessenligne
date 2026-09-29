@@ -1,0 +1,182 @@
+﻿<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Créer un compte — BusinessEnLigne</title>
+    <!-- Bibliothèque d'icônes Font Awesome (CDN) : fournit les polices d'icônes <i class="fas fa-..."></i> -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <!-- Feuille de style unique du site : mise en page, couleurs, composants, responsive -->
+    <link rel="stylesheet" href="style.css">
+    <!-- Thème (clair / sombre / couleur) : chargé dans le <head> pour éviter tout clignotement -->
+    <script src="theme.js"></script>
+</head>
+<body data-page="auth" class="auth-body has-theme-btn">
+
+<!-- ============ HEADER SIMPLIFIÉ ============ -->
+<header class="header">
+    <div class="hdr-top">
+        <a class="logo" href="index.html">
+            <span class="logo-top"><b class="lg-biz">business</b><span class="lg-on">enligne</span></span>
+        </a>
+        <div class="hdr-right">
+            <button class="h-item h-theme" type="button" data-theme-open aria-haspopup="dialog" aria-expanded="false">
+                <small><i class="fas fa-palette h-theme-ic"></i> Thème</small>
+                <b data-theme-label>Orange</b>
+            </button>
+            <span class="auth-redirect">Déjà inscrit ? <a href="#connexion" id="goLogin">Se connecter</a></span>
+            <a class="h-item h-cart" href="index.html#tous">
+                <small class="c-top">Panier</small>
+                <i class="fas fa-shopping-cart"></i>
+                <span class="cart-count" id="cartItemCount">0</span>
+            </a>
+        </div>
+    </div>
+</header>
+
+<main class="auth-wrap">
+
+    <!-- ============ INSCRIPTION ============ -->
+    <section class="auth-card" id="inscription">
+        <h1>Créer votre compte</h1>
+        <p class="auth-sub">Ouvrez votre boutique et publiez vos articles en quelques secondes.</p>
+
+        <div class="alert alert-off" id="offlineAlert">
+            <i class="fas fa-plug"></i>
+            <div>
+                <b>Serveur non lancé</b>
+                <span>Pour créer un compte, ouvrez une invite de commande dans ce dossier, tapez
+                <code>node server.js</code> puis ouvrez <code>http://localhost:3000</code>.</span>
+            </div>
+        </div>
+
+        <form id="registerForm" novalidate>
+            <div class="auth-hint">
+                <i class="fas fa-envelope-open-text"></i>
+                <div>
+                    <b>Un seul champ suffit pour commencer</b>
+                    Saisissez votre <b>adresse email</b> et votre mot de passe : nous créons
+                    votre identifiant et le nom de votre boutique automatiquement.
+                    Vous pourrez les personnaliser juste après.
+                </div>
+            </div>
+
+            <div class="f-row" id="r-email">
+                <label for="email">Adresse email *</label>
+                <input type="email" id="email" placeholder="vous@mail.com" autocomplete="email" autofocus>
+                <span class="err">Adresse email invalide.</span>
+            </div>
+
+            <div class="auth-grid2">
+                <div class="f-row" id="r-password">
+                    <label for="password">Mot de passe *</label>
+                    <div class="pwd-wrap">
+                        <input type="password" id="password" placeholder="6 caractères minimum" autocomplete="new-password">
+                        <button type="button" class="pwd-eye" data-eye="password" aria-label="Afficher"><i class="far fa-eye"></i></button>
+                    </div>
+                    <span class="err">6 caractères minimum.</span>
+                </div>
+                <div class="f-row" id="r-password2">
+                    <label for="password2">Confirmer le mot de passe *</label>
+                    <div class="pwd-wrap">
+                        <input type="password" id="password2" placeholder="Répétez le mot de passe" autocomplete="new-password">
+                        <button type="button" class="pwd-eye" data-eye="password2" aria-label="Afficher"><i class="far fa-eye"></i></button>
+                    </div>
+                    <span class="err">Les deux mots de passe ne correspondent pas.</span>
+                </div>
+            </div>
+
+            <details class="auth-more">
+                <summary><i class="fas fa-sliders-h"></i> Personnaliser ma boutique maintenant <span>(optionnel)</span></summary>
+
+                <div class="f-row" id="r-shop">
+                    <label for="shopName">Nom de votre boutique</label>
+                    <input type="text" id="shopName" placeholder="Ma Boutique" autocomplete="organization">
+                    <span class="err">Le nom doit contenir au moins 3 caractères.</span>
+                </div>
+
+                <div class="f-row" id="r-username">
+                    <label for="username">Identifiant</label>
+                    <input type="text" id="username" placeholder="généré depuis votre email" autocomplete="username">
+                    <span class="err">3 à 20 caractères : lettres, chiffres, . _ -</span>
+                </div>
+
+                <div class="auth-grid2">
+                    <div class="f-row" id="r-city">
+                        <label for="city">Ville</label>
+                        <input type="text" id="city" placeholder="Lubumbashi" value="Lubumbashi">
+                        <span class="err">Indiquez votre ville.</span>
+                    </div>
+                    <div class="f-row" id="r-phone">
+                        <label for="phone">Téléphone</label>
+                        <input type="tel" id="phone" placeholder="+243 99 000 0000">
+                        <span class="err">Numéro à 10 chiffres minimum.</span>
+                    </div>
+                </div>
+
+                <div class="f-row" id="r-shopdesc">
+                    <label for="shopDesc">Présentation de la boutique</label>
+                    <textarea id="shopDesc" rows="3" placeholder="Que vendez-vous ? Décrivez votre boutique en quelques mots…"></textarea>
+                    <span class="err">Maximum 500 caractères.</span>
+                </div>
+            </details>
+
+            <label class="check">
+                <input type="checkbox" id="terms">
+                <span>J'accepte les conditions générales de vente et la politique de confidentialité.</span>
+            </label>
+
+            <button type="submit" class="btn btn-cta btn-block" id="registerBtn">
+                <i class="fas fa-user-plus"></i> Créer mon compte avec mon email
+            </button>
+
+            <p class="auth-switch">Vous avez déjà un compte ? <a href="#connexion" id="goLogin2">Connectez-vous</a></p>
+        </form>
+    </section>
+
+    <!-- ============ CONNEXION ============ -->
+    <section class="auth-card" id="connexion" hidden>
+        <h1>Connexion</h1>
+        <p class="auth-sub">Accédez à votre boutique « Mon Magasin ».</p>
+
+        <form id="loginForm" novalidate>
+            <div class="f-row" id="l-ident">
+                <label for="ident">Identifiant ou email</label>
+                <input type="text" id="ident" placeholder="rodrigue" autocomplete="username">
+                <span class="err">Saisissez votre identifiant ou votre email.</span>
+            </div>
+            <div class="f-row" id="l-password">
+                <label for="loginPwd">Mot de passe</label>
+                <div class="pwd-wrap">
+                    <input type="password" id="loginPwd" placeholder="••••••••" autocomplete="current-password">
+                    <button type="button" class="pwd-eye" data-eye="loginPwd" aria-label="Afficher"><i class="far fa-eye"></i></button>
+                </div>
+                <span class="err">Saisissez votre mot de passe.</span>
+            </div>
+            <button type="submit" class="btn btn-cta btn-block" id="loginBtn">
+                <i class="fas fa-right-to-bracket"></i> Se connecter
+            </button>
+        </form>
+
+        <p class="auth-switch">Pas encore de compte ? <a href="#inscription" id="goReg">Créer mon compte</a></p>
+    </section>
+
+</main>
+
+<footer class="auth-foot">
+    <div class="foot-mid">
+        <a class="logo" href="index.html"><span class="logo-top"><b class="lg-biz">business</b><span class="lg-on">enligne</span></span></a>
+    </div>
+    <div class="foot-bottom">
+        © 2026 BusinessEnLigne | Réalisé par <b style="color:#fff">Rodrigue Disasi</b>
+    </div>
+</footer>
+
+<div class="toast-wrap" id="toastWrap"></div>
+
+<!-- Couche réseau : parle au serveur (connexion, produits, commandes). Doit précéder javascript.js -->
+<script src="api.js"></script>
+<!-- Logique du site : catalogue, recherche, filtres, panier, fiches produit -->
+<script src="javascript.js"></script>
+</body>
+</html>

@@ -1,0 +1,186 @@
+﻿<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Magasin — BusinessEnLigne</title>
+    <!-- Bibliothèque d'icônes Font Awesome (CDN) : fournit les polices d'icônes <i class="fas fa-..."></i> -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <!-- Feuille de style unique du site : mise en page, couleurs, composants, responsive -->
+    <link rel="stylesheet" href="style.css">
+    <!-- Thème (clair / sombre / couleur) : chargé dans le <head> pour éviter tout clignotement -->
+    <script src="theme.js"></script>
+</head>
+<body class="has-theme-btn" data-page="magasin">
+
+<header class="header">
+    <div class="hdr-top">
+        <button class="menu-btn" id="menuBtn" aria-label="Menu"><i class="fas fa-bars"></i></button>
+        <a class="logo" href="index.html">
+            <span class="logo-top"><b class="lg-biz">business</b><span class="lg-on">enligne</span></span>
+        </a>
+        <form class="search-bar" id="searchForm" role="search">
+            <select class="search-cat" id="searchCat" aria-label="Catégorie">
+                <option value="">Toutes les catégories</option>
+                <option>Électronique</option><option>Mode</option><option>Maison</option>
+                <option>Sport</option><option>Beauté</option><option>Enfants</option><option>Livres</option>
+            </select>
+            <input class="search-input" id="searchInput" type="search" placeholder="Rechercher sur BusinessEnLigne" autocomplete="off">
+            <button class="search-btn" type="submit" aria-label="Rechercher"><i class="fas fa-search"></i></button>
+        </form>
+        <div class="hdr-right">
+            <button class="h-item h-theme" type="button" data-theme-open aria-haspopup="dialog" aria-expanded="false">
+                <small><i class="fas fa-palette h-theme-ic"></i> Thème</small>
+                <b data-theme-label>Orange</b>
+            </button>
+            <div class="account-wrap">
+                <button class="h-item h-account" id="accountBtn" aria-haspopup="true" aria-expanded="false">
+                    <small>Bonjour, <b id="accName">Identifiez-vous</b></small>
+                    <b><span id="accAction">Créer un compte</span> <i class="fas fa-caret-down"></i></b>
+                </button>
+                <div class="account-menu" id="accountMenu">
+                    <div class="am-head">
+                        <i class="fas fa-user-circle"></i>
+                        <div><b id="amName">Connectez-vous à votre compte</b><a href="connexion.html">Connexion / Inscription</a></div>
+                    </div>
+                    <ul>
+                        <li><a href="compte.html"><i class="fas fa-user"></i> Mon compte</a></li>
+                        <li><a href="compte.html#boutique"><i class="fas fa-store"></i> Mon magasin</a></li>
+                        <li><a href="publier.html"><i class="fas fa-square-plus"></i> Publier un article</a></li>
+                        <li><a href="compte.html#commandes"><i class="fas fa-box"></i> Mes commandes</a></li>
+                        <li><a href="compte.html#likes"><i class="fas fa-heart"></i> Mes J'aime</a></li>
+                    </ul>
+                    <button class="am-out" id="logoutBtn" type="button" hidden><i class="fas fa-right-from-bracket"></i> Se déconnecter</button>
+                </div>
+            </div>
+            <a class="h-item h-cart" href="#" id="cartIcon">
+                <small class="c-top">Panier</small>
+                <i class="fas fa-shopping-cart"></i>
+                <span class="cart-count" id="cartItemCount">0</span>
+            </a>
+        </div>
+    </div>
+    <nav class="nav-bar">
+        <a class="nav-all" href="index.html"><i class="fas fa-bars"></i> Tout</a>
+        <a href="tous.html">Tous les produits</a>
+        <a href="magasin.html"><i class="fas fa-store"></i> Magasins en ligne</a>
+        <a href="index.html#deals">Offres du jour</a>
+        <a href="electronique.html">Électronique</a>
+        <a href="mode.html">Mode</a>
+        <a href="maison.html">Maison &amp; Cuisine</a>
+        <a href="sport.html">Sport</a>
+        <a href="beaute.html">Beauté</a>
+        <a href="enfants.html">Enfants</a>
+        <a href="livres.html">Livres</a>
+        <a href="publier.html" style="color:#ffd814">Publier un article</a>
+    </nav>
+</header>
+
+<main class="container" style="padding-top:16px;padding-bottom:40px">
+
+    <!-- ============ FIL D'ARIANE ============ -->
+    <div class="crumb">
+        <a href="index.html">Accueil</a> <span>&rsaquo;</span> <b>Magasins en ligne</b>
+    </div>
+
+    <!-- ============ BANNIÈRE DE LA BOUTIQUE ============ -->
+    <div id="shopHeader" hidden>
+        <div class="shop-cover">
+            <img id="shBanner" src="" alt="">
+        </div>
+        <div class="shop-id">
+            <div class="avatar" id="shAvatar">B</div>
+            <div style="flex:1;min-width:200px;padding-top:12px">
+                <h1 id="shName">Boutique</h1>
+                <div class="shop-meta" id="shMeta">@identifiant · 0 article</div>
+            </div>
+            <div class="shop-actions">
+                <button class="btn btn-outline" id="followBtn"><i class="fas fa-heart"></i> Suivre</button>
+                <a class="btn btn-cta" id="shPublish" href="publier.html" hidden><i class="fas fa-square-plus"></i> Publier un article</a>
+            </div>
+        </div>
+    </div>
+
+    <div id="shopNotFound" class="box" hidden style="text-align:center;padding:50px 20px">
+        <i class="fas fa-store" style="font-size:46px;color:#c7ccd1"></i>
+        <h2 style="font-size:22px;margin:12px 0 6px">Boutique introuvable</h2>
+        <p style="color:var(--txt-2);margin-bottom:18px">Cette boutique n'existe pas ou a été supprimée.</p>
+        <a class="btn btn-cta" href="index.html">Retour à l'accueil</a>
+    </div>
+
+    <div id="shopBody" hidden>
+        <!-- ============ À PROPOS ============ -->
+        <div class="box" style="margin:16px 0">
+            <div class="box-head"><h3>À propos de la boutique</h3></div>
+            <p id="shDesc" style="font-size:13.5px;color:var(--txt-2)"></p>
+            <div class="kpis" style="display:flex;gap:26px;margin-top:12px;flex-wrap:wrap">
+                <div><b id="shArticles" style="font-size:20px;color:#0f1111">0</b> <span style="font-size:12px;color:var(--txt-2)">articles</span></div>
+                <div><b id="shLikes" style="font-size:20px;color:#0f1111">0</b> <span style="font-size:12px;color:var(--txt-2)">J'aime</span></div>
+                <div><b id="shSince" style="font-size:20px;color:#0f1111">—</b> <span style="font-size:12px;color:var(--txt-2)">membre depuis</span></div>
+            </div>
+        </div>
+
+        <!-- ============ FILTRES ============ -->
+        <div class="filters" id="shopFilters"></div>
+
+        <!-- ============ ARTICLES ============ -->
+        <div class="box">
+            <div class="box-head">
+                <h3>Articles de la boutique</h3>
+                <span class="see-all" id="shCount"></span>
+            </div>
+            <div class="p-grid" id="shopGrid"></div>
+        </div>
+    </div>
+</main>
+
+<footer>
+    <div class="foot-mid"><a class="logo" href="index.html"><span class="logo-top"><b class="lg-biz">business</b><span class="lg-on">enligne</span></span></a></div>
+    <div class="foot-bottom">© 2026 BusinessEnLigne | Réalisé par <b style="color:#fff">Rodrigue Disasi</b></div>
+</footer>
+
+<!-- ============ PANIER ============ -->
+<aside class="cart-drawer" id="cartDrawer">
+    <div class="cart-head">
+        <h2><i class="fas fa-shopping-cart"></i> Votre panier</h2>
+        <button id="closeCart" aria-label="Fermer"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="cart-body" id="cartBody"></div>
+    <div class="cart-foot">
+        <div class="cart-sub"><span>Sous-total</span><span id="cartSub">0 FC</span></div>
+        <div class="cart-ship" id="cartShip">Livraison calculée à l'étape suivante</div>
+        <button class="btn btn-cta" id="checkoutBtn">Passer la commande</button>
+    </div>
+</aside>
+
+<div class="modal" id="modal">
+    <div class="modal-card">
+        <button class="modal-close" id="modalClose" aria-label="Fermer"><i class="fas fa-times"></i></button>
+        <div class="modal-cols">
+            <div class="modal-img"><img id="mImg" src="" alt=""></div>
+            <div class="modal-info">
+                <span class="p-rating"><span class="stars" id="mStars"></span><span class="n" id="mRating"></span><span class="c" id="mCount"></span></span>
+                <h2 id="mTitle"></h2>
+                <div class="p-price" id="mPrice"></div>
+                <div class="p-extra" id="mDesc"></div>
+                <ul class="modal-list" id="mList"></ul>
+                <div class="buy-box">
+                    <div style="font-weight:700;margin-bottom:6px" id="mStock"></div>
+                    <div class="ship" id="mShip" style="margin-bottom:10px"></div>
+                    <button class="btn btn-buy" id="mBuy">Acheter maintenant</button>
+                    <button class="btn-add" id="mAdd"><i class="fas fa-cart-plus"></i> Ajouter au panier</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="overlay" id="overlay"></div>
+<div class="toast-wrap" id="toastWrap"></div>
+
+<!-- Couche réseau : parle au serveur (connexion, produits, commandes). Doit précéder javascript.js -->
+<script src="api.js"></script>
+<!-- Logique du site : catalogue, recherche, filtres, panier, fiches produit -->
+<script src="javascript.js"></script>
+</body>
+</html>

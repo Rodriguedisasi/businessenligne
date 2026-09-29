@@ -1,0 +1,26 @@
+/* ==========================================================
+   RÈGLES FIRESTORE
+   ------------------------------------------------------------
+   Ce projet n'accède JAMAIS à Firestore depuis le navigateur :
+   toute l'écriture passe par server.js, qui utilise le SDK
+   d'administration (firebase-admin) et contourne ces règles.
+
+   Ces règles servent donc de verrou de sécurité : même si une clé
+   firebaseConfig ou un jeton firebaseClientConfig fuit un jour,
+   la base reste inaccessible depuis un poste utilisateur.
+
+   Ouvrir la console Firebase > Firestore Database > Rules,
+   coller ce fichier, puis « Publier ».
+   ========================================================== */
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    /* Aucun accès direct, quel que soit l'utilisateur authentifié
+       ou non : le serveur contourne ces règles via firebase-admin. */
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
