@@ -20,9 +20,11 @@ env:
     value: firebase
 
   # Photos : Cloud Storage, car le disque du conteneur est efface a chaque
-  # deploiement. Renseigne ici le nom du bucket, par exemple :
-  #   - variable: STORAGE_BUCKET
-  #     value: mon-projet.firebasestorage.app
+  # deploiement. Bucket par defaut du projet businessenligne-5b267 :
+  #   si tu le renommes, change cette valeur ici OU dans la console.
+  - variable: STORAGE_BUCKET
+    value: businessenligne-5b267.firebasestorage.app
+
   # Sans STORAGE_BUCKET, storage.js cherche le bucket dans FIREBASE_CONFIG puis
   # tente <projet>.appspot.com ; s'il ne trouve rien, il retombe sur le disque
   # local et le dit dans les journaux au demarrage.
