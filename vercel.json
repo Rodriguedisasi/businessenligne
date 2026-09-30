@@ -1,13 +1,13 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": null,
   "buildCommand": "node build-static.js",
   "outputDirectory": "public",
   "rewrites": [
     { "source": "/uploads/(.*)", "destination": "/api/uploads/$1" }
   ],
   "functions": {
-    "api/[...path].js": { "memory": 1024, "maxDuration": 60 },
-    "api/uploads/[...path].js": { "memory": 1024, "maxDuration": 60 }
+    "api/**/*.js": { "maxDuration": 60 }
   },
   "env": {
     "NODE_ENV": "production",

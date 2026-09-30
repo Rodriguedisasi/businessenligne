@@ -149,12 +149,29 @@ function makeFirestoreDriver(firestore){
         likes:     [{ field: 'created_at', dir: 'desc' }]
     };
 
+    /* Firestore conserve exactement le type ecrit lors de l'insertion : le meme
+       drapeau peut s'y trouver sous forme de booleen (true), de nombre (1) ou
+       de chaine ("1"), selon l'outil qui a alimente la collection. La base
+       locale, elle, compare apres conversion implicite. On ramene donc chaque
+       valeur a une forme unique avant de comparer, sinon un filtre du type
+       « published = 1 » ne selectionne rien. */
+    function normalize(v){
+        if (typeof v === 'boolean') return v ? 1 : 0;
+        if (typeof v === 'string'){
+            const t = v.trim();
+            if (t === 'true')  return 1;
+            if (t === 'false') return 0;
+            if (t !== '' && Number.isFinite(Number(t))) return Number(t);
+        }
+        return v;
+    }
+
     function matches(doc, where){
         return Object.entries(where || {}).every(([k, v]) => {
             const actual = doc[k];
             if (v === null || v === undefined) return actual === null || actual === undefined;
-            if (typeof v === 'boolean') return Boolean(actual) === v;
-            return actual === v;
+            if (typeof v === 'boolean') return Boolean(normalize(actual)) === v;
+            return normalize(actual) === normalize(v);
         });
     }
 

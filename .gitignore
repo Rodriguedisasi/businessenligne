@@ -22,3 +22,6 @@ npm-debug.log*
 public/
 .vercel
 .firebase/
+
+.vercel
+.env*

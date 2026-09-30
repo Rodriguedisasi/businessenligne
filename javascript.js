@@ -156,25 +156,25 @@ function paintInfo(p){
     }
     const photos = photosOf(p).length;
     const rows = [
-        ['Catégorie', p.cat],
-        p.owner && p.owner.shopName ? ['Boutique', p.owner.shopName] : null,
-        ['Note', t('★ {0} sur 5 · {1} avis', [String(p.rating).replace('.', ','), nfmt(Number(p.reviews || 0))])],
-        [t("J'aime"), t(p.likes > 1 ? '{0} personnes' : '{0} personne', [Number(p.likes || 0)])],
-        ['Photos', t(photos > 1 ? '{0} photo(s) dans la galerie' : '{0} photo', [photos])],
-        ['Disponibilité', p.stock > 0
-            ? (p.stock <= 10 ? t('Plus que {0} en stock', [p.stock]) : t('{0} article(s) en stock', [p.stock]))
+        [t('Catégorie'), p.cat],
+        p.owner && p.owner.shopName ? [t('Boutique'), p.owner.shopName] : null,
+        [t('Note'), t('★ {0} sur 5 · {1} avis', [String(p.rating).replace('.', ','), nfmt(Number(p.reviews || 0))])],
+        [t("J'aime"), t(p.likes > 1 ? '{0} personnes' : '{0} personne', [nfmt(Number(p.likes || 0))])],
+        [t('Photos'), t(photos > 1 ? '{0} photo(s) dans la galerie' : '{0} photo', [nfmt(photos)])],
+        [t('Disponibilité'), p.stock > 0
+            ? (p.stock <= 10 ? t('Plus que {0} en stock', [nfmt(p.stock)]) : t('{0} article(s) en stock', [nfmt(p.stock)]))
             : t('Rupture de stock')],
-        ['Livraison', t('Gratuite, reçue sous 24 à 48 h à Lubumbashi')],
-        ['Paiement', t('Mobile Money, carte bancaire ou espèces à la livraison')],
-        p.prime ? ['Livraison Prime', t('Offerte et prioritaire')] : null
+        [t('Livraison'), t('Gratuite, reçue sous 24 à 48 h à Lubumbashi')],
+        [t('Paiement'), t('Mobile Money, carte bancaire ou espèces à la livraison')],
+        p.prime ? [t('Livraison Prime'), t('Offerte et prioritaire')] : null
     ].filter(Boolean);
     const specs = detailsOf(p);
     infoBox.innerHTML =
         (specs.length
-            ? `<h4>Détails de l'article</h4><table><tbody>${specs.map(d =>
+            ? `<h4>${t("Détails de l'article")}</h4><table><tbody>${specs.map(d =>
                 `<tr><th>${esc(d.k)}</th><td>${d.v ? esc(d.v) : '—'}</td></tr>`).join('')}</tbody></table>`
             : '') +
-        `<h4>Informations sur l'article</h4><ul class="p-meta">${rows.map(([k, v]) =>
+        `<h4>${t("Informations sur l'article")}</h4><ul class="p-meta">${rows.map(([k, v]) =>
             `<li><span>${esc(k)}</span><b>${esc(v)}</b></li>`).join('')}</ul>`;
 }
 
@@ -220,19 +220,19 @@ function galleryHTML(photos, name, opts){
         return `<img class="gal-single" src="${safeUrl(photos[0])}" alt="${label}">`;
     }
     const slides = photos.map((u, i) =>
-        `<img class="gal-slide" src="${safeUrl(u)}" alt="${label} — photo ${i + 1}/${photos.length}"${i ? ' loading="lazy"' : ''}>`).join('');
+        `<img class="gal-slide" src="${safeUrl(u)}" alt="${label} — ${t('photo {0}/{1}', [nfmt(i + 1), nfmt(photos.length)])}"${i ? ' loading="lazy"' : ''}>`).join('');
     return `<div class="gal" data-gal>
             <div class="gal-stage">
                 <div class="gal-track">${slides}</div>
-                <button type="button" class="gal-btn gal-prev" aria-label="Photo précédente"><i class="fas fa-chevron-left"></i></button>
-                <button type="button" class="gal-btn gal-next" aria-label="Photo suivante"><i class="fas fa-chevron-right"></i></button>
+                <button type="button" class="gal-btn gal-prev" aria-label="${t('Photo précédente')}"><i class="fas fa-chevron-left"></i></button>
+                <button type="button" class="gal-btn gal-next" aria-label="${t('Photo suivante')}"><i class="fas fa-chevron-right"></i></button>
                 <div class="gal-dots">${photos.map((_, i) =>
-                    `<button type="button" class="gal-dot" data-go="${i}" aria-label="Aller à la photo ${i + 1}"></button>`).join('')}</div>
-                <span class="gal-count">1/${photos.length}</span>
+                    `<button type="button" class="gal-dot" data-go="${i}" aria-label="${t('Aller à la photo {0}', [nfmt(i + 1)])}"></button>`).join('')}</div>
+                <span class="gal-count">1/${nfmt(photos.length)}</span>
                 <i class="fas fa-expand gal-zoom" aria-hidden="true"></i>
             </div>
             ${opts.thumbs ? `<div class="gal-thumbs">${photos.map((u, i) =>
-                `<button type="button" class="gal-thumb" data-go="${i}" aria-label="Voir la photo ${i + 1}"><img src="${safeUrl(u)}" alt=""></button>`).join('')}</div>` : ''}
+                `<button type="button" class="gal-thumb" data-go="${i}" aria-label="${t('Voir la photo {0}', [nfmt(i + 1)])}"><img src="${safeUrl(u)}" alt=""></button>`).join('')}</div>` : ''}
         </div>`;
 }
 
@@ -307,7 +307,7 @@ function buildLightbox(){
     const el = document.createElement('div');
     el.className = 'lightbox';
     el.innerHTML = `
-        <div class="lb-box" role="dialog" aria-modal="true" aria-label="Photos de l'article">
+        <div class="lb-box" role="dialog" aria-modal="true" aria-label="${t("Photos de l'article")}">
             <div class="lb-head">
                 <div class="lb-titles">
                     <b class="lb-title"></b>
@@ -317,8 +317,8 @@ function buildLightbox(){
             </div>
             <div class="lb-stage"></div>
             <div class="lb-foot">
-                <button type="button" class="btn btn-cta btn-sm lb-sheet"><i class="fas fa-info-circle"></i> Détails de l'article</button>
-                <span class="lb-zoom"><i class="fas fa-expand"></i> Photos en grand</span>
+                <button type="button" class="btn btn-cta btn-sm lb-sheet"><i class="fas fa-info-circle"></i> ${t("Détails de l'article")}</button>
+                <span class="lb-zoom"><i class="fas fa-expand"></i> ${t('Photos en grand')}</span>
             </div>
         </div>`;
     document.body.appendChild(el);
@@ -352,7 +352,7 @@ function openLightbox(p, start){
     $('.lb-title', lb.el).textContent = p.name;
     const off = p.old ? Math.round((1 - p.price / p.old) * 100) : 0;
     $('.lb-meta', lb.el).innerHTML =
-        `${fmt(p.price)}${p.old ? ` <s>${fmt(p.old)}</s> <em>-${off}%</em>` : ''} · ${p.cat}${p.stock > 0 ? ' · en stock' : ' · rupturé'}`;
+        `${fmt(p.price)}${p.old ? ` <s>${fmt(p.old)}</s> <em>-${nfmt(off)}%</em>` : ''} · ${t(p.cat)}${p.stock > 0 ? ' · ' + t('en stock') : ' · ' + t('rupturé')}`;
 
     lb.stage.innerHTML = photos.length > 1
         ? galleryHTML(photos, p.name, { thumbs: true })
@@ -415,11 +415,11 @@ function cardHTML(p){
         <div class="p-img-wrap">${galleryHTML(photosOf(p), p.name)}</div>
         <div class="p-rating">${starsHTML(p.rating)} <span class="n">${String(p.rating).replace('.', ',')}</span> <span class="c">(${nfmt(Number(p.reviews || 0))})</span></div>
         <h3 class="p-title">${p.name}</h3>
-        <div class="p-price">${fmt(p.price)}${p.old ? `<span class="old">${fmt(p.old)}</span><span class="off">-${off}%</span>` : ''}</div>
+        <div class="p-price">${fmt(p.price)}${p.old ? `<span class="old">${fmt(p.old)}</span><span class="off">-${nfmt(off)}%</span>` : ''}</div>
         <div class="p-extra">${t('ou 3x {0} sans frais', [fmt(Math.round(p.price / 3))])}</div>
         ${p.prime ? `<div class="p-prime"><i class="fas fa-check-circle"></i> ${t('LIVRAISON PRIME')}</div>` : ''}
         ${owner}
-        <div class="p-stock ${p.stock <= 10 ? 'low' : ''}">${p.stock <= 10 ? t('Plus que {0} en stock', [p.stock]) : t('En stock')}</div>
+        <div class="p-stock ${p.stock <= 10 ? 'low' : ''}">${p.stock <= 10 ? t('Plus que {0} en stock', [nfmt(p.stock)]) : t('En stock')}</div>
         <div class="p-actions">
             <button class="btn-add" data-add="${p.id}"><i class="fas fa-cart-plus"></i> ${t('Ajouter au panier')}</button>
             ${like}
@@ -433,8 +433,8 @@ async function toggleLike(btn){
     const p = PRODUCTS.find(x => String(x.id) === String(id));
     if (!p) return;
 
-    if (!window.BE || !BE.isOnline()){ toast('⚠️ J\'aime disponible uniquement avec le serveur (node server.js).'); return; }
-    if (!requireLogin('Connectez-vous pour aimer un article')) return;
+    if (!window.BE || !BE.isOnline()){ toast(t("⚠️ J'aime disponible uniquement avec le serveur (node server.js).")); return; }
+    if (!requireLogin(t('Connectez-vous pour aimer un article'))) return;
 
     btn.disabled = true;
     try {
@@ -444,7 +444,7 @@ async function toggleLike(btn){
         btn.classList.toggle('on', d.liked);
         btn.querySelector('i').className = d.liked ? 'fas fa-heart' : 'far fa-heart';
         btn.querySelector('.like-nb').textContent = nfmt(Number(d.likes));
-        toast(d.liked ? '❤️ Article ajouté à vos J\'aime' : 'J\'aime retiré');
+        toast(d.liked ? t("❤️ Article ajouté à vos J'aime") : t("J'aime retiré"));
     } catch (err){
         toast('❌ ' + err.message);
     } finally {
@@ -587,8 +587,8 @@ function renderCart(){
     if (!cart.length){
         body.innerHTML = `<div class="cart-empty">
             <i class="fas fa-shopping-basket"></i>
-            <p><b>Votre panier est vide</b></p>
-            <p style="font-size:12px;margin-top:6px">Ajoutez des articles pour commencer.</p>
+            <p><b>${t('Votre panier est vide')}</b></p>
+            <p style="font-size:12px;margin-top:6px">${t('Ajoutez des articles pour commencer.')}</p>
         </div>`;
     } else {
         body.innerHTML = cart.map(l => {
@@ -665,13 +665,13 @@ function openModal(id){
     $('#mRating').textContent = t('{0} sur 5', [String(p.rating).replace('.', ',')]);
     $('#mCount').textContent = t('({0} avis)', [nfmt(Number(p.reviews || 0))]);
     $('#mTitle').textContent = p.name;
-    $('#mPrice').innerHTML = `${fmt(p.price)}${p.old ? `<span class="old">${fmt(p.old)}</span><span class="off">-${off}%</span>` : ''}`;
+    $('#mPrice').innerHTML = `${fmt(p.price)}${p.old ? `<span class="old">${fmt(p.old)}</span><span class="off">-${nfmt(off)}%</span>` : ''}`;
     $('#mDesc').textContent = p.desc || '';
     /* tableau des détails saisis par le vendeur + infos sur l'article */
     paintInfo(p);
     $('#mList').innerHTML = featsOf(p).map(f => `<li><i class="fas fa-check"></i><span>${esc(f)}</span></li>`).join('');
     $('#mStock').innerHTML = p.stock <= 10
-        ? `<span style="color:#b12704">${t('Plus que {0} en stock', [p.stock])}</span>`
+        ? `<span style="color:#b12704">${t('Plus que {0} en stock', [nfmt(p.stock)])}</span>`
         : `<span style="color:#007600">${t('En stock')}</span>`;
     $('#mShip').innerHTML = t('Livraison <b>GRATUITE</b> le <b>{0}</b> à Lubumbashi', [dj(Date.now() + 3 * 864e5, { weekday: 'long', day: 'numeric', month: 'long' })]);
     $('#mBuy').onclick = () => { addToCart(p.id, 1, true); closeAll(); checkout(); };
@@ -683,7 +683,7 @@ function openModal(id){
 
 /* ---------------- CHECKOUT ---------------- */
 async function checkout(){
-    if (!cart.length){ toast('🛒 Votre panier est vide'); return; }
+    if (!cart.length){ toast(t('🛒 Votre panier est vide')); return; }
     const items = cart.map(l => ({ id: l.id, qty: l.qty }));
     const total = cartTotal();
 
@@ -695,7 +695,7 @@ async function checkout(){
             saveCart();
             closeAll();
             toast('✅ ' + t('Commande {0} confirmée — {1}', [o.ref, fmt(o.total)]));
-            setTimeout(() => toast('📦 Livraison estimée sous 24 à 48h'), 900);
+            setTimeout(() => toast(t('📦 Livraison estimée sous 24 à 48h')), 900);
             return;
         } catch (e){
             toast('⚠️ ' + e.message + ' — ' + t('commande enregistrée localement.'));
@@ -720,7 +720,7 @@ async function checkout(){
     saveCart();
     closeAll();
     toast('✅ ' + t('Commande {0} confirmée — {1}', [order.ref, fmt(order.total)]));
-    setTimeout(() => toast('📦 Livraison estimée sous 24 à 48h'), 900);
+    setTimeout(() => toast(t('📦 Livraison estimée sous 24 à 48h')), 900);
 }
 
 /* ==========================================================
@@ -893,7 +893,7 @@ async function renderCatShops(){
 
     const cat = cstate.cat;
     const title = $('#catShopsTitle');
-    if (title) title.textContent = cat === 'Toutes' ? 'Tous les magasins en ligne' : 'Magasins en ligne — ' + cat;
+    if (title) title.textContent = cat === 'Toutes' ? t('Tous les magasins en ligne') : t('Magasins en ligne — {0}', [cat]);
 
     if (!window.BE){ box.hidden = true; return; }
 
@@ -1000,15 +1000,15 @@ function initAccountMenu(){
     if (out) out.addEventListener('click', async () => {
         await BE.logout();
         refreshAccountUI();
-        toast('👋 Vous êtes déconnecté.');
+        toast(t('👋 Vous êtes déconnecté.'));
         setTimeout(() => location.reload(), 700);
     });
 }
 
 /* Redirige vers la connexion si l'utilisateur n'est pas connecté */
-function requireLogin(message = 'Connectez-vous pour continuer'){
+function requireLogin(message = null){
     if (BE.isLogged()) return true;
-    toast('🔒 ' + message);
+    toast('🔒 ' + (message || t('Connectez-vous pour continuer')));
     setTimeout(() => { location.href = 'connexion.html?next=' + encodeURIComponent(location.pathname + location.hash); }, 800);
     return false;
 }
@@ -1062,10 +1062,10 @@ function initAuthPage(){
         };
         let ok = true;
         Object.entries(v).forEach(([k, valid]) => { if (!mark('r-' + k, valid)) ok = false; });
-        if (!ok) return toast('⚠️ Merci de corriger les champs en rouge.');
+        if (!ok) return toast(t('⚠️ Merci de corriger les champs en rouge.'));
 
         btn.disabled = true;
-        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Création…';
+        btn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> ${t('Création…')}`;
         try {
             const { user, generated } = await BE.register({
                 username: uname,
@@ -1083,7 +1083,7 @@ function initAuthPage(){
             setTimeout(() => { location.href = 'compte.html'; }, 1600);
         } catch (err){
             btn.disabled = false;
-            btn.innerHTML = '<i class="fas fa-user-plus"></i> Créer mon compte avec mon email';
+            btn.innerHTML = `<i class="fas fa-user-plus"></i> ${t('Créer mon compte avec mon email')}`;
             toast('❌ ' + err.message);
             if (err.status === 409){
                 const msg = /identifiant/i.test(err.message) ? 'r-username' : 'r-email';
@@ -1102,22 +1102,22 @@ function initAuthPage(){
         if (!idOk || !pwdOk) return;
 
         btn.disabled = true;
-        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Connexion…';
+        btn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> ${t('Connexion…')}`;
         try {
             const user = await BE.login($('#ident').value.trim(), $('#loginPwd').value);
-            toast('👋 Bonjour ' + user.username + ' !');
+            toast(t('👋 Bonjour {0} !', [user.username]));
             const next = new URLSearchParams(location.search).get('next');
             setTimeout(() => { location.href = next || 'compte.html'; }, 800);
         } catch (err){
             btn.disabled = false;
-            btn.innerHTML = '<i class="fas fa-right-to-bracket"></i> Se connecter';
+            btn.innerHTML = `<i class="fas fa-right-to-bracket"></i> ${t('Se connecter')}`;
             toast('❌ ' + err.message);
         }
     });
 
     /* déjà connecté ? */
     BE.loadMe().then(u => {
-        if (u){ refreshAccountUI(); toast('👋 Déjà connecté en tant que ' + u.username + '.'); }
+        if (u){ refreshAccountUI(); toast(t('👋 Déjà connecté en tant que {0}.', [u.username])); }
     });
 }
 
@@ -1182,11 +1182,11 @@ async function initAccountPage(){
     $('#meAvatar').innerHTML = me.avatar
         ? `<img src="${me.avatar}" alt="${me.shopName}">`
         : me.shopName.charAt(0).toUpperCase();
-    $('#shopDesc').textContent = me.shopDesc || 'Vous n\'avez pas encore décrit votre boutique.';
+    $('#shopDesc').textContent = me.shopDesc || t('Vous n\'avez pas encore décrit votre boutique.');
     $('#shopLink').href = 'magasin.html?u=' + encodeURIComponent(me.username);
     $('#setUsername').textContent = '@' + me.username;
     $('#setEmail').textContent = me.email;
-    $('#setSince').textContent = new Date(me.createdAt).toLocaleDateString(BE_LOCALE, { day:'numeric', month:'long', year:'numeric' });
+    $('#setSince').textContent = dj(me.createdAt, { day: 'numeric', month: 'long', year: 'numeric' });
 
     /* ---------- onglets ---------- */
     const TABS = ['boutique', 'articles', 'likes', 'commandes', 'reglages'];
@@ -1232,9 +1232,9 @@ async function initAccountPage(){
             $('#meShop').textContent = u.shopName;
             $('#meMeta').textContent = `@${u.username} · ${u.shopCity || 'Lubumbashi'}`;
             $('#meAvatar').innerHTML = u.avatar ? `<img src="${u.avatar}" alt="${u.shopName}">` : u.shopName.charAt(0).toUpperCase();
-            $('#shopDesc').textContent = u.shopDesc || 'Vous n\'avez pas encore décrit votre boutique.';
+            $('#shopDesc').textContent = u.shopDesc || t("Vous n'avez pas encore décrit votre boutique.");
             $('#shopLink').href = 'magasin.html?u=' + encodeURIComponent(u.username);
-            toast('✅ Boutique mise à jour.');
+            toast('✅ ' + t('Boutique mise à jour.'));
         } catch (err){ toast('❌ ' + err.message); }
     });
 
@@ -1246,10 +1246,10 @@ async function initAccountPage(){
         const box = $('#myProducts');
         if (!list.length){
             box.innerHTML = `<div class="empty-state"><i class="fas fa-box-open"></i>
-                <h3>Vous n'avez pas encore publié d'article</h3>
-                <p>Ouvrez votre boutique et publiez votre premier article.</p>
-                <p style="margin-top:14px"><a class="btn btn-cta" href="publier.html"><i class="fas fa-square-plus"></i> Publier un article</a></p></div>`;
-            $('#kpiArticles').textContent = 0;
+                <h3>${t("Vous n'avez pas encore publié d'article")}</h3>
+                <p>${t('Ouvrez votre boutique et publiez votre premier article.')}</p>
+                <p style="margin-top:14px"><a class="btn btn-cta" href="publier.html"><i class="fas fa-square-plus"></i> ${t('Publier un article')}</a></p></div>`;
+            $('#kpiArticles').textContent = '0';
             return;
         }
         box.innerHTML = list.map(p => {
@@ -1259,16 +1259,16 @@ async function initAccountPage(){
                 <div class="ir-body">
                     <div class="ir-title">${p.title}</div>
                     <div class="ir-meta">
-                        ${p.category} · ${fmt(p.price)}${p.oldPrice ? ` <s>${fmt(p.oldPrice)}</s> -${off}%` : ''} · ${p.stock} en stock
+                        ${t(p.category)} · ${fmt(p.price)}${p.oldPrice ? ` <s>${fmt(p.oldPrice)}</s> -${off}%` : ''} · ${t('{0} en stock', [nfmt(p.stock)])}
                     </div>
                     <div class="ir-meta">
-                        <span style="color:#cc0c39;font-weight:700">♥ ${p.likes} J'aime</span> ·
-                        publié le ${new Date(p.createdAt).toLocaleDateString(BE_LOCALE)}
+                        <span style="color:#cc0c39;font-weight:700">♥ ${nfmt(p.likes)} ${t("J'aime")}</span> ·
+                        ${t('publié le {0}', [dj(p.createdAt)])}
                     </div>
                     <div class="ir-actions">
-                        <button class="btn btn-outline btn-sm" data-edit="${p.id}"><i class="fas fa-pen"></i> Modifier</button>
-                        <button class="btn btn-outline btn-sm" data-del-p="${p.id}"><i class="fas fa-trash-alt"></i> Supprimer</button>
-                        <a class="btn btn-outline btn-sm" href="magasin.html?u=${encodeURIComponent(me.username)}"><i class="fas fa-eye"></i> Voir</a>
+                        <button class="btn btn-outline btn-sm" data-edit="${p.id}"><i class="fas fa-pen"></i> ${t('Modifier')}</button>
+                        <button class="btn btn-outline btn-sm" data-del-p="${p.id}"><i class="fas fa-trash-alt"></i> ${t('Supprimer')}</button>
+                        <a class="btn btn-outline btn-sm" href="magasin.html?u=${encodeURIComponent(me.username)}"><i class="fas fa-eye"></i> ${t('Voir')}</a>
                     </div>
                 </div>
             </div>`;
@@ -1280,10 +1280,10 @@ async function initAccountPage(){
     $('#myProducts').addEventListener('click', async e => {
         const del = e.target.closest('[data-del-p]');
         if (del){
-            if (!confirm('Supprimer définitivement cet article ?')) return;
+            if (!confirm(t('Supprimer définitivement cet article ?'))) return;
             try {
                 await BE.deleteProduct(del.dataset.delP);
-                toast('🗑️ Article supprimé.');
+                toast(t('🗑️ Article supprimé.'));
                 loadAll();
             } catch (err){ toast('❌ ' + err.message); }
             return;
@@ -1298,50 +1298,50 @@ async function initAccountPage(){
 
     /* ---------- J'aime / commandes ---------- */
     const renderLikes = list => {
-        $('#likesCount').textContent = list.length + (list.length > 1 ? ' articles' : ' article');
+        $('#likesCount').textContent = nfmt(list.length) + ' ' + t(list.length > 1 ? 'articles' : 'article');
         const box = $('#myLikes');
         if (!list.length){
             box.innerHTML = `<div class="empty-state"><i class="far fa-heart"></i>
-                <h3>Aucun J'aime pour l'instant</h3>
-                <p>Parcourez le catalogue et aimez les articles qui vous plaisent.</p>
-                <p style="margin-top:14px"><a class="btn btn-cta" href="tous.html">Découvrir les produits</a></p></div>`;
+                <h3>${t("Aucun J'aime pour l'instant")}</h3>
+                <p>${t('Parcourez le catalogue et aimez les articles qui vous plaisent.')}</p>
+                <p style="margin-top:14px"><a class="btn btn-cta" href="tous.html">${t('Découvrir les produits')}</a></p></div>`;
             return;
         }
         box.innerHTML = list.map(p => `<div class="item-row" data-pid="${p.id}">
             <img src="${p.image || 'https://picsum.photos/seed/' + p.id + '/200/200'}" alt="${p.title}">
             <div class="ir-body">
                 <div class="ir-title">${p.title}</div>
-                <div class="ir-meta">${p.category} · ${p.owner ? 'Boutique ' + p.owner.shopName : ''}</div>
+                <div class="ir-meta">${t(p.category)} · ${p.owner ? t('Boutique {0}', [p.owner.shopName]) : ''}</div>
                 <div class="ir-meta" style="color:#0f1111;font-weight:700;font-size:15px">${fmt(p.price)}</div>
                 <div class="ir-actions">
-                    <button class="btn-add btn-sm" data-add="${p.id}" style="width:auto;padding:6px 16px"><i class="fas fa-cart-plus"></i> Ajouter au panier</button>
-                    <button class="like-btn on" data-like="${p.id}"><i class="fas fa-heart"></i><span class="like-nb">${p.likes}</span></button>
+                    <button class="btn-add btn-sm" data-add="${p.id}" style="width:auto;padding:6px 16px"><i class="fas fa-cart-plus"></i> ${t('Ajouter au panier')}</button>
+                    <button class="like-btn on" data-like="${p.id}"><i class="fas fa-heart"></i><span class="like-nb">${nfmt(p.likes)}</span></button>
                 </div>
             </div>
         </div>`).join('');
     };
 
     const renderOrders = list => {
-        $('#ordersCount').textContent = list.length + (list.length > 1 ? ' commandes' : ' commande');
+        $('#ordersCount').textContent = nfmt(list.length) + ' ' + t(list.length > 1 ? 'commandes' : 'commande');
         const box = $('#myOrders');
         if (!list.length){
             box.innerHTML = `<div class="empty-state"><i class="fas fa-box-open"></i>
-                <h3>Aucune commande</h3><p>Vos commandes validées apparaîtront ici.</p>
-                <p style="margin-top:14px"><a class="btn btn-cta" href="tous.html">Commencer mes achats</a></p></div>`;
+                <h3>${t('Aucune commande')}</h3><p>${t('Vos commandes validées apparaîtront ici.')}</p>
+                <p style="margin-top:14px"><a class="btn btn-cta" href="tous.html">${t('Commencer mes achats')}</a></p></div>`;
             return;
         }
         box.innerHTML = list.map(o => `<div class="order-card">
             <div class="oc-top">
                 <div>
-                    <div class="oc-ref">Commande ${o.ref}</div>
-                    <div class="oc-items">${o.items.length} article(s) · ${new Date(o.createdAt).toLocaleDateString(BE_LOCALE, { day:'numeric', month:'long', year:'numeric' })}</div>
+                    <div class="oc-ref">${t('Commande {0}', [o.ref])}</div>
+                    <div class="oc-items">${t('{0} article(s)', [nfmt(o.items.length)])} · ${dj(o.createdAt, { day: 'numeric', month: 'long', year: 'numeric' })}</div>
                 </div>
                 <div style="text-align:right">
                     <div style="font-weight:700;font-size:17px">${fmt(o.total)}</div>
-                    <span class="badge badge-new" style="position:static;border-radius:3px">${o.status}</span>
+                    <span class="badge badge-new" style="position:static;border-radius:3px">${t(o.status)}</span>
                 </div>
             </div>
-            <div class="oc-items">${o.items.map(i => `${i.qty} × ${i.title}`).join(' · ')}</div>
+            <div class="oc-items">${o.items.map(i => `${nfmt(i.qty)} × ${i.title}`).join(' · ')}</div>
         </div>`).join('');
     };
 
@@ -1386,35 +1386,35 @@ function makePhotoPicker(o){
 
     const paint = () => {
         grid.innerHTML = photos.map((u, i) => `<div class="photo-item${i === 0 ? ' main' : ''}">
-                <img src="${safeUrl(u)}" alt="Photo ${i + 1}">
-                ${i === 0 ? '<span class="photo-tag">Principale</span>' : ''}
-                <button type="button" class="photo-btn photo-del" data-del="${i}" aria-label="Retirer la photo ${i + 1}"><i class="fas fa-times"></i></button>
-                ${i > 0 ? `<button type="button" class="photo-btn photo-set" data-main="${i}" title="Définir comme photo principale"><i class="fas fa-star"></i></button>` : ''}
+                <img src="${safeUrl(u)}" alt="${t('Photo {0}', [nfmt(i + 1)])}">
+                ${i === 0 ? `<span class="photo-tag">${t('Principale')}</span>` : ''}
+                <button type="button" class="photo-btn photo-del" data-del="${i}" aria-label="${t('Retirer la photo {0}', [nfmt(i + 1)])}"><i class="fas fa-times"></i></button>
+                ${i > 0 ? `<button type="button" class="photo-btn photo-set" data-main="${i}" title="${t('Définir comme photo principale')}"><i class="fas fa-star"></i></button>` : ''}
             </div>`).join('');
         const full = photos.length >= MAX_PHOTOS;
         if (zone){
             zone.classList.toggle('full', full);
             zone.style.display = 'block';
         }
-        if (count) count.textContent = photos.length ? `— ${photos.length}/${MAX_PHOTOS}` : '';
+        if (count) count.textContent = photos.length ? `— ${nfmt(photos.length)}/${nfmt(MAX_PHOTOS)}` : '';
         if (hint) hint.textContent = photos.length > 1
-            ? 'Astuce : les photos défileront seules dans la galerie de l\'article. La 1re photo sert de photo principale.'
+            ? t("Astuce : les photos défileront seules dans la galerie de l'article. La 1re photo sert de photo principale.")
             : '';
     };
 
     const add = list => {
         const room = MAX_PHOTOS - photos.length;
-        if (room <= 0) return toast(`⚠️ ${MAX_PHOTOS} photos maximum par article.`);
-        if (list.length > room) toast(`⚠️ Seules ${room} photo(s) ont été ajoutées (maximum ${MAX_PHOTOS}).`);
+        if (room <= 0) return toast(t('⚠️ {0} photos maximum par article.', [nfmt(MAX_PHOTOS)]));
+        if (list.length > room) toast(t('⚠️ Seules {0} photo(s) ont été ajoutées (maximum {1}).', [nfmt(room), nfmt(MAX_PHOTOS)]));
         photos = photos.concat(list.slice(0, room));
         if (url) url.value = '';
         paint();
     };
 
     async function send(list){
-        if (!requireLogin('Connectez-vous pour envoyer des images')) return;
+        if (!requireLogin(t('Connectez-vous pour envoyer des images'))) return;
         const room = MAX_PHOTOS - photos.length;
-        if (room <= 0) return toast(`⚠️ ${MAX_PHOTOS} photos maximum par article.`);
+        if (room <= 0) return toast(t('⚠️ {0} photos maximum par article.', [nfmt(MAX_PHOTOS)]));
         const batch = list.slice(0, room);
         if (zone) zone.classList.add('busy');
         let n = 0;
@@ -1424,7 +1424,7 @@ function makePhotoPicker(o){
                 n++;
                 paint();
             }
-            toast(`✅ ${n} photo${n > 1 ? 's envoyée' : ' envoyée'}${batch.length > n ? ` · autres ignorées (${MAX_PHOTOS} max)` : ''}.`);
+            toast(t('✅ {0} photo(s) envoyée(s) · autres ignorées ({1} max).', [nfmt(n), nfmt(MAX_PHOTOS)]));
         } catch (err){
             toast('❌ ' + err.message);
         } finally {
@@ -1475,21 +1475,21 @@ function makeDetailEditor(o){
 
     const paint = () => {
         rows.innerHTML = details.map((d, i) => `<div class="detail-row">
-                <input class="detail-k" type="text" value="${esc(d.k)}" maxlength="60" placeholder="Intitulé (ex. Matière)" aria-label="Intitulé du détail ${i + 1}">
-                <input class="detail-v" type="text" value="${esc(d.v)}" maxlength="200" placeholder="Valeur (ex. Bois massif)" aria-label="Valeur du détail ${i + 1}">
-                <button type="button" class="detail-del" data-del="${i}" aria-label="Supprimer le détail ${i + 1}"><i class="fas fa-times"></i></button>
+                <input class="detail-k" type="text" value="${esc(d.k)}" maxlength="60" placeholder="${t('Intitulé (ex. Matière)')}" aria-label="${t('Intitulé du détail {0}', [nfmt(i + 1)])}">
+                <input class="detail-v" type="text" value="${esc(d.v)}" maxlength="200" placeholder="${t('Valeur (ex. Bois massif)')}" aria-label="${t('Valeur du détail {0}', [nfmt(i + 1)])}">
+                <button type="button" class="detail-del" data-del="${i}" aria-label="${t('Supprimer le détail {0}', [nfmt(i + 1)])}"><i class="fas fa-times"></i></button>
             </div>`).join('');
         const full = details.length >= MAX_DETAILS;
-        if (count) count.textContent = details.length ? `— ${details.length}` : '';
+        if (count) count.textContent = details.length ? `— ${nfmt(details.length)}` : '';
         if (addBtn){
             addBtn.disabled = full;
             addBtn.innerHTML = full
-                ? `<i class="fas fa-check"></i> ${MAX_DETAILS} détails maximum`
-                : '<i class="fas fa-plus"></i> Ajouter un détail';
+                ? `<i class="fas fa-check"></i> ${t('{0} détails maximum', [nfmt(MAX_DETAILS)])}`
+                : `<i class="fas fa-plus"></i> ${t('Ajouter un détail')}`;
         }
     };
     const add = (k, v) => {
-        if (details.length >= MAX_DETAILS) return toast(`⚠️ ${MAX_DETAILS} détails maximum par article.`);
+        if (details.length >= MAX_DETAILS) return toast(t('⚠️ {0} détails maximum par article.', [nfmt(MAX_DETAILS)]));
         details.push({ k: k || '', v: v || '' });
         paint();
         const last = rows.lastElementChild;
@@ -1507,7 +1507,7 @@ function makeDetailEditor(o){
     };
     if (chips){
         chips.innerHTML = DETAIL_SUGGESTIONS.map(s =>
-            `<button type="button" class="dchip" data-chip="${esc(s)}">${esc(s)}</button>`).join('');
+            `<button type="button" class="dchip" data-chip="${esc(s)}">${t(s)}</button>`).join('');
         chips.addEventListener('click', e => {
             const c = e.target.closest('[data-chip]');
             if (c) add(c.dataset.chip);
@@ -1543,7 +1543,7 @@ async function initPublishPage(){
     $('#pvShop').textContent = me.shopName;
 
     BE.products({ mine: '1' }).then(list => {
-        $('#pvCount').textContent = list.length + (list.length > 1 ? ' articles publiés' : ' article publié');
+        $('#pvCount').textContent = nfmt(list.length) + ' ' + t(list.length > 1 ? 'articles publiés' : 'article publié');
     }).catch(() => {});
 
     const mark = (id, ok) => { $('#' + id).classList.toggle('invalid', !ok); return ok; };
@@ -1568,7 +1568,7 @@ async function initPublishPage(){
         BE.product(editId).then(p => {
             if (!p) return;
             if (p.owner && p.owner.username !== me.username)
-                return toast('⚠️ Vous ne pouvez modifier que vos propres articles.');
+                return toast(t('⚠️ Vous ne pouvez modifier que vos propres articles.'));
             editingId = p.id;
             $('#vTitle').value    = p.title;
             $('#vCat').value      = p.cat;
@@ -1580,9 +1580,9 @@ async function initPublishPage(){
             $('#vDesc').value     = p.desc || '';
             photoPicker.set(p.images && p.images.length ? p.images : (p.image ? [p.image] : []));
             detailEditor.set(detailsOf(p));
-            $('#publishBtn').innerHTML = '<i class="fas fa-save"></i> Enregistrer les modifications';
+            $('#publishBtn').innerHTML = `<i class="fas fa-save"></i> ${t('Enregistrer les modifications')}`;
             window.scrollTo({ top: 0, behavior: 'smooth' });
-            toast('✏️ Article chargé — modifiez puis enregistrez.');
+            toast(t('✏️ Article chargé — modifiez puis enregistrez.'));
         }).catch(e => toast('❌ ' + e.message));
     }
 
@@ -1591,7 +1591,7 @@ async function initPublishPage(){
     const refreshOff = () => {
         const p = parseFloat($('#vPrice').value), o = parseFloat($('#vOldPrice').value);
         if (p > 0 && o > p){
-            off.innerHTML = `Soit <b>-${Math.round((1 - p / o) * 100)}%</b> · badge « Promotion » appliqué`;
+            off.innerHTML = t('Soit <b>-{0}%</b> · badge « Promotion » appliqué', [nfmt(Math.round((1 - p / o) * 100))]);
             if (!$('#vBadge').value) $('#vBadge').value = 'deal';
         } else off.textContent = '';
     };
@@ -1632,14 +1632,14 @@ async function initPublishPage(){
         };
 
         btn.disabled = true;
-        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Publication…';
+        btn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> ${t('Publication…')}`;
         try {
             if (editingId){
                 await BE.editProduct(editingId, payload);
-                toast('✅ Article mis à jour.');
+                toast('✅ ' + t('Article mis à jour.'));
             } else {
                 await BE.publish(payload);
-                toast('🎉 Article publié dans votre magasin !');
+                toast(t('🎉 Article publié dans votre magasin !'));
             }
             editingId = null;
             photoPicker.clear();
@@ -1647,9 +1647,9 @@ async function initPublishPage(){
             $('#publishForm').reset();
             $('#vStock').value = 10;
             $('#vPrime').checked = true;
-            btn.innerHTML = '<i class="fas fa-cloud-arrow-up"></i> Publier dans mon magasin';
+            btn.innerHTML = `<i class="fas fa-cloud-arrow-up"></i> ${t('Publier dans mon magasin')}`;
             BE.products({ mine: '1' }).then(l => {
-                $('#pvCount').textContent = l.length + (l.length > 1 ? ' articles publiés' : ' article publié');
+                $('#pvCount').textContent = nfmt(l.length) + ' ' + t(l.length > 1 ? 'articles publiés' : 'article publié');
             }).catch(() => {});
         } catch (err){
             toast('❌ ' + err.message);
@@ -1675,18 +1675,18 @@ async function initShopPage(){
            de l'électronique). */
         $('#notLogged')?.remove();
         document.querySelector('main').innerHTML =
-            `<div class="crumb" style="padding-bottom:10px"><a href="index.html">Accueil</a> <span>&rsaquo;</span> <b>Magasins en ligne</b></div>
+            `<div class="crumb" style="padding-bottom:10px"><a href="index.html">${t('Accueil')}</a> <span>&rsaquo;</span> <b>${t('Magasins en ligne')}</b></div>
              <div class="box">
                  <div class="box-head">
-                     <h3 id="shopsTitle">Tous les magasins en ligne</h3>
+                     <h3 id="shopsTitle">${t('Tous les magasins en ligne')}</h3>
                      <span class="sh-tools">
                          <label class="sh-search"><i class="fas fa-search"></i>
-                             <input type="search" id="shopsQuery" placeholder="Rechercher une boutique" autocomplete="off"></label>
+                             <input type="search" id="shopsQuery" placeholder="${t('Rechercher une boutique')}" autocomplete="off"></label>
                          <select class="sh-sort" id="shopsSort">
-                             <option value="products">Plus d'articles</option>
-                             <option value="likes">Plus de J'aime</option>
-                             <option value="name">Nom (A-Z)</option>
-                             <option value="recent">Plus récentes</option>
+                             <option value="products">${t("Plus d'articles")}</option>
+                             <option value="likes">${t("Plus de J'aime")}</option>
+                             <option value="name">${t('Nom (A-Z)')}</option>
+                             <option value="recent">${t('Plus récentes')}</option>
                          </select>
                      </span>
                  </div>
@@ -1694,7 +1694,7 @@ async function initShopPage(){
                  <div id="shopsList" class="shop-grid"></div>
              </div>`;
 
-        $('#shopsTitle').textContent = wantedCat === 'Toutes' ? 'Tous les magasins en ligne' : 'Magasins en ligne — ' + wantedCat;
+        $('#shopsTitle').textContent = wantedCat === 'Toutes' ? t('Tous les magasins en ligne') : t('Magasins en ligne — {0}', [wantedCat]);
         $('#shopsList').innerHTML = '<span class="sh-sk on"></span>'.repeat(8);
 
         const query  = $('#shopsQuery');
@@ -1708,22 +1708,24 @@ async function initShopPage(){
                 const all = await BE.shops(params2);
                 const list = all.filter(s => s.productCount > 0 || wantedCat === 'Toutes');
                 $('#shopsIntro').textContent = list.length
-                    ? `${list.length} boutique${list.length > 1 ? 's' : ''} — cliquez pour voir les photos, les prix et les articles publiés.`
+                    ? t(list.length > 1
+                        ? '{0} boutiques — cliquez pour voir les photos, les prix et les articles publiés.'
+                        : '{0} boutique — cliquez pour voir les photos, les prix et les articles publiés.', [nfmt(list.length)])
                     : '';
                 $('#shopsList').innerHTML = list.length
                     ? list.map(s => shopCardHTML(s, wantedCat)).join('')
                     : `<div class="empty-state" style="grid-column:1/-1">
-                           <i class="fas fa-store"></i><h3>Aucune boutique</h3>
-                           <p>Aucune boutique ne correspond à cette recherche.</p>
-                           <p style="margin-top:12px"><a class="btn btn-outline" href="publier.html">Créer ma boutique</a></p>
+                           <i class="fas fa-store"></i><h3>${t('Aucune boutique')}</h3>
+                           <p>${t('Aucune boutique ne correspond à cette recherche.')}</p>
+                           <p style="margin-top:12px"><a class="btn btn-outline" href="publier.html">${t('Créer ma boutique')}</a></p>
                        </div>`;
             } catch (err){
                 $('#shopsList').innerHTML = `<div class="alert alert-err" style="grid-column:1/-1">
                     <i class="fas fa-triangle-exclamation"></i><div><b>${esc(err.message)}</b></div></div>`;
             }
         };
-        let t;
-        query.addEventListener('input', () => { clearTimeout(t); t = setTimeout(paint, 250); });
+        let shopTimer;
+        query.addEventListener('input', () => { clearTimeout(shopTimer); shopTimer = setTimeout(paint, 250); });
         sorter.addEventListener('change', paint);
         await paint();
         return;
@@ -1745,10 +1747,10 @@ async function initShopPage(){
         }
 
         $('#shName').textContent = shop.shopName;
-        $('#shMeta').textContent = `@${shop.username} · ${shop.productCount} article(s) · ${shop.shopCity || 'Lubumbashi'}`;
-        $('#shDesc').textContent = shop.shopDesc || 'Cette boutique n\'a pas encore de description.';
-        $('#shArticles').textContent = shop.productCount;
-        $('#shLikes').textContent = shop.likes;
+        $('#shMeta').textContent = `@${shop.username} · ${t('{0} article(s)', [nfmt(shop.productCount)])} · ${shop.shopCity || 'Lubumbashi'}`;
+        $('#shDesc').textContent = shop.shopDesc || t("Cette boutique n'a pas encore de description.");
+        $('#shArticles').textContent = nfmt(shop.productCount);
+        $('#shLikes').textContent = nfmt(shop.likes);
         $('#shSince').textContent = new Date(shop.createdAt).getFullYear();
         $('#shAvatar').innerHTML = shop.avatar
             ? `<img src="${shop.avatar}" alt="${shop.shopName}">`
@@ -1760,19 +1762,21 @@ async function initShopPage(){
         const follow = $('#followBtn');
         const followed = PRODUCTS.some(p => p.likedByMe && p.owner && p.owner.username === shop.username);
         const paint = on => {
-            follow.innerHTML = on ? '<i class="fas fa-heart"></i> Vous suivez' : '<i class="far fa-heart"></i> Suivre';
+            follow.innerHTML = on
+                ? `<i class="fas fa-heart"></i> ${t('Vous suivez')}`
+                : `<i class="far fa-heart"></i> ${t('Suivre')}`;
             follow.style.background = on ? '#fff1f1' : '';
             follow.style.borderColor = on ? '#ffafcb' : '';
             follow.style.color = on ? '#cc0c39' : '';
         };
         paint(followed);
         follow.onclick = async () => {
-            if (!requireLogin('Connectez-vous pour suivre une boutique')) return;
+            if (!requireLogin(t('Connectez-vous pour suivre une boutique'))) return;
             const mine = PRODUCTS.filter(p => p.owner && p.owner.username === shop.username);
-            if (!mine.length) return toast('Aucun article à aimer pour le moment.');
+            if (!mine.length) return toast(t("Aucun article à aimer pour l'instant."));
             try {
                 for (const p of mine) await BE.toggleLike(p.id);
-                toast(followed ? 'Vous ne suivez plus cette boutique.' : 'Vous suivez cette boutique !');
+                toast(t(followed ? 'Vous ne suivez plus cette boutique.' : 'Vous suivez cette boutique !'));
                 location.reload();
             } catch (err){ toast('❌ ' + err.message); }
         };
@@ -1781,14 +1785,14 @@ async function initShopPage(){
         const cats = ['Toutes', ...new Set(products.map(p => p.cat))];
         const paintChips = active => {
             $('#shopFilters').innerHTML = cats.map(c =>
-                `<a href="#" class="chip ${c === active ? 'active' : ''}" data-sc="${c}">${c === 'Toutes' ? 'Tous les articles' : c}</a>`).join('');
+                `<a href="#" class="chip ${c === active ? 'active' : ''}" data-sc="${c}">${c === 'Toutes' ? t('Tous les articles') : t(c)}</a>`).join('');
         };
         const paintGrid = cat => {
             const list = products.map(normalize).filter(p => cat === 'Toutes' || p.cat === cat);
-            $('#shCount').textContent = list.length + (list.length > 1 ? ' articles' : ' article');
+            $('#shCount').textContent = nfmt(list.length) + ' ' + t(list.length > 1 ? 'articles' : 'article');
             $('#shopGrid').innerHTML = list.length
                 ? list.map(cardHTML).join('')
-                : `<div class="empty-state" style="grid-column:1/-1"><i class="fas fa-box-open"></i><h3>Aucun article ici</h3></div>`;
+                : `<div class="empty-state" style="grid-column:1/-1"><i class="fas fa-box-open"></i><h3>${t('Aucun article ici')}</h3></div>`;
             initGalleries($('#shopGrid'));
         };
         $('#shopFilters').addEventListener('click', e => {
@@ -1944,10 +1948,10 @@ async function initAdminPage(){
 
     async function loadUsers(){
         const list = await BE.adminUsers(uQuery);
-        $('#usersCount').textContent = list.length + (list.length > 1 ? ' comptes' : ' compte');
+        $('#usersCount').textContent = nfmt(list.length) + ' ' + t(list.length > 1 ? 'comptes' : 'compte');
         const body = $('#usersTable tbody');
         if (!list.length){
-            body.innerHTML = '<tr><td colspan="10" class="muted">Aucun compte ne correspond à la recherche.</td></tr>';
+            body.innerHTML = `<tr><td colspan="10" class="muted">${t('Aucun compte ne correspond à la recherche.')}</td></tr>`;
             return;
         }
         body.innerHTML = list.map(u => `<tr${u.banned ? ' class="row-banned"' : ''}>
@@ -1956,23 +1960,23 @@ async function initAdminPage(){
                     <div class="avatar xs">${u.avatar ? `<img src="${u.avatar}" alt="">` : u.shopName.charAt(0).toUpperCase()}</div>
                     <div>
                         <b>${u.shopName}</b>
-                        <span>@${u.username}${u.isAdmin ? ' <i class="tag-admin">admin</i>' : ''}${u.banned ? ' <i class="tag-out">suspendu</i>' : ''}</span>
+                        <span>@${u.username}${u.isAdmin ? ' <i class="tag-admin">admin</i>' : ''}${u.banned ? ` <i class="tag-out">${t('suspendu')}</i>` : ''}</span>
                     </div>
                 </div>
             </td>
             <td class="muted">${u.email}</td>
             <td>${u.shopCity || '—'}</td>
-            <td class="num">${u.productCount}</td>
-            <td class="num">${u.likesReceived}</td>
-            <td class="num">${u.sales || 0}</td>
+            <td class="num">${nfmt(u.productCount)}</td>
+            <td class="num">${nfmt(u.likesReceived)}</td>
+            <td class="num">${nfmt(u.sales || 0)}</td>
             <td class="num"><b>${fmt(u.revenue)}</b></td>
             <td class="num muted">${fmt(u.spent)}</td>
-            <td class="muted">${new Date(u.createdAt).toLocaleDateString(BE_LOCALE)}</td>
+            <td class="muted">${dj(u.createdAt)}</td>
             <td class="cell-actions">
-                <a class="btn btn-outline btn-sm" href="magasin.html?u=${encodeURIComponent(u.username)}" title="Voir la boutique"><i class="fas fa-eye"></i></a>
-                <button class="btn btn-outline btn-sm" data-u-admin="${u.id}" title="${u.isAdmin ? 'Retirer le rôle admin' : 'Nommer administrateur'}"><i class="fas fa-shield-halved"></i></button>
-                <button class="btn btn-outline btn-sm" data-u-ban="${u.id}" title="${u.banned ? 'Réactiver le compte' : 'Suspendre le compte'}"><i class="fas ${u.banned ? 'fa-unlock' : 'fa-ban'}"></i></button>
-                <button class="btn btn-outline btn-sm danger" data-u-del="${u.id}" title="Supprimer le compte"><i class="fas fa-trash-alt"></i></button>
+                <a class="btn btn-outline btn-sm" href="magasin.html?u=${encodeURIComponent(u.username)}" title="${t('Voir la boutique')}"><i class="fas fa-eye"></i></a>
+                <button class="btn btn-outline btn-sm" data-u-admin="${u.id}" title="${t(u.isAdmin ? 'Retirer le rôle admin' : 'Nommer administrateur')}"><i class="fas fa-shield-halved"></i></button>
+                <button class="btn btn-outline btn-sm" data-u-ban="${u.id}" title="${t(u.banned ? 'Réactiver le compte' : 'Suspendre le compte')}"><i class="fas ${u.banned ? 'fa-unlock' : 'fa-ban'}"></i></button>
+                <button class="btn btn-outline btn-sm danger" data-u-del="${u.id}" title="${t('Supprimer le compte')}"><i class="fas fa-trash-alt"></i></button>
             </td>
         </tr>`).join('');
     }
@@ -1989,17 +1993,17 @@ async function initAdminPage(){
             if (btn.dataset.uAdmin){
                 const on = btn.querySelector('i').classList.contains('fa-shield-halved');
                 await BE.patchUser(id, { isAdmin: !on });
-                toast('Rôle administrateur mis à jour.');
+                toast(t('Rôle administrateur mis à jour.'));
             } else if (btn.dataset.uBan){
                 const ban = btn.querySelector('i').classList.contains('fa-ban');
-                if (ban && !confirm(`Suspendre le compte « ${name} » ? Il sera déconnecté et ne pourra plus se connecter.`)) return;
-                if (!ban && !confirm(`Réactiver le compte « ${name} » ?`)) return;
+                if (ban && !confirm(t('Suspendre le compte « {0} » ? Il sera déconnecté et ne pourra plus se connecter.', [name]))) return;
+                if (!ban && !confirm(t('Réactiver le compte « {0} » ?', [name]))) return;
                 await BE.patchUser(id, { banned: ban });
-                toast(ban ? 'Compte suspendu.' : 'Compte réactivé.');
+                toast(t(ban ? 'Compte suspendu.' : 'Compte réactivé.'));
             } else {
-                if (!confirm(`Supprimer définitivement « ${name} », ses articles et ses commandes ?`)) return;
+                if (!confirm(t('Supprimer définitivement « {0} », ses articles et ses commandes ?', [name]))) return;
                 await BE.deleteUser(id);
-                toast('🗑️ Compte supprimé.');
+                toast(t('🗑️ Compte supprimé.'));
             }
             await refresh();
             loadUsers();
@@ -2037,8 +2041,8 @@ async function initAdminPage(){
     const showForm = open => {
         $('#admForm').hidden = !open;
         $('#admFormToggle').innerHTML = open
-            ? '<i class="fas fa-chevron-up"></i> Masquer le formulaire'
-            : '<i class="fas fa-chevron-down"></i> Afficher le formulaire';
+            ? `<i class="fas fa-chevron-up"></i> ${t('Masquer le formulaire')}`
+            : `<i class="fas fa-chevron-down"></i> ${t('Afficher le formulaire')}`;
     };
     $('#admFormToggle').onclick = () => showForm($('#admForm').hidden);
     showForm(false);
@@ -2049,7 +2053,7 @@ async function initAdminPage(){
         try {
             const { shops } = await BE.shops();
             sel.innerHTML = shops.map(s =>
-                `<option value="${s.id}" data-username="${esc(s.username)}">${esc(s.shopName)} · @${esc(s.username)} (${s.productCount})</option>`).join('');
+                `<option value="${s.id}" data-username="${esc(s.username)}">${esc(s.shopName)} · @${esc(s.username)} (${nfmt(s.productCount)})</option>`).join('');
         } catch (err){
             sel.innerHTML = `<option value="${me.id}" data-username="${esc(me.username)}">${esc(me.shopName)}</option>`;
         }
@@ -2064,8 +2068,8 @@ async function initAdminPage(){
         $('#aPublished').checked = true;
         admPhotos.clear();
         admDetails.clear();
-        $('#admFormTitle').innerHTML = '<i class="fas fa-square-plus" style="color:#ff9900"></i> Ajouter un article publié';
-        $('#aSave').innerHTML = '<i class="fas fa-cloud-arrow-up"></i> Publier l\'article';
+        $('#admFormTitle').innerHTML = `<i class="fas fa-square-plus" style="color:#ff9900"></i> ${t('Ajouter un article publié')}`;
+        $('#aSave').innerHTML = `<i class="fas fa-cloud-arrow-up"></i> ${t("Publier l'article")}`;
         $('#admFormCancel').hidden = true;
     }
     $('#admFormCancel').onclick = () => { admReset(); showForm(false); };
@@ -2088,12 +2092,12 @@ async function initAdminPage(){
         }
         admPhotos.set(p.images && p.images.length ? p.images : (p.image ? [p.image] : []));
         admDetails.set(detailsOf(p));
-        $('#admFormTitle').innerHTML = `<i class="fas fa-pen" style="color:#ff9900"></i> Modifier l'article #${p.id}`;
-        $('#aSave').innerHTML = '<i class="fas fa-save"></i> Enregistrer les modifications';
+        $('#admFormTitle').innerHTML = `<i class="fas fa-pen" style="color:#ff9900"></i> ${t("Modifier l'article #{0}", [nfmt(p.id)])}`;
+        $('#aSave').innerHTML = `<i class="fas fa-save"></i> ${t('Enregistrer les modifications')}`;
         $('#admFormCancel').hidden = false;
         showForm(true);
         $('#admFormBox').scrollIntoView({ behavior: 'smooth', block: 'start' });
-        toast('✏️ Article chargé — modifiez puis enregistrez.');
+        toast(t('✏️ Article chargé — modifiez puis enregistrez.'));
     }
 
     $('#admForm').addEventListener('submit', async e => {
@@ -2132,14 +2136,14 @@ async function initAdminPage(){
 
         const btn = $('#aSave');
         btn.disabled = true;
-        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Enregistrement…';
+        btn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> ${t('Enregistrement…')}`;
         try {
             if (admEditId){
                 await BE.editAsAdmin(admEditId, payload);
-                toast('✅ Article mis à jour.');
+                toast('✅ ' + t('Article mis à jour.'));
             } else {
                 await BE.adminPublish(payload);
-                toast('🎉 Article publié sur la plateforme.');
+                toast(t('🎉 Article publié sur la plateforme.'));
             }
             admReset();
             showForm(false);
@@ -2155,33 +2159,33 @@ async function initAdminPage(){
 
     async function loadProducts(){
         const list = await BE.adminProducts(pQuery);
-        $('#productsCount').textContent = list.length + (list.length > 1 ? ' articles' : ' article');
+        $('#productsCount').textContent = nfmt(list.length) + ' ' + t(list.length > 1 ? 'articles' : 'article');
         const body = $('#productsTable tbody');
         if (!list.length){
-            body.innerHTML = '<tr><td colspan="8" class="muted">Aucun article ne correspond à la recherche.</td></tr>';
+            body.innerHTML = `<tr><td colspan="8" class="muted">${t('Aucun article ne correspond à la recherche.')}</td></tr>`;
             return;
         }
         body.innerHTML = list.map(p => `<tr data-pid="${p.id}"${p.stock === 0 ? ' class="row-banned"' : ''}>
             <td>
                 <div class="cell-user">
                     <img class="thumb" src="${safeUrl(p.image) || 'https://picsum.photos/seed/' + p.id + '/80/80'}" alt="">
-                    <div><b>${esc(p.title)}</b><span>#${p.id} · ${(p.images || []).length} photo(s)</span></div>
+                    <div><b>${esc(p.title)}</b><span>#${p.id} · ${t('{0} photo(s)', [nfmt((p.images || []).length)])}</span></div>
                 </div>
             </td>
             <td>${p.owner ? esc(p.owner.shopName) : '—'}</td>
             <td>${esc(p.cat)}</td>
             <td class="num"><b>${fmt(p.price)}</b>${p.oldPrice ? `<br><s class="muted">${fmt(p.oldPrice)}</s>` : ''}</td>
-            <td class="num">${p.stock === 0 ? '<i class="tag-out">Rupture</i>' : p.stock <= 3 ? `<i class="tag-low">${p.stock}</i>` : p.stock}</td>
-            <td class="num"><i class="fas fa-heart" style="color:#cc0c39"></i> ${p.likes}</td>
+            <td class="num">${p.stock === 0 ? `<i class="tag-out">${t('Rupture')}</i>` : p.stock <= 3 ? `<i class="tag-low">${nfmt(p.stock)}</i>` : nfmt(p.stock)}</td>
+            <td class="num"><i class="fas fa-heart" style="color:#cc0c39"></i> ${nfmt(p.likes)}</td>
             <td>
-                ${p.published ? '<i class="tag-admin">Publié</i>' : '<i class="tag-out">Masqué</i>'}
-                <br><span class="muted" style="font-size:11px">${new Date(p.createdAt).toLocaleDateString(BE_LOCALE)}</span>
+                ${p.published ? `<i class="tag-admin">${t('Publié')}</i>` : `<i class="tag-out">${t('Masqué')}</i>`}
+                <br><span class="muted" style="font-size:11px">${dj(p.createdAt)}</span>
             </td>
             <td class="cell-actions">
-                <a class="btn btn-outline btn-sm" href="magasin.html?u=${encodeURIComponent(p.owner ? p.owner.username : '')}" title="Voir la boutique"><i class="fas fa-eye"></i></a>
-                <button class="btn btn-outline btn-sm" data-p-edit="${p.id}" title="Modifier l'article (photos, détails, prix…)"><i class="fas fa-pen"></i></button>
-                <button class="btn btn-outline btn-sm" data-p-toggle="${p.published ? 'hide' : 'show'}" title="${p.published ? 'Masquer l\'article' : 'Publier l\'article'}"><i class="fas fa-${p.published ? 'eye-slash' : 'check'}"></i></button>
-                <button class="btn btn-outline btn-sm danger" data-p-del="${p.id}" title="Supprimer l'article"><i class="fas fa-trash-alt"></i></button>
+                <a class="btn btn-outline btn-sm" href="magasin.html?u=${encodeURIComponent(p.owner ? p.owner.username : '')}" title="${t('Voir la boutique')}"><i class="fas fa-eye"></i></a>
+                <button class="btn btn-outline btn-sm" data-p-edit="${p.id}" title="${t("Modifier l'article (photos, détails, prix…)")}"><i class="fas fa-pen"></i></button>
+                <button class="btn btn-outline btn-sm" data-p-toggle="${p.published ? 'hide' : 'show'}" title="${t(p.published ? "Masquer l'article" : "Publier l'article")}"><i class="fas fa-${p.published ? 'eye-slash' : 'check'}"></i></button>
+                <button class="btn btn-outline btn-sm danger" data-p-del="${p.id}" title="${t("Supprimer l'article")}"><i class="fas fa-trash-alt"></i></button>
             </td>
         </tr>`).join('');
     }
@@ -2201,20 +2205,20 @@ async function initAdminPage(){
         }
         if (e.target.closest('[data-p-toggle]')){
             const hide = e.target.closest('[data-p-toggle]').dataset.pToggle === 'hide';
-            if (hide && !confirm(`Masquer l'article « ${title} » du site ?\nIl pourra être republié à tout moment.`)) return;
+            if (hide && !confirm(t("Masquer l'article « {0} » du site ?\nIl pourra être republié à tout moment.", [title]))) return;
             try {
                 await BE.editAsAdmin(id, { published: !hide });
-                toast(hide ? '🙈 Article masqué.' : '👁️ Article publié.');
+                toast(t(hide ? '🙈 Article masqué.' : '👁️ Article publié.'));
                 await refresh();
                 loadProducts();
             } catch (err){ toast('❌ ' + err.message); }
             return;
         }
         if (e.target.closest('[data-p-del]')){
-            if (!confirm(`Supprimer définitivement l'article « ${title} » ?\nCette action est irréversible.`)) return;
+            if (!confirm(t("Supprimer définitivement l'article « {0} » ?\nCette action est irréversible.", [title]))) return;
             try {
                 await BE.deleteAsAdmin(id);
-                toast('🗑️ Article supprimé.');
+                toast(t('🗑️ Article supprimé.'));
                 if (String(admEditId) === String(id)) admReset();
                 await refresh();
                 loadProducts();
@@ -2234,21 +2238,21 @@ async function initAdminPage(){
        ====================================================== */
     async function loadOrders(){
         const list = await BE.adminOrders();
-        $('#ordersCountAdmin').textContent = list.length + (list.length > 1 ? ' commandes' : ' commande');
+        $('#ordersCountAdmin').textContent = nfmt(list.length) + ' ' + t(list.length > 1 ? 'commandes' : 'commande');
         const body = $('#ordersTable tbody');
         if (!list.length){
-            body.innerHTML = '<tr><td colspan="6" class="muted">Aucune commande pour le moment.</td></tr>';
+            body.innerHTML = `<tr><td colspan="6" class="muted">${t('Aucune commande pour le moment.')}</td></tr>`;
             return;
         }
         body.innerHTML = list.map(o => `<tr>
             <td><b>${o.ref}</b></td>
-            <td>${o.buyer ? o.buyer.shopName + ' <span class="muted">@' + o.buyer.username + '</span>' : '<i class="muted">visiteur</i>'}</td>
-            <td class="muted">${o.items.map(i => i.qty + ' × ' + i.title).join('<br>')}</td>
+            <td>${o.buyer ? o.buyer.shopName + ' <span class="muted">@' + o.buyer.username + '</span>' : `<i class="muted">${t('visiteur')}</i>`}</td>
+            <td class="muted">${o.items.map(i => nfmt(i.qty) + ' × ' + i.title).join('<br>')}</td>
             <td class="num"><b>${fmt(o.total)}</b></td>
-            <td class="muted">${new Date(o.createdAt).toLocaleDateString(BE_LOCALE, { day:'numeric', month:'short', year:'numeric' })}</td>
+            <td class="muted">${dj(o.createdAt, { day: 'numeric', month: 'short', year: 'numeric' })}</td>
             <td>
                 <select class="status-sel" data-o-status="${o.id}">
-                    ${STATUTS.map(s => `<option${s === o.status ? ' selected' : ''}>${s}</option>`).join('')}
+                    ${STATUTS.map(s => `<option value="${s}"${s === o.status ? ' selected' : ''}>${t(s)}</option>`).join('')}
                 </select>
             </td>
         </tr>`).join('');
@@ -2259,7 +2263,7 @@ async function initAdminPage(){
         if (!sel) return;
         try {
             await BE.setOrderStatus(sel.dataset.oStatus, sel.value);
-            toast('Statut de la commande mis à jour.');
+            toast('✅ ' + t('Statut de la commande mis à jour.'));
         } catch (err){ toast('❌ ' + err.message); }
     });
 
@@ -2298,13 +2302,13 @@ function buildMobileNav(){
     const nav = document.createElement('nav');
     nav.className = 'mnav';
     nav.id = 'mnav';
-    nav.setAttribute('aria-label', 'Navigation rapide');
+    nav.setAttribute('aria-label', t('Navigation rapide'));
     nav.innerHTML =
-        link('index.html', 'fa-house', 'Accueil', page === 'home' ? 'is-on' : '') +
-        '<button type="button" data-mn="cat"><i class="fas fa-layer-group"></i><span>Catégories</span></button>' +
-        '<button type="button" data-mn="cart"><i class="fas fa-shopping-cart"></i><span>Panier</span><span class="mnav-badge" id="mnavCount"></span></button>' +
-        link('publier.html', 'fa-square-plus', 'Publier', 'mn-hide-xs') +
-        link('compte.html', 'fa-user', 'Compte', on);
+        link('index.html', 'fa-house', t('Accueil'), page === 'home' ? 'is-on' : '') +
+        `<button type="button" data-mn="cat"><i class="fas fa-layer-group"></i><span>${t('Catégories')}</span></button>` +
+        `<button type="button" data-mn="cart"><i class="fas fa-shopping-cart"></i><span>${t('Panier')}</span><span class="mnav-badge" id="mnavCount"></span></button>` +
+        link('publier.html', 'fa-square-plus', t('Publier'), 'mn-hide-xs') +
+        link('compte.html', 'fa-user', t('Compte'), on);
     document.body.appendChild(nav);
     document.body.classList.add('has-mnav');
 
@@ -2393,8 +2397,8 @@ function initCommon(){
         });
         const sel = $('#searchCat');
         if (sel) sel.onchange = ev => {
-            const t = CATEGORIES.find(x => x.name === ev.target.value);
-            if (t) location.href = t.file;
+            const cat = CATEGORIES.find(x => x.name === ev.target.value);
+            if (cat) location.href = cat.file;
         };
     }
 
