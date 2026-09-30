@@ -32,7 +32,9 @@ const BE = (() => {
             });
         } catch (e){
             state.online = false;
-            const err = new Error("Serveur injoignable. Lancez « node server.js » puis ouvrez http://localhost:3000");
+            const err = new Error(location.protocol === 'file:'
+                ? "Serveur injoignable : la page est ouverte en local. Lancez « node server.js » puis ouvrez http://localhost:3000"
+                : "Serveur injoignable. Vérifiez votre connexion internet puis rechargez la page.");
             err.offline = true;
             throw err;
         }
