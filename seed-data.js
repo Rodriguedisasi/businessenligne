@@ -4,7 +4,7 @@
    ========================================================== */
 const OFFICIAL_SHOP = {
     username: 'businessenligne',
-    email: 'contact@businessenligne.cd',
+    email: 'rodriguedisasi15@gmail.com',
     shopName: 'BusinessEnLigne Officiel',
     shopDesc: 'Boutique officielle : électronique, mode, maison, sport, beauté, enfants et livres. Livraison partout en RDC.',
     city: 'Lubumbashi',
