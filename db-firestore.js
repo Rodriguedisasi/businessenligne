@@ -171,11 +171,30 @@ function makeFirestoreDriver(firestore){
         });
     }
 
-    /* prochain identifiant numérique libre */
-    async function nextId(table){
+    /* Firestore n'a pas de séquence auto-incrémentée : un identifiant
+       numérique se choisit en prenant le plus grand déjà présent, plus 1.
+
+       Cette lecture est faite UNE FOIS par écriture, et surtout sous un
+       verrou. Sans verrou, deux articles créés au même instant liraient
+       tous deux le même « plus grand id », recevraient le même numéro et
+       l'écriture du second écraserait le premier. */
+
+    /* Verrou par table : chaque tâche attend la fin de la précédente.
+       La file est chaînée par une promesse, et une tâche qui échoue ne
+       bloque pas les suivantes (on absorbe le refus). */
+    const locks = new Map();
+    function locked(table, task){
+        const previous = locks.get(table) || Promise.resolve();
+        const run = previous.then(task, task);
+        locks.set(table, run.then(() => {}, () => {}));
+        return run;
+    }
+
+    /* plus grand identifiant numérique d'une collection (0 si vide) */
+    async function maxId(table){
         const snap = await col(table).get();
         const ids = snap.docs.map(d => Number(d.id)).filter(n => Number.isFinite(n));
-        return (ids.length ? Math.max(...ids) : 0) + 1;
+        return ids.length ? Math.max(...ids) : 0;
     }
 
     const driver = {
@@ -208,23 +227,45 @@ function makeFirestoreDriver(firestore){
         },
 
         async insert(table, obj){
-            let row = { ...obj };
-            if (NUMERIC.has(table) && row.id === undefined) row.id = await nextId(table);
-            const id = docId(table, row);
-            await ref(table, id).set(row);
-            return row;
+            /* L'attribution du numéro et l'écriture ont lieu dans la même
+               tâche verrouillée : c'est ce qui garantit qu'aucun autre
+               document ne peut prendre le numéro entre les deux. */
+            return locked(table, async () => {
+                const row = { ...obj };
+                if (NUMERIC.has(table)){
+                    if (row.id === undefined) row.id = (await maxId(table)) + 1;
+                    else row.id = Number(row.id);
+                }
+                await ref(table, docId(table, row)).set(row);
+                return row;
+            });
         },
 
         async insertMany(table, rows){
             if (!rows.length) return [];
-            const writes = [];
-            for (const obj of rows){
-                const row = { ...obj };
-                if (NUMERIC.has(table) && row.id === undefined) row.id = await nextId(table);
-                writes.push({ ref: ref(table, docId(table, row)), data: row });
-            }
-            await commit(writes);
-            return rows;
+            return locked(table, async () => {
+                const out = [];
+                /* Une seule lecture de la collection pour tout le lot : le
+                   maximum n'est calculé qu'une fois, puis distribué. Le lire
+                   à chaque ligne donnerait le même numéro à tous les
+                   documents, les suivants écrasant les précédents. */
+                let next = NUMERIC.has(table) ? (await maxId(table)) + 1 : null;
+                for (const obj of rows){
+                    const row = { ...obj };
+                    if (NUMERIC.has(table)){
+                        if (row.id === undefined) row.id = next++;
+                        /* un identifiant imposé (migration) doit rester
+                           intact, mais le compteur ne doit pas le réutiliser */
+                        else {
+                            row.id = Number(row.id);
+                            if (Number.isFinite(row.id)) next = Math.max(next, row.id + 1);
+                        }
+                    }
+                    out.push(row);
+                }
+                await commit(out.map(row => ({ ref: ref(table, docId(table, row)), data: row })));
+                return out;
+            });
         },
 
         async update(table, id, patch){
@@ -236,10 +277,12 @@ function makeFirestoreDriver(firestore){
         async remove(table, where = {}){
             const rows = await driver.all(table, where);
             if (!rows.length) return 0;
-            await commit(rows.map(r => ({
-                ref: ref(table, PAIR.has(table) ? `${r.user_id}_${r.product_id}` : r.id),
-                del: true
-            })));
+            /* La clé du document se déduit de la ligne par la même règle que
+               l'insertion (docId). On ne peut pas utiliser « r.id » : une
+               session est indexée par son token et n'a pas de champ id, ce
+               qui viserait « sessions/undefined » et ne supprimerait rien
+               — le jeton resterait valide après une déconnexion. */
+            await commit(rows.map(r => ({ ref: ref(table, docId(table, r)), del: true })));
             return rows.length;
         },
 

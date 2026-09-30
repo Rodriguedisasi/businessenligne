@@ -166,7 +166,13 @@ function get(){
         if (!backend) console.warn('[photos] aucun stockage distant — photos en disque local');
     }
     if (!backend) backend = localBackend;
-    if (backend === localBackend) fs.mkdirSync(UPLOAD_DIR, { recursive: true });
+    if (backend === localBackend){
+        /* Le dossier n'est créé qu'au moment d'en avoir besoin, et sans faire
+           échouer le serveur : en conteneur le code est en lecture seule, et
+           c'est un avertissement, pas une raison de ne pas démarrer. */
+        try { fs.mkdirSync(UPLOAD_DIR, { recursive: true }); }
+        catch (e){ console.warn('[photos] dossier ' + UPLOAD_DIR + ' indisponible (' + e.code + ') — les photos ne pourront pas être enregistrées'); }
+    }
     return backend;
 }
 

@@ -1,4 +1,5 @@
 {
+  "$schema": "https://openapi.vercel.sh/vercel.json",
   "buildCommand": "node build-static.js",
   "outputDirectory": "public",
   "rewrites": [
@@ -7,5 +8,10 @@
   "functions": {
     "api/[...path].js": { "memory": 1024, "maxDuration": 60 },
     "api/uploads/[...path].js": { "memory": 1024, "maxDuration": 60 }
+  },
+  "env": {
+    "NODE_ENV": "production",
+    "DB_DRIVER": "firebase",
+    "STORAGE_DRIVER": "firestore"
   }
 }

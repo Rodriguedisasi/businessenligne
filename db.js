@@ -26,7 +26,17 @@ const JSON_FILE = path.join(DATA_DIR, 'boutique.json'); // repli si SQLite absen
 let sqlite = null;
 try { sqlite = require('node:sqlite'); } catch (e) { /* Node trop ancien */ }
 
-if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
+/* Le dossier de données n'est créé que le jour où on s'en sert.
+   En conteneur (App Hosting, Cloud Run) le code déployé est en lecture
+   seule : créer ce dossier au chargement ferait échouer le require() et
+   donc tout le serveur, alors que la base est Firestore et n'a besoin
+   d'aucun fichier local. C'est donc volontairement différé et tolérant
+   à l'échec — seul le moteur local vérifiera realmente le dossier. */
+function ensureDataDir(){
+    if (fs.existsSync(DATA_DIR)) return true;
+    try { fs.mkdirSync(DATA_DIR, { recursive: true }); return true; }
+    catch (e) { return false; }
+}
 
 /* ---------------- Requêtes SQL de création ---------------- */
 const SCHEMA = `
@@ -125,6 +135,8 @@ function migrate(db){
    MOTEUR SQLITE
    ========================================================== */
 function makeSqliteDriver(){
+    if (!ensureDataDir())
+        throw new Error("Impossible de créer le dossier de données « " + DATA_DIR + " » (système de fichiers en lecture seule ?). Renseignez DATA_DIR vers un dossier inscriptible, ou utilisez DB_DRIVER=firebase.");
     const db = new sqlite.DatabaseSync(DB_FILE);
     db.exec('PRAGMA journal_mode = WAL;');
     db.exec(SCHEMA);
@@ -202,6 +214,8 @@ function makeSqliteDriver(){
    MOTEUR JSON (repli)
    ========================================================== */
 function makeJsonDriver(){
+    if (!ensureDataDir())
+        throw new Error("Impossible de créer le dossier de données « " + DATA_DIR + " » (système de fichiers en lecture seule ?). Renseignez DATA_DIR vers un dossier inscriptible, ou utilisez DB_DRIVER=firebase.");
     const EMPTY = { users: [], sessions: [], products: [], likes: [], orders: [], seq: { products: 0, orders: 0 } };
     let db = fs.existsSync(JSON_FILE) ? JSON.parse(fs.readFileSync(JSON_FILE, 'utf8')) : JSON.parse(JSON.stringify(EMPTY));
     ['users', 'sessions', 'products', 'likes', 'orders'].forEach(t => { if (!db[t]) db[t] = []; });
