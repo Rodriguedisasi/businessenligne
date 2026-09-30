@@ -1029,6 +1029,27 @@ function initAuthPage(){
     const goReg = $('#goReg');
     if (goReg) goReg.onclick = e => { e.preventDefault(); show('inscription'); };
 
+    /* ---------- AVIS « SERVEUR INJOIGNABLE » ----------
+       Affiche un message adapté à la situation réelle plutôt qu'une
+       consigne « node server.js » qui ne concerne que l usage en local. */
+    function showOfflineNotice(){
+        const box = $('#offlineAlert');
+        if (!box) return;
+        const title = $('#offlineTitle');
+        const text  = $('#offlineText');
+        const link  = BE.ONLINE_URL + location.pathname.replace(/^\//, '');
+        if (BE.isLocalFile()){
+            if (title) title.textContent = 'Vous ouvrez le fichier depuis votre ordinateur';
+            if (text) text.innerHTML = 'Le site n\'est joignable que depuis son adresse en ligne. '
+                + '<a href="' + link + '">Ouvrir BusinessEnLigne</a>';
+        } else {
+            if (title) title.textContent = 'Serveur injoignable';
+            if (text) text.innerHTML = 'La connexion au serveur a échoué. '
+                + '<a href="' + link + '">Réessayer</a>';
+        }
+        box.hidden = false;
+    }
+
     /* œil afficher / masquer */
     $$('.pwd-eye').forEach(b => b.onclick = () => {
         const inp = $('#' + b.dataset.eye);
@@ -1089,7 +1110,7 @@ function initAuthPage(){
                 const msg = /identifiant/i.test(err.message) ? 'r-username' : 'r-email';
                 mark(msg, false);
             }
-            if (err.offline) $('#offlineAlert').hidden = false;
+            if (err.offline) showOfflineNotice();
         }
     });
 

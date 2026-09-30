@@ -11,6 +11,10 @@ const BE = (() => {
     const TOKEN_KEY = 'be_token';
     const state = { user: null, loaded: false, online: null };
 
+    const ONLINE_URL = 'https://businessenligne.vercel.app';
+    const isLocalFile = () => location.protocol === 'file:';
+    const isLocalHost = () => /^(localhost|127\.0\.0\.1|\[::1\])$/i.test(location.hostname);
+
     const token   = () => localStorage.getItem(TOKEN_KEY);
     const setToken = t => t ? localStorage.setItem(TOKEN_KEY, t) : localStorage.removeItem(TOKEN_KEY);
     const isOnline = () => state.online;
@@ -32,8 +36,8 @@ const BE = (() => {
             });
         } catch (e){
             state.online = false;
-            const err = new Error(location.protocol === 'file:'
-                ? "Serveur injoignable : la page est ouverte en local. Lancez « node server.js » puis ouvrez http://localhost:3000"
+            const err = new Error(isLocalFile()
+                ? "Cette page est ouverte depuis votre ordinateur, le site n'est donc pas joignable. Utilisez le lien ci-dessous."
                 : "Serveur injoignable. Vérifiez votre connexion internet puis rechargez la page.");
             err.offline = true;
             throw err;
@@ -146,6 +150,7 @@ const BE = (() => {
 
     return {
         req, token, setToken, isOnline, user, isLogged, loadMe,
+        ONLINE_URL, isLocalFile, isLocalHost,
         register, login, logout, updateProfile,
         products, product, publish, editProduct, deleteProduct,
         toggleLike, likes, order, orders, shops, shop, upload,
