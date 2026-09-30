@@ -119,47 +119,242 @@
         <!-- ============ MA BOUTIQUE ============ -->
         <section class="tab-panel" id="tab-boutique">
             <div class="acct-grid">
-                <div class="box">
+                <!-- ---------- aperçu + taux de complétion ---------- -->
+                <div class="box shop-side">
                     <div class="box-head"><h3>Mon Magasin</h3><a class="see-all" id="shopLink" href="#">Voir la page publique <i class="fas fa-chevron-right"></i></a></div>
                     <p id="shopDesc" style="font-size:13.5px;color:var(--txt-2);margin-bottom:14px"></p>
+                    <div id="shopMini" class="shop-mini"></div>
                     <div class="ir-actions">
                         <a class="btn btn-cta" href="publier.html"><i class="fas fa-square-plus"></i> Publier un article</a>
                         <a class="btn btn-outline" href="compte.html#articles"><i class="fas fa-box"></i> Gérer mes articles</a>
                     </div>
+
+                    <hr style="border:0;border-top:1px solid var(--line);margin:18px 0">
+                    <h4 class="shop-set-h">Complétude de ma vitrine</h4>
+                    <div class="score-ring" id="scoreRing" style="--p:0">
+                        <b id="scoreVal">0 %</b><span>renseigné</span>
+                    </div>
+                    <p class="score-tip" id="scoreTip">Plus votre boutique est détaillée, plus les acheteurs vous font confiance.</p>
+                    <ul class="score-list" id="scoreList"></ul>
                 </div>
+
+                <!-- ---------- formulaire de réglages ---------- -->
                 <div class="box">
-                    <div class="box-head"><h3>Compléter mon profil</h3></div>
+                    <div class="box-head">
+                        <h3>Paramètres de ma boutique</h3>
+                        <span class="see-all">Enregistrez pour publier</span>
+                    </div>
                     <form id="profileForm" novalidate>
-                        <div class="f-row" id="p-shopName">
-                            <label>Nom de la boutique</label>
-                            <input type="text" id="pShopName">
-                            <span class="err">3 caractères minimum.</span>
-                        </div>
-                        <div class="f-row" id="p-shopDesc">
-                            <label>Présentation</label>
-                            <textarea id="pShopDesc" rows="3"></textarea>
-                            <span class="err">Maximum 500 caractères.</span>
-                        </div>
-                        <div class="f-row" id="p-shopCity">
-                            <label>Ville</label>
-                            <input type="text" id="pShopCity">
-                            <span class="err">Indiquez votre ville.</span>
-                        </div>
-                        <div class="f-row" id="p-phone">
-                            <label>Téléphone</label>
-                            <input type="tel" id="pPhone">
-                            <span class="err">Numéro à 10 chiffres minimum.</span>
-                        </div>
-                        <div class="f-row" id="p-avatar">
-                            <label>Photo de profil (URL)</label>
-                            <input type="url" id="pAvatar" placeholder="https://…">
-                            <span class="err">Lien d'image invalide.</span>
-                        </div>
-                        <button type="submit" class="btn btn-cta btn-block"><i class="fas fa-save"></i> Enregistrer</button>
+
+                        <!-- ---------- 1. identité ---------- -->
+                        <fieldset class="shop-set" open>
+                            <legend><i class="fas fa-store"></i> Identité</legend>
+                            <p class="shop-set-t">Le nom, le logo et l'accroche apparaissent en haut de votre vitrine.</p>
+
+                            <div class="f-row media-row">
+                                <label>Logo</label>
+                                <div class="media-pick" id="logoPick"></div>
+                            </div>
+                            <div class="f-row media-row">
+                                <label>Bannière de couverture</label>
+                                <div class="media-pick wide" id="bannerPick"></div>
+                            </div>
+                            <div class="f-row" id="p-shopName">
+                                <label>Nom de la boutique</label>
+                                <input type="text" id="pShopName" data-shop="shopName" maxlength="60">
+                                <span class="err">3 caractères minimum.</span>
+                            </div>
+                            <div class="f-row" id="p-shopSlogan">
+                                <label>Accroche (slogan)</label>
+                                <input type="text" id="pShopSlogan" data-shop="shopSlogan" maxlength="90" placeholder="Ex. : Les meilleurs prix de Lubumbashi, livrés chez vous">
+                                <span class="err">Maximum 90 caractères.</span>
+                            </div>
+                            <div class="f-row" id="p-shopCats">
+                                <label>Catégories specialties</label>
+                                <div class="pick-group" data-shop-group="shopCats" id="pickCats"></div>
+                                <span class="err">Choisissez au moins une catégorie.</span>
+                            </div>
+                            <div class="f-row" id="p-shopDesc">
+                                <label>Description courte</label>
+                                <textarea id="pShopDesc" data-shop="shopDesc" rows="3" maxlength="600"></textarea>
+                                <span class="hint" data-count-for="pShopDesc">0 / 600</span>
+                                <span class="err">Maximum 600 caractères.</span>
+                            </div>
+                            <div class="f-row" id="p-shopAbout">
+                                <label>Présentation détaillée</label>
+                                <textarea id="pShopAbout" data-shop="shopAbout" rows="6" maxlength="2500" placeholder="Votre histoire, vos produits, votre savoir-faire, ce qui vous rend unique…"></textarea>
+                                <span class="hint" data-count-for="pShopAbout">0 / 2500</span>
+                                <span class="err">Maximum 2500 caractères.</span>
+                            </div>
+                        </fieldset>
+
+                        <!-- ---------- 2. coordonnées ---------- -->
+                        <fieldset class="shop-set">
+                            <legend><i class="fas fa-location-dot"></i> Coordonnées</legend>
+                            <p class="shop-set-t">Où vous trouver et comment vous joindre.</p>
+                            <div class="f-2">
+                                <div class="f-row" id="p-shopCity">
+                                    <label>Ville</label>
+                                    <input type="text" data-shop="shopCity" maxlength="60">
+                                    <span class="err">Indiquez votre ville.</span>
+                                </div>
+                                <div class="f-row" id="p-shopFounded">
+                                    <label>Année d'ouverture</label>
+                                    <input type="text" inputmode="numeric" data-shop="shopFounded" maxlength="10" placeholder="Ex. : 2019">
+                                    <span class="err">Année invalide (ex. : 2019).</span>
+                                </div>
+                            </div>
+                            <div class="f-row" id="p-shopAddress">
+                                <label>Adresse / quartier</label>
+                                <input type="text" data-shop="shopAddress" maxlength="140" placeholder="Ex. : Avenue Kasa-Vubu n°42, commune de Lubumbashi">
+                                <span class="err">Maximum 140 caractères.</span>
+                            </div>
+                            <div class="f-row" id="p-shopLandmark">
+                                <label>Point de repère</label>
+                                <input type="text" data-shop="shopLandmark" maxlength="120" placeholder="Ex. : en face de la Poste, près du marché">
+                                <span class="err">Maximum 120 caractères.</span>
+                            </div>
+                            <div class="f-2">
+                                <div class="f-row" id="p-phone">
+                                    <label>Téléphone</label>
+                                    <input type="tel" id="pPhone" data-shop="phone" maxlength="40">
+                                    <span class="err">Numéro à 10 chiffres minimum.</span>
+                                </div>
+                                <div class="f-row" id="p-shopWhatsapp">
+                                    <label>WhatsApp</label>
+                                    <input type="tel" data-shop="shopWhatsapp" maxlength="40" placeholder="Ex. : +243 81 000 0000">
+                                    <span class="err">Numéro invalide.</span>
+                                </div>
+                            </div>
+                            <div class="f-row" id="p-shopEmail">
+                                <label>Email de contact</label>
+                                <input type="email" data-shop="shopEmail" maxlength="120" placeholder="contact@monboutique.cd">
+                                <span class="err">Adresse email invalide.</span>
+                            </div>
+                        </fieldset>
+
+                        <!-- ---------- 3. livraison ---------- -->
+                        <fieldset class="shop-set">
+                            <legend><i class="fas fa-truck-fast"></i> Livraison &amp; retrait</legend>
+                            <p class="shop-set-t">Expliquez comment vous livrez vos articles.</p>
+                            <div class="pick-group row" data-shop-group="shopDelivery">
+                                <label class="chk"><input type="checkbox" value="1" data-shop="shopDelivery"><span><i class="fas fa-truck"></i> Livraison à domicile</span></label>
+                                <label class="chk"><input type="checkbox" value="1" data-shop="shopPickup"><span><i class="fas fa-hand-hold"></i> Retrait en boutique</span></label>
+                            </div>
+                            <div class="f-2">
+                                <div class="f-row" id="p-shopDeliveryTime">
+                                    <label>Délai de livraison</label>
+                                    <input type="text" data-shop="shopDeliveryTime" maxlength="60" placeholder="Ex. : 24 à 48 heures">
+                                    <span class="err">Maximum 60 caractères.</span>
+                                </div>
+                                <div class="f-row" id="p-shopDeliveryFee">
+                                    <label>Frais de livraison</label>
+                                    <input type="text" data-shop="shopDeliveryFee" maxlength="60" placeholder="Ex. : 5 000 FC">
+                                    <span class="err">Maximum 60 caractères.</span>
+                                </div>
+                            </div>
+                            <div class="f-row" id="p-shopDeliveryZones">
+                                <label>Zones desservies</label>
+                                <input type="text" data-shop="shopDeliveryZones" maxlength="200" placeholder="Ex. : Lubumbashi centre, Kamalondo, Ruwashi">
+                                <span class="err">Maximum 200 caractères.</span>
+                            </div>
+                            <div class="f-row" id="p-shopFreeDelivery">
+                                <label>Livraison offerte dès…</label>
+                                <input type="text" data-shop="shopFreeDelivery" maxlength="60" placeholder="Ex. : 100 000 FC d'achat">
+                                <span class="err">Maximum 60 caractères.</span>
+                            </div>
+                        </fieldset>
+
+                        <!-- ---------- 4. paiement ---------- -->
+                        <fieldset class="shop-set">
+                            <legend><i class="fas fa-credit-card"></i> Moyens de paiement</legend>
+                            <div class="pick-group" data-shop-group="shopPayments" id="pickPayments"></div>
+                        </fieldset>
+
+                        <!-- ---------- 5. horaires ---------- -->
+                        <fieldset class="shop-set">
+                            <legend><i class="fas fa-clock"></i> Horaires d'ouverture</legend>
+                            <p class="shop-set-t">Le bandeau « ouvert / fermé » de votre vitrine se met à jour tout seul.</p>
+                            <div class="hours-grid" data-shop="shopHours" id="hoursGrid"></div>
+                            <button type="button" class="btn btn-outline btn-sm" id="hoursCopy"><i class="fas fa-copy"></i> Appliquer le lundi à toute la semaine</button>
+                        </fieldset>
+
+                        <!-- ---------- 6. galerie ---------- -->
+                        <fieldset class="shop-set">
+                            <legend><i class="fas fa-images"></i> Galerie de la boutique</legend>
+                            <p class="shop-set-t">Photos de l'équipe, de la boutique, de vos rayon et de vos nouveautés.</p>
+                            <div class="gal-picker" data-shop="shopGallery" id="galleryPick"></div>
+                        </fieldset>
+
+                        <!-- ---------- 7. garanties ---------- -->
+                        <fieldset class="shop-set">
+                            <legend><i class="fas fa-shield-halved"></i> Garanties &amp; service client</legend>
+                            <div class="pick-group row" data-shop-group="shopReturns">
+                                <label class="chk"><input type="checkbox" value="1" data-shop="shopReturns"><span><i class="fas fa-rotate-left"></i> J'accepte les retours</span></label>
+                            </div>
+                            <div class="f-2">
+                                <div class="f-row" id="p-shopReturnDays">
+                                    <label>Délai de retour</label>
+                                    <input type="text" data-shop="shopReturnDays" maxlength="60" placeholder="Ex. : 7 jours après réception">
+                                    <span class="err">Maximum 60 caractères.</span>
+                                </div>
+                                <div class="f-row" id="p-shopWarranty">
+                                    <label>Garantie</label>
+                                    <input type="text" data-shop="shopWarranty" maxlength="160" placeholder="Ex. : garantie 3 mois sur les appareils">
+                                    <span class="err">Maximum 160 caractères.</span>
+                                </div>
+                            </div>
+                            <div class="f-row" id="p-shopLegal">
+                                <label>Identifiants légaux (NIF / RCCM)</label>
+                                <input type="text" data-shop="shopLegal" maxlength="80" placeholder="Optionnel — rassure les acheteurs">
+                                <span class="err">Maximum 80 caractères.</span>
+                            </div>
+                            <div class="f-row" id="p-shopFeatures">
+                                <label>Atouts de la boutique</label>
+                                <div class="pick-group" data-shop-group="shopFeatures" id="pickFeatures"></div>
+                                <span class="err">Choisissez au moins un atout.</span>
+                            </div>
+                        </fieldset>
+
+                        <!-- ---------- 8. réseaux sociaux ---------- -->
+                        <fieldset class="shop-set">
+                            <legend><i class="fas fa-share-nodes"></i> Réseaux sociaux</legend>
+                            <p class="shop-set-t">Vos visiteurs peuvent retrouver vos autres comptes.</p>
+                            <div class="f-2">
+                                <div class="f-row" id="p-shopFacebook">
+                                    <label><i class="fab fa-facebook"></i> Facebook</label>
+                                    <input type="url" data-shop="shopFacebook" maxlength="200" placeholder="https://facebook.com/…">
+                                    <span class="err">Lien invalide (https://…).</span>
+                                </div>
+                                <div class="f-row" id="p-shopInstagram">
+                                    <label><i class="fab fa-instagram"></i> Instagram</label>
+                                    <input type="url" data-shop="shopInstagram" maxlength="200" placeholder="https://instagram.com/…">
+                                    <span class="err">Lien invalide (https://…).</span>
+                                </div>
+                                <div class="f-row" id="p-shopTiktok">
+                                    <label><i class="fab fa-tiktok"></i> TikTok</label>
+                                    <input type="url" data-shop="shopTiktok" maxlength="200" placeholder="https://tiktok.com/@…">
+                                    <span class="err">Lien invalide (https://…).</span>
+                                </div>
+                                <div class="f-row" id="p-shopYoutube">
+                                    <label><i class="fab fa-youtube"></i> YouTube</label>
+                                    <input type="url" data-shop="shopYoutube" maxlength="200" placeholder="https://youtube.com/@…">
+                                    <span class="err">Lien invalide (https://…).</span>
+                                </div>
+                            </div>
+                            <div class="f-row" id="p-shopWebsite">
+                                <label><i class="fas fa-globe"></i> Site web</label>
+                                <input type="url" data-shop="shopWebsite" maxlength="200" placeholder="https://monboutique.cd">
+                                <span class="err">Lien invalide (https://…).</span>
+                            </div>
+                        </fieldset>
+
+                        <button type="submit" class="btn btn-cta btn-block"><i class="fas fa-save"></i> Enregistrer ma boutique</button>
                     </form>
                 </div>
             </div>
         </section>
+
 
         <!-- ============ MES ARTICLES ============ -->
         <section class="tab-panel" id="tab-articles" hidden>

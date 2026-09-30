@@ -121,6 +121,10 @@ const photosOf = p => {
     return list.length ? list : [imgOf(p)];
 };
 const safeUrl = u => String(u || '').replace(/["'<>]/g, '');
+/* Contrôles de saisie réutilisés par tous les formulaires du site. */
+const HTTP_URL = /^https?:\/\/[^\s"'<>]{4,400}$/i;
+const isMail   = v => /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(String(v || '').trim());
+const digits   = v => String(v == null ? '' : v).replace(/\D/g, '');
 /* Texte saisi par l'utilisateur, affiche en HTML (détails, libellés). */
 const esc = s => String(s == null ? '' : s)
     .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
@@ -867,19 +871,48 @@ function syncRadio(name, value){
    par la liste générale des magasins. Le clic ouvre la vitrine
    de la boutique, filtrée sur la catégorie d'origine si besoin.
    ========================================================== */
+const payInfo  = id => SHOP_PAYMENTS.find(p => p.id === id) || null;
+const featInfo = id => SHOP_FEATURES.find(f => f.id === id) || null;
+const payLabel = id => (payInfo(id) || {}).label || id;
+const featLabel = id => (featInfo(id) || {}).label || id;
+
+/* WhatsApp n'accepte qu'un numéro international, sans « + » ni espaces. */
+const waNumber = v => digits(v).replace(/^0+/, '');
+const waLink   = (v, text) => 'https://wa.me/' + waNumber(v) + (text ? '?text=' + encodeURIComponent(text) : '');
+const telLink  = v => 'tel:' + String(v || '').replace(/[^\d+]/g, '');
+
+/* Pastille « ouvert / fermé » d'une boutique, d'après ses horaires. */
+function openBadge(shop, small){
+    if (shop.openNow === null || shop.openNow === undefined)
+        return `<span class="sh-open unknown"><i class="fas fa-clock"></i>${t('horaires non précisés')}</span>`;
+    const cls = shop.openNow ? 'yes' : 'no';
+    const label = shop.openNow ? t('Ouvert') : t('Fermé');
+    const icon = shop.openNow ? 'fa-circle-check' : 'fa-circle-xmark';
+    return `<span class="sh-open ${cls}${small ? ' tiny' : ''}"><i class="fas ${icon}"></i>${label}</span>`;
+}
+
 function shopCardHTML(s, cat){
     const keep = cat && cat !== 'Toutes' ? '&cat=' + encodeURIComponent(cat) : '';
     const href = 'magasin.html?u=' + encodeURIComponent(s.username) + keep;
     const face = s.avatar
         ? `<img src="${esc(s.avatar)}" alt="" loading="lazy">`
         : esc(String(s.shopName || '?').charAt(0).toUpperCase());
+    const perks = [];
+    if (s.shopDelivery) perks.push(`<em title="${t('Livraison à domicile')}"><i class="fas fa-truck"></i></em>`);
+    if (s.shopPickup)   perks.push(`<em title="${t('Retrait en boutique')}"><i class="fas fa-hand-hold"></i></em>`);
+    if (s.shopReturns)  perks.push(`<em title="${t('Retours acceptés')}"><i class="fas fa-rotate-left"></i></em>`);
+    if (s.shopVerified) perks.push(`<em class="v" title="${t('Boutique vérifiée')}"><i class="fas fa-badge-check"></i></em>`);
     return `<a class="shop-card" href="${href}">
         <span class="sc-avatar">${face}</span>
         <span class="sc-body">
-            <b>${esc(s.shopName || s.username)}</b>
-            <span class="sc-meta"><i class="fas fa-map-marker-alt"></i> ${esc(s.shopCity || 'Lubumbashi')}</span>
-            <span class="sc-stats">${t('{0} articles', [nfmt(s.productCount)])}${s.likes ? ' · ' + t('{0} J\'aime', [nfmt(s.likes)]) : ''}</span>
-            ${s.minPrice != null ? `<span class="sc-price">${t('dès {0}', [fmt(s.minPrice)])}</span>` : ''}
+            <b>${esc(s.shopName || s.username)}${s.shopVerified ? ' <i class="fas fa-badge-check sc-v" title="' + t('Boutique vérifiée') + '"></i>' : ''}</b>
+            ${s.shopSlogan ? `<span class="sc-slogan">${esc(s.shopSlogan)}</span>` : ''}
+            <span class="sc-meta"><i class="fas fa-map-marker-alt"></i> ${esc(s.shopCity || 'Lubumbashi')}${openBadge(s, true)}</span>
+            <span class="sc-stats">${t('{0} articles', [nfmt(s.productCount)])}${s.likes ? ' · ' + t('{0} J\'aime', [nfmt(s.likes)]) : ''}${s.rating ? ' · ' + s.rating + ' ★' : ''}</span>
+            <span class="sc-foot">
+                ${s.minPrice != null ? `<span class="sc-price">${t('dès {0}', [fmt(s.minPrice)])}</span>` : '<span></span>'}
+                ${perks.length ? `<span class="sc-perks">${perks.join('')}</span>` : ''}
+            </span>
         </span>
     </a>`;
 }
@@ -1186,6 +1219,334 @@ async function loadFromApi(){
 }
 
 /* ==========================================================
+   RÉGLAGES DE LA BOUTIQUE  (page « Mon compte »)
+   ------------------------------------------------------------
+   Aucun nom de champ n'est écrit en dur dans ce fichier : le
+   formulaire HTML se décrit lui-même avec « data-shop ».
+     • data-shop="clef"            champ texte ou case à cocher simple
+     • data-shop-group="clef"      groupe de cases à cocher (liste)
+     • data-shop="clef" sur un bloc horaires, galerie ou image
+   collectShopForm() lit tout, fillShopForm() remplit tout.
+   ========================================================== */
+const SHOP_DAYS = [
+    { id: 'mon', label: 'Lundi' },    { id: 'tue', label: 'Mardi' },
+    { id: 'wed', label: 'Mercredi' }, { id: 'thu', label: 'Jeudi' },
+    { id: 'fri', label: 'Vendredi' }, { id: 'sat', label: 'Samedi' },
+    { id: 'sun', label: 'Dimanche' }
+];
+
+const SHOP_PAYMENTS = [
+    { id: 'momo',     label: 'Mobile Money',      icon: 'fa-mobile-screen' },
+    { id: 'especes',  label: 'Espèces',           icon: 'fa-money-bill-wave' },
+    { id: 'carte',    label: 'Carte bancaire',    icon: 'fa-credit-card' },
+    { id: 'virement', label: 'Virement bancaire', icon: 'fa-building-columns' },
+    { id: 'credit',   label: 'Paiement échelonné', icon: 'fa-calendar-days' }
+];
+
+const SHOP_FEATURES = [
+    { id: 'rapide',   label: 'Livraison rapide',        icon: 'fa-bolt' },
+    { id: 'gratuit',  label: 'Livraison offerte',       icon: 'fa-truck-fast' },
+    { id: 'garantie', label: 'Garantie satisfaction',   icon: 'fa-thumbs-up' },
+    { id: 'retour',   label: 'Retours acceptés',        icon: 'fa-rotate-left' },
+    { id: 'original', label: 'Produits authentiques',   icon: 'fa-certificate' },
+    { id: 'support',  label: 'Service client réactif',  icon: 'fa-headset' },
+    { id: 'physique', label: 'Boutique physique',       icon: 'fa-store' },
+    { id: 'gros',     label: 'Vente en gros',           icon: 'fa-boxes-stacked' },
+    { id: 'nouveau',  label: 'Nouveautés régulières',   icon: 'fa-sparkles' },
+    { id: 'secure',   label: 'Paiement sécurisé',       icon: 'fa-lock' }
+];
+
+const SHOP_MAX_GALLERY = 8;
+
+/* Liste de cases à cocher : chaque case porte sa valeur dans « value ». */
+function buildShopPick(el, items){
+    if (!el) return;
+    el.innerHTML = items.map(it =>
+        `<label class="chk"><input type="checkbox" value="${esc(it.id)}"><span><i class="fas ${it.icon}"></i>${esc(it.label)}</span></label>`
+    ).join('');
+    el.addEventListener('change', () => {
+        const row = el.closest('.f-row');
+        if (row) row.classList.remove('invalid');
+    });
+}
+const shopPickSet = (el, values) => {
+    const set = new Set(Array.isArray(values) ? values : []);
+    Array.from(el.querySelectorAll('input[type=checkbox]')).forEach(cb => { cb.checked = set.has(cb.value); });
+};
+const shopPickGet = el =>
+    Array.from(el.querySelectorAll('input[type=checkbox]:checked')).map(cb => cb.value);
+
+/* ---------- GRILLE DES HORAIRES ---------- */
+function buildHoursGrid(el){
+    el.innerHTML = SHOP_DAYS.map(d =>
+        `<div class="hr-row" data-day="${d.id}">
+            <label class="chk tiny"><input type="checkbox" data-closed checked><span>${d.label}</span></label>
+            <span class="hr-times">
+                <input type="time" data-o value="08:00" disabled aria-label="${d.label} — ouverture">
+                <em>–</em>
+                <input type="time" data-c value="18:00" disabled aria-label="${d.label} — fermeture">
+            </span>
+            <span class="hr-state" data-state>Fermé</span>
+        </div>`).join('');
+
+    const sync = row => {
+        const closed = !row.querySelector('[data-closed]').checked;
+        row.querySelectorAll('input[type=time]').forEach(i => { i.disabled = closed; });
+        row.querySelector('[data-state]').textContent = closed ? t('Fermé') : t('Ouvert');
+        row.classList.toggle('is-closed', closed);
+    };
+    el.addEventListener('change', e => {
+        const row = e.target.closest('.hr-row');
+        if (row) sync(row);
+    });
+    el.addEventListener('click', e => {
+        if (!e.target.closest('.hr-row')) return;
+        sync(e.target.closest('.hr-row'));
+    });
+    Array.from(el.querySelectorAll('.hr-row')).forEach(sync);
+}
+const hoursSet = (el, hours) => {
+    Array.from(el.querySelectorAll('.hr-row')).forEach(row => {
+        const h = (hours || {})[row.dataset.day];
+        const closed = !h || h.closed !== false;
+        const box = row.querySelector('[data-closed]');
+        box.checked = !closed;
+        row.querySelector('[data-o]').value = (h && h.o) || '08:00';
+        row.querySelector('[data-c]').value = (h && h.c) || '18:00';
+        box.dispatchEvent(new Event('change', { bubbles: true }));
+    });
+};
+const hoursGet = el => {
+    const out = {};
+    Array.from(el.querySelectorAll('.hr-row')).forEach(row => {
+        out[row.dataset.day] = {
+            closed: !row.querySelector('[data-closed]').checked,
+            o: row.querySelector('[data-o]').value || '08:00',
+            c: row.querySelector('[data-c]').value || '18:00'
+        };
+    });
+    return out;
+};
+
+/* ---------- SÉLECTEUR D'UNE SEULE IMAGE (logo, bannière) ---------- */
+function makeImagePicker(zone, onChange){
+    let url = '';
+    const paint = () => {
+        zone.classList.toggle('has-img', !!url);
+        zone.innerHTML = url
+            ? `<img src="${safeUrl(url)}" alt="">
+               <span class="mi-actions">
+                   <button type="button" class="btn btn-outline btn-sm" data-replace><i class="fas fa-repeat"></i> ${t('Changer')}</button>
+                   <button type="button" class="btn btn-outline btn-sm" data-clear><i class="fas fa-trash"></i> ${t('Retirer')}</button>
+               </span>`
+            : `<i class="fas fa-camera"></i><b>${t('Ajouter une image')}</b>
+               <span>${t('png, jpg, gif ou webp — 3 Mo max')}</span>`;
+    };
+    const file = document.createElement('input');
+    file.type = 'file';
+    file.accept = 'image/png,image/jpeg,image/gif,image/webp';
+    file.hidden = true;
+    zone.after(file);
+
+    file.onchange = async () => {
+        const f = (file.files || [])[0];
+        if (!f) return;
+        try { url = await BE.upload(f); paint(); onChange && onChange(url); }
+        catch (e){ toast('❌ ' + e.message); }
+        file.value = '';
+    };
+    zone.addEventListener('click', async e => {
+        if (e.target.closest('[data-clear]')){ url = ''; paint(); onChange && onChange(''); return; }
+        if (e.target.closest('[data-replace]')){ file.click(); return; }
+        file.click();
+    });
+    paint();
+    return { get: () => url, set: u => { url = u || ''; paint(); } };
+}
+
+/* ---------- GALERIE DE LA BOUTIQUE ---------- */
+function makeShopGallery(zone, initial){
+    let photos = (Array.isArray(initial) ? initial : []).filter(Boolean).slice(0, SHOP_MAX_GALLERY);
+    const file = document.createElement('input');
+    file.type = 'file';
+    file.multiple = true;
+    file.accept = 'image/png,image/jpeg,image/gif,image/webp';
+    file.hidden = true;
+    zone.after(file);
+
+    const paint = () => {
+        zone.innerHTML = photos.map((u, i) =>
+                `<span class="gal-item"><img src="${safeUrl(u)}" alt="${t('Photo {0}', [nfmt(i + 1)])}" loading="lazy">
+                    <button type="button" class="gal-del" data-del="${i}" aria-label="${t('Retirer')}"><i class="fas fa-times"></i></button>
+                </span>`).join('')
+            + (photos.length < SHOP_MAX_GALLERY
+                ? `<button type="button" class="gal-add"><i class="fas fa-plus"></i><span>${t('Ajouter une photo')}</span>
+                     <em>${nfmt(photos.length)}/${nfmt(SHOP_MAX_GALLERY)}</em></button>`
+                : `<span class="gal-full">${t('{0} photosmaximum', [nfmt(SHOP_MAX_GALLERY)])}</span>`);
+    };
+    const send = async list => {
+        const room = SHOP_MAX_GALLERY - photos.length;
+        if (room <= 0) return;
+        zone.classList.add('busy');
+        try {
+            for (const f of list.slice(0, room)) photos.push(await BE.upload(f));
+            paint();
+        } catch (e){ toast('❌ ' + e.message); }
+        finally { zone.classList.remove('busy'); file.value = ''; }
+    };
+    zone.addEventListener('click', e => {
+        const del = e.target.closest('[data-del]');
+        if (del){ photos.splice(+del.dataset.del, 1); paint(); return; }
+        file.click();
+    });
+    ['dragenter', 'dragover'].forEach(ev => zone.addEventListener(ev, e => { e.preventDefault(); zone.classList.add('over'); }));
+    ['dragleave', 'drop'].forEach(ev => zone.addEventListener(ev, e => { e.preventDefault(); zone.classList.remove('over'); }));
+    zone.addEventListener('drop', e => {
+        const list = Array.from(e.dataTransfer.files || []).filter(f => /^image\//.test(f.type));
+        if (list.length) send(list);
+    });
+    file.onchange = () => { const list = Array.from(file.files || []); if (list.length) send(list); };
+    paint();
+    return { list: () => photos.slice() };
+}
+
+/* ---------- LECTURE / ÉCRITURE DU FORMULAIRE ---------- */
+const shopForm = () => $('#profileForm');
+function collectShopForm(){
+    const form = shopForm();
+    const out = {};
+    Array.from(form.querySelectorAll('[data-shop]')).forEach(el => {
+        const key = el.dataset.shop;
+        if (el.type === 'checkbox') out[key] = el.checked;
+        else out[key] = el.value;
+    });
+    Array.from(form.querySelectorAll('[data-shop-group]')).forEach(el => {
+        out[el.dataset.shopGroup] = shopPickGet(el);
+    });
+    return out;
+}
+function fillShopForm(me){
+    const form = shopForm();
+    Array.from(form.querySelectorAll('[data-shop]')).forEach(el => {
+        const key = el.dataset.shop;
+        const v = me[key];
+        if (el.type === 'checkbox') el.checked = !!v;
+        else el.value = v == null ? '' : (typeof v === 'object' ? '' : v);
+    });
+    Array.from(form.querySelectorAll('[data-shop-group]')).forEach(el => {
+        shopPickSet(el, me[el.dataset.shopGroup]);
+    });
+}
+
+/* ---------- VALIDATION, côté navigateur ---------- */
+function validateShopForm(){
+    const form = shopForm();
+    const bad = [];
+    const fail = (rowId, badFlag) => {
+        const row = document.getElementById(rowId);
+        if (row) row.classList.add('invalid');
+        if (badFlag) bad.push(rowId);
+    };
+    const v = id => { const el = form.querySelector(`[id="${id}"]`); return el ? el.value.trim() : ''; };
+
+    if (v('pShopName').length < 3) fail('p-shopName');
+    if (v('pShopSlogan').length > 90) fail('p-shopSlogan');
+    if (v('pShopDesc').length > 600) fail('p-shopDesc');
+    if (v('pShopAbout').length > 2500) fail('p-shopAbout');
+    if (v('pShopCity').length < 2) fail('p-shopCity');
+    if (digits(v('pPhone')).length > 0 && digits(v('pPhone')).length < 9) fail('p-phone');
+    if (v('pShopWhatsapp') && (digits(v('pShopWhatsapp')).length < 6 || digits(v('pShopWhatsapp')).length > 15)) fail('p-shopWhatsapp');
+    if (v('pShopEmail') && !isMail(v('pShopEmail'))) fail('p-shopEmail');
+    const year = v('pShopFounded');
+    if (year && !/^(19|20)\d{2}$/.test(year)) fail('p-shopFounded');
+    if (v('pShopAddress').length > 140) fail('p-shopAddress');
+    if (v('pShopLandmark').length > 120) fail('p-shopLandmark');
+    if (v('pShopDeliveryTime').length > 60) fail('p-shopDeliveryTime');
+    if (v('pShopDeliveryFee').length > 60) fail('p-shopDeliveryFee');
+    if (v('pShopDeliveryZones').length > 200) fail('p-shopDeliveryZones');
+    if (v('pShopFreeDelivery').length > 60) fail('p-shopFreeDelivery');
+    if (v('pShopReturnDays').length > 60) fail('p-shopReturnDays');
+    if (v('pShopWarranty').length > 160) fail('p-shopWarranty');
+    if (v('pShopLegal').length > 80) fail('p-shopLegal');
+    ['shopFacebook', 'shopInstagram', 'shopTiktok', 'shopYoutube', 'shopWebsite'].forEach(k => {
+        const row = document.getElementById('p-' + k);
+        const val = (form.querySelector(`[data-shop="${k}"]`) || {}).value || '';
+        if (row && val && !HTTP_URL.test(val.trim())){ row.classList.add('invalid'); bad.push(row.id); }
+    });
+
+    /* le premier champ fautif est ramené dans l'écran */
+    if (bad.length){
+        const first = document.getElementById(bad[0]);
+        if (first) first.scrollIntoView({ block: 'center', behavior: 'smooth' });
+    }
+    return bad.length === 0;
+}
+
+/* ---------- Taux de complétion, calculé par le serveur ---------- */
+function paintScore(score){
+    const ring = $('#scoreRing');
+    if (!ring || !score) return;
+    ring.style.setProperty('--p', score.score);
+    $('#scoreVal').textContent = score.score + ' %';
+    $('#scoreTip').textContent = score.score >= 100
+        ? t('Votre vitrine est complète : les acheteurs ont toutes les informations.')
+        : t('Plus votre boutique est détaillée, plus les acheteurs vous font confiance.');
+    const list = $('#scoreList');
+    if (!list) return;
+    list.innerHTML = (score.missing || []).length
+        ? score.missing.map(m => `<li><i class="fas fa-circle-plus"></i>${esc(m.label)}</li>`).join('')
+        : `<li class="done"><i class="fas fa-circle-check"></i>${t('Tout est renseigné.')}</li>`;
+}
+
+/* Aperçu mis à jour pendant la saisie, sans rien enregistrer. */
+let scoreTimer;
+function liveScore(draft){
+    clearTimeout(scoreTimer);
+    scoreTimer = setTimeout(async () => {
+        try { paintScore((await BE.req('POST', '/api/shops/preview', draft)).score); }
+        catch (e){ /* hors ligne : la jauge garde sa dernière valeur */ }
+    }, 400);
+}
+
+/* ---------- Compteurs de caractères ---------- */
+function bindCharCounters(root){
+    Array.from(root.querySelectorAll('[data-count-for]')).forEach(out => {
+        const el = root.querySelector('#' + out.dataset.countFor);
+        if (!el) return;
+        const upd = () => { out.textContent = `${nfmt(el.value.length)} / ${nfmt(el.maxLength)}`; };
+        el.addEventListener('input', upd);
+        upd();
+    });
+}
+
+/* ---------- Mini-aperçu de la vitrine (colonne de gauche) ---------- */
+function paintShopPreview(me, score){
+    const box = $('#shopMini');
+    if (!box || !me) return;
+    const badge = (icon, label, on) => on ? `<span class="mi-pill"><i class="fas ${icon}"></i>${esc(label)}</span>` : '';
+    const payments = (me.shopPayments || []).map(id => (SHOP_PAYMENTS.find(p => p.id === id) || {}).label).filter(Boolean);
+    const cats = (me.shopCats || []).length;
+
+    box.innerHTML = [
+        me.shopSlogan ? `<p class="mi-slogan">${esc(me.shopSlogan)}</p>` : '',
+        cats ? `<p class="mi-cats">${me.shopCats.map(c => `<span>${esc(t(c))}</span>`).join('')}</p>` : '',
+        `<p class="mi-pills">
+            ${badge('fa-truck', t('Livraison'), me.shopDelivery)}
+            ${badge('fa-hand-hold', t('Retrait'), me.shopPickup)}
+            ${badge('fa-mobile-screen', t('Mobile Money'), (me.shopPayments || []).includes('momo'))}
+            ${badge('fa-rotate-left', t('Retours'), me.shopReturns)}
+            ${badge('fa-shield-halved', t('Boutique vérifiée'), me.shopVerified)}
+        </p>`,
+        payments.length
+            ? `<p class="mi-line"><i class="fas fa-credit-card"></i>${esc(t('Paiement : {0}', [payments.join(', ')]))}</p>`
+            : '',
+        me.shopAddress ? `<p class="mi-line"><i class="fas fa-location-dot"></i>${esc([me.shopAddress, me.shopCity].filter(Boolean).join(', '))}</p>` : '',
+        Object.keys(me.shopHours || {}).length ? `<p class="mi-line"><i class="fas fa-clock"></i>${esc(t('Horaires définis'))}</p>` : '',
+        score ? `<p class="mi-line"><i class="fas fa-gauge-high"></i>${esc(t('{0} sur {1} informations renseignées', [nfmt(score.done), nfmt(score.total)]))}</p>` : ''
+    ].join('');
+}
+
+/* ==========================================================
    PAGE « MON COMPTE »
    ========================================================== */
 async function initAccountPage(){
@@ -1220,47 +1581,79 @@ async function initAccountPage(){
     $$('.acct-tabs a').forEach(a => a.onclick = e => { e.preventDefault(); showTab(a.dataset.tab); });
     showTab(TABS.includes(location.hash.slice(1)) ? location.hash.slice(1) : 'boutique');
 
-    /* ---------- profil ---------- */
-    $('#pShopName').value = me.shopName;
-    $('#pShopDesc').value = me.shopDesc || '';
-    $('#pShopCity').value = me.shopCity || '';
-    $('#pPhone').value    = me.phone || '';
-    $('#pAvatar').value   = me.avatar || '';
+    /* ---------- réglages de la boutique ---------- */
+    buildShopPick($('#pickCats'), CATEGORIES.map(c => ({ id: c.name, label: c.name, icon: 'fa-tag' })));
+    buildShopPick($('#pickPayments'), SHOP_PAYMENTS);
+    buildShopPick($('#pickFeatures'), SHOP_FEATURES);
+    buildHoursGrid($('#hoursGrid'));
+    bindCharCounters(shopForm());
 
-    const mark = (id, ok) => { $('#' + id).classList.toggle('invalid', !ok); return ok; };
-    $$('#profileForm input, #profileForm textarea').forEach(el =>
-        el.addEventListener('input', () => el.closest('.f-row').classList.remove('invalid')));
+    const logo = makeImagePicker($('#logoPick'));
+    const banner = makeImagePicker($('#bannerPick'));
+    const gallery = makeShopGallery($('#galleryPick'), me.shopGallery);
 
-    $('#profileForm').addEventListener('submit', async e => {
+    /* « appliquer le lundi à toute la semaine » */
+    $('#hoursCopy').onclick = () => {
+        const mon = hoursGet($('#hoursGrid')).mon;
+        hoursSet($('#hoursGrid'), Object.fromEntries(SHOP_DAYS.map(d => [d.id, mon])));
+        toast(t('✅ Horaires appliqués à toute la semaine.'));
+        liveScore(collectShopForm());
+    };
+
+    fillShopForm(me);
+    logo.set(me.avatar);
+    banner.set(me.banner);
+    hoursSet($('#hoursGrid'), me.shopHours);
+
+    /* on efface la marque rouge dès que l'utilisateur corrige le champ */
+    Array.from(shopForm().querySelectorAll('input, textarea')).forEach(el =>
+        el.addEventListener('input', () => {
+            const row = el.closest('.f-row');
+            if (row) row.classList.remove('invalid');
+        }));
+    shopForm().addEventListener('input', () => liveScore(collectShopForm()));
+    shopForm().addEventListener('change', () => liveScore(collectShopForm()));
+
+    shopForm().addEventListener('submit', async e => {
         e.preventDefault();
-        const ok =
-            mark('p-shopName', $('#pShopName').value.trim().length >= 3) &&
-            mark('p-shopDesc', $('#pShopDesc').value.trim().length <= 500) &&
-            mark('p-shopCity', $('#pShopCity').value.trim().length >= 2) &&
-            mark('p-phone',    $('#pPhone').value.replace(/\D/g, '').length >= 10 || !$('#pPhone').value.trim()) &&
-            mark('p-avatar',   !$('#pAvatar').value.trim() || /^https?:\/\/.+\.(png|jpe?g|gif|webp)$/i.test($('#pAvatar').value.trim()));
-        if (!ok) return toast('⚠️ Merci de corriger les champs en rouge.');
+        if (!validateShopForm()) return toast('⚠️ ' + t('Merci de corriger les champs en rouge.'));
+
+        const draft = collectShopForm();
+        /* les trois blocs gérés par des widgets (logo, bannière, galerie,
+           horaires) n'ont pas de champ dans le formulaire : leurs valeurs
+           viennent du widget et écrasent la clé vide lue dans le HTML */
+        draft.avatar       = logo.get();
+        draft.banner       = banner.get();
+        draft.shopGallery  = gallery.list();
+        draft.shopHours    = hoursGet($('#hoursGrid'));
 
         try {
-            const u = await BE.updateProfile({
-                shopName: $('#pShopName').value.trim(),
-                shopDesc: $('#pShopDesc').value.trim(),
-                shopCity: $('#pShopCity').value.trim(),
-                phone:    $('#pPhone').value.trim(),
-                avatar:   $('#pAvatar').value.trim()
-            });
+            const res = await BE.updateProfile(draft);
+            const u = res.user || res;
             refreshAccountUI();
             $('#meShop').textContent = u.shopName;
             $('#meMeta').textContent = `@${u.username} · ${u.shopCity || 'Lubumbashi'}`;
-            $('#meAvatar').innerHTML = u.avatar ? `<img src="${u.avatar}" alt="${u.shopName}">` : u.shopName.charAt(0).toUpperCase();
+            $('#meAvatar').innerHTML = u.avatar ? `<img src="${u.avatar}" alt="${esc(u.shopName)}">` : u.shopName.charAt(0).toUpperCase();
             $('#shopDesc').textContent = u.shopDesc || t("Vous n'avez pas encore décrit votre boutique.");
             $('#shopLink').href = 'magasin.html?u=' + encodeURIComponent(u.username);
+            paintScore(res.score);
+            paintShopPreview(u, res.score);
             toast('✅ ' + t('Boutique mise à jour.'));
         } catch (err){ toast('❌ ' + err.message); }
     });
 
+    /* aperçu de la vitrine dans la colonne de gauche */
+    async function firstPaint(){
+        try {
+            const me2 = await BE.loadMe(true);
+            const sc  = await BE.req('GET', '/api/me');
+            paintShopPreview(me2, sc.score);
+        } catch (e){ /* hors ligne */ }
+    }
+
     const out2 = $('#logoutBtn2');
     if (out2) out2.onclick = () => $('#logoutBtn').click();
+
 
     /* ---------- mes articles ---------- */
     const renderMyProducts = list => {
@@ -1386,6 +1779,7 @@ async function initAccountPage(){
         }
     }
     loadAll();
+    firstPaint();
 }
 
 /* ==========================================================

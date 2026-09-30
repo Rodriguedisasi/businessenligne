@@ -92,18 +92,28 @@
     <div id="shopHeader" hidden>
         <div class="shop-cover">
             <img id="shBanner" src="" alt="">
+            <div class="shop-cover-fade"></div>
+            <div class="shop-badges" id="shBadges"></div>
         </div>
         <div class="shop-id">
             <div class="avatar" id="shAvatar">B</div>
-            <div style="flex:1;min-width:200px;padding-top:12px">
-                <h1 id="shName">Boutique</h1>
+            <div class="shop-id-main">
+                <h1 id="shName">Boutique <span class="vbadge" id="shVerified" hidden title="Boutique vérifiée"><i class="fas fa-badge-check"></i></span></h1>
+                <p class="shop-slogan" id="shSlogan" hidden></p>
                 <div class="shop-meta" id="shMeta">@identifiant · 0 article</div>
+                <div class="shop-tags" id="shTags"></div>
             </div>
             <div class="shop-actions">
-                <button class="btn btn-outline" id="followBtn"><i class="fas fa-heart"></i> Suivre</button>
+                <button class="btn btn-outline" id="followBtn"><i class="far fa-heart"></i> Suivre</button>
+                <a class="btn btn-outline" id="callBtn" hidden><i class="fas fa-phone"></i> Appeler</a>
+                <a class="btn btn-wa" id="waBtn" hidden target="_blank" rel="noopener"><i class="fab fa-whatsapp"></i> WhatsApp</a>
+                <button class="btn btn-outline btn-ico" id="shareBtn" aria-label="Partager"><i class="fas fa-share-nodes"></i></button>
                 <a class="btn btn-cta" id="shPublish" href="publier.html" hidden><i class="fas fa-square-plus"></i> Publier un article</a>
+                <a class="btn btn-outline" id="shEdit" href="compte.html#boutique" hidden><i class="fas fa-sliders"></i> Réglages</a>
             </div>
         </div>
+        <!-- ============ BARRE DE STATISTIQUES ============ -->
+        <div class="shop-statbar" id="shStatbar"></div>
     </div>
 
     <div id="shopNotFound" class="box" hidden style="text-align:center;padding:50px 20px">
@@ -116,7 +126,9 @@
     <div id="shopBody" hidden>
         <!-- ============ À PROPOS ============ -->
         <div class="box" style="margin:16px 0">
-            <div class="box-head"><h3>À propos de la boutique</h3></div>
+            <div class="box-head"><h3>À propos de la boutique</h3>
+                <span class="see-all" id="shCompleteness"></span>
+            </div>
             <p id="shDesc" style="font-size:13.5px;color:var(--txt-2)"></p>
             <div class="kpis" style="display:flex;gap:26px;margin-top:12px;flex-wrap:wrap">
                 <div><b id="shArticles" style="font-size:20px;color:#0f1111">0</b> <span style="font-size:12px;color:var(--txt-2)">articles</span></div>
@@ -125,18 +137,79 @@
             </div>
         </div>
 
-        <!-- ============ FILTRES ============ -->
-        <div class="filters" id="shopFilters"></div>
+        <!-- ============ CORPS : CONTENU + COLONNE LATÉRALE ============ -->
+        <div class="shop-layout">
+            <div class="shop-main">
+                <!-- onglets -->
+                <nav class="shop-tabs" id="shopTabs">
+                    <a href="#" class="active" data-tab="apropos">À propos</a>
+                    <a href="#" data-tab="infos">Informations</a>
+                    <a href="#" data-tab="livraison">Livraison &amp; paiement</a>
+                    <a href="#" data-tab="horaires">Horaires</a>
+                    <a href="#" data-tab="galerie">Galerie</a>
+                </nav>
 
-        <!-- ============ ARTICLES ============ -->
-        <div class="box">
-            <div class="box-head">
-                <h3>Articles de la boutique</h3>
-                <span class="see-all" id="shCount"></span>
+                <div class="shop-panel" id="panel-apropos">
+                    <div class="shop-about" id="shAbout"></div>
+                    <div class="shop-feats" id="shFeats"></div>
+                </div>
+
+                <div class="shop-panel" id="panel-infos" hidden>
+                    <div class="info-table" id="shInfos"></div>
+                </div>
+
+                <div class="shop-panel" id="panel-livraison" hidden>
+                    <div class="info-table" id="shShip"></div>
+                </div>
+
+                <div class="shop-panel" id="panel-horaires" hidden>
+                    <div class="hours-table" id="shHours"></div>
+                </div>
+
+                <div class="shop-panel" id="panel-galerie" hidden>
+                    <div class="shop-gal" id="shGal"></div>
+                </div>
+
+                <!-- ============ FILTRES ============ -->
+                <div class="filters" id="shopFilters"></div>
+
+                <!-- ============ ARTICLES ============ -->
+                <div class="box">
+                    <div class="box-head">
+                        <h3>Articles de la boutique</h3>
+                        <span class="sh-tools">
+                            <label class="sh-search"><i class="fas fa-search"></i>
+                                <input type="search" id="shQuery" placeholder="Rechercher un article" autocomplete="off"></label>
+                            <select class="sh-sort" id="shSort">
+                                <option value="recent">Plus récents</option>
+                                <option value="asc">Prix croissant</option>
+                                <option value="desc">Prix décroissant</option>
+                                <option value="note">Mieux notés</option>
+                            </select>
+                        </span>
+                        <span class="see-all" id="shCount"></span>
+                    </div>
+                    <div class="p-grid" id="shopGrid"></div>
+                </div>
+
+                <!-- ============ AUTRES BOUTIQUES ============ -->
+                <div class="box" id="shRelatedBox" hidden>
+                    <div class="box-head"><h3>Autres boutiques à découvrir</h3></div>
+                    <div class="shop-grid" id="shRelated"></div>
+                </div>
             </div>
-            <div class="p-grid" id="shopGrid"></div>
+
+            <!-- ============ COLONNE LATÉRALE ============ -->
+            <aside class="shop-aside">
+                <div class="box sh-card" id="shContact"></div>
+                <div class="box sh-card" id="shOpen"></div>
+                <div class="box sh-card" id="shPayBox"></div>
+                <div class="box sh-card" id="shSocial"></div>
+                <div class="box sh-card sh-trust" id="shTrust"></div>
+            </aside>
         </div>
     </div>
+
 </main>
 
 <footer>

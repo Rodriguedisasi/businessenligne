@@ -278,6 +278,7 @@ const SHOP_FIELDS = [
     { key: 'shopTiktok',        col: 'shop_tiktok',         type: 'url',       max: 200 },
     { key: 'shopYoutube',       col: 'shop_youtube',        type: 'url',       max: 200 },
     { key: 'shopWebsite',       col: 'shop_website',        type: 'url',       max: 200 },
+    { key: 'shopHours',         col: 'shop_hours',          type: 'hours' },
     { key: 'shopDelivery',      col: 'shop_delivery',       type: 'flag' },
     { key: 'shopPickup',        col: 'shop_pickup',         type: 'flag' },
     { key: 'shopDeliveryTime',  col: 'shop_delivery_time',  type: 'text',      max: 60 },
@@ -291,7 +292,7 @@ const SHOP_FIELDS = [
     { key: 'shopFeatures',      col: 'shop_features',       type: 'tags',      allowed: FEATURE_IDS, max: FEATURE_IDS.length },
     { key: 'shopFounded',       col: 'shop_founded',        type: 'text',      max: 10 },
     { key: 'shopLegal',         col: 'shop_legal',          type: 'text',      max: 80 },
-    { key: 'shopGallery',       col: 'shop_gallery',        type: 'list',      max: MAX_GALLERY }
+    { key: 'shopGallery',       col: 'shop_gallery',        type: 'urlList',   max: MAX_GALLERY }
 ];
 const SHOP_FIELD_BY_KEY = new Map(SHOP_FIELDS.map(f => [f.key, f]));
 
@@ -356,6 +357,10 @@ function checkShopField(f, raw){
            catégories, les moyens de paiement, les atouts). */
         case 'list':
         case 'tags':   return { value: readList(raw, f.allowed, f.max).join('|') };
+        /* une liste d'images : seules les vraies URL http(s) sont gardées,
+           pour qu'une valeur glissée dans le champ ne puisse pas produire
+           autre chose qu'une photo */
+        case 'urlList': return { value: readList(raw, null, f.max).filter(isHttpUrl).join('|') };
         case 'hours':  return { value: hoursField(raw) };
         case 'url':    return isHttpUrl(raw) ? { value: flat(raw, f.max) } : { error: 'Lien invalide (commencez par https://)' };
         case 'email':  return !raw ? { value: '' } : isEmail(raw) ? { value: flat(raw, f.max) } : { error: 'Adresse email invalide' };
@@ -406,8 +411,8 @@ function publicShop(u){
         if (out[f.key] !== undefined) continue;                 /* déjà traité ci-dessus */
         const stored = u[f.col];
         if (f.type === 'flag')       out[f.key] = !!stored;
-        else if (f.type === 'list')  out[f.key] = readList(stored, null, f.max);
-        else if (f.type === 'tags')  out[f.key] = readList(stored, f.allowed, f.max);
+        else if (f.type === 'list' || f.type === 'tags' || f.type === 'urlList')
+                                      out[f.key] = readList(stored, f.allowed, f.max);
         else if (f.type === 'hours') out[f.key] = readHours(stored);
         else                         out[f.key] = String(stored == null ? '' : stored);
     }
@@ -1172,28 +1177,6 @@ const routes = {
             },
             products,
             related
-        });
-    },
-
-
-    'GET /api/shops/:username': async (req, res, url, m) => {
-        const owner = await db.one('users', { username: String(m.username).toLowerCase() });
-        if (!owner) return err(res, 404, 'Boutique introuvable');
-        const auth = await currentUser(req);
-        const showHidden = (auth && auth.user.is_admin) || url.searchParams.get('all') === '1';
-        const where = { owner_id: owner.id };
-        if (!showHidden) where.published = 1;
-        const rows = await db.all('products', where, { orderBy: 'created_at DESC' });
-        const products = await decorateAll(rows, auth ? auth.user.id : null);
-        const allLikes = await db.all('likes');
-        ok(res, {
-            shop: {
-                ...publicUser(owner),
-                productCount: products.length,
-                likes: products.reduce((s, p) => s + p.likes, 0),
-                followers: allLikes.length ? new Set(allLikes.map(l => l.user_id)).size : 0
-            },
-            products
         });
     },
 

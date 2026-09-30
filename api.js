@@ -82,7 +82,7 @@ const BE = (() => {
     const updateProfile = async patch => {
         const d = await req('PATCH', '/api/me', patch);
         state.user = d.user;
-        return d.user;
+        return { user: d.user, score: d.score };
     };
 
     /* ---------------- CATALOGUE ---------------- */
