@@ -209,14 +209,281 @@ async function requireAdmin(req, res){
     return auth.user;
 }
 
-function publicUser(u){
+/* ==========================================================
+   FICHE DÉTAILLÉE DE LA BOUTIQUE
+   ------------------------------------------------------------
+   Tous les paramètres que le vendeur peut renseigner sont décrits
+   UNE seule fois, dans SHOP_FIELDS. Le même tableau sert à trois choses :
+
+     1. valider et enregistrer le « PATCH /api/me » ;
+     2. rendre la fiche publique renvoyée à l'affichage ;
+     3. calculer le taux de complétion montré au vendeur.
+
+   Ajouter un paramètre = ajouter une ligne dans SHOP_FIELDS, plus
+   la colonne correspondante dans db.js. Rien d'autre à modifier.
+   ========================================================== */
+
+/* Référentiels : ce que le vendeur peut choisir dans les listes. */
+const SHOP_CATEGORIES = ['Électronique', 'Mode', 'Maison', 'Sport', 'Beauté', 'Enfants', 'Livres'];
+
+const SHOP_PAYMENTS = [
+    { id: 'momo',     label: 'Mobile Money' },
+    { id: 'especes',  label: 'Espèces' },
+    { id: 'carte',    label: 'Carte bancaire' },
+    { id: 'virement', label: 'Virement bancaire' },
+    { id: 'credit',   label: 'Paiement échelonné' }
+];
+
+const SHOP_FEATURES = [
+    { id: 'rapide',   label: 'Livraison rapide' },
+    { id: 'gratuit',  label: 'Livraison offerte' },
+    { id: 'garantie', label: 'Garantie satisfaction' },
+    { id: 'retour',   label: 'Retours acceptés' },
+    { id: 'original', label: 'Produits authentiques' },
+    { id: 'support',  label: 'Service client réactif' },
+    { id: 'physique', label: 'Boutique physique' },
+    { id: 'gros',     label: 'Vente en gros' },
+    { id: 'nouveau',  label: 'Nouveautés régulières' },
+    { id: 'secure',   label: 'Paiement sécurisé' }
+];
+
+const SHOP_DAYS = [
+    { id: 'mon', label: 'Lundi' },    { id: 'tue', label: 'Mardi' },
+    { id: 'wed', label: 'Mercredi' }, { id: 'thu', label: 'Jeudi' },
+    { id: 'fri', label: 'Vendredi' }, { id: 'sat', label: 'Samedi' },
+    { id: 'sun', label: 'Dimanche' }
+];
+
+const PAYMENT_IDS = SHOP_PAYMENTS.map(p => p.id);
+const FEATURE_IDS = SHOP_FEATURES.map(f => f.id);
+const MAX_GALLERY = 8;
+const MAX_CATS = SHOP_CATEGORIES.length;
+
+/* type : text | longtext | email | tel | url | list | tags | flag | hours
+   col  : nom de la colonne dans la table « users »
+   max  : longueur maximale, ou nombre d'éléments pour une liste            */
+const SHOP_FIELDS = [
+    { key: 'shopSlogan',        col: 'shop_slogan',         type: 'text',      max: 90 },
+    { key: 'shopDesc',          col: 'shop_desc',           type: 'longtext',  max: 600 },
+    { key: 'shopCats',          col: 'shop_cats',           type: 'list',      allowed: SHOP_CATEGORIES, max: MAX_CATS },
+    { key: 'shopAbout',         col: 'shop_about',          type: 'longtext',  max: 2500 },
+    { key: 'shopAddress',       col: 'shop_address',        type: 'text',      max: 140 },
+    { key: 'shopLandmark',      col: 'shop_landmark',       type: 'text',      max: 120 },
+    { key: 'shopCity',          col: 'shop_city',           type: 'text',      max: 60 },
+    { key: 'phone',             col: 'phone',               type: 'tel',       max: 40 },
+    { key: 'shopEmail',         col: 'shop_email',          type: 'email',     max: 120 },
+    { key: 'shopWhatsapp',      col: 'shop_whatsapp',       type: 'tel',       max: 40 },
+    { key: 'shopFacebook',      col: 'shop_facebook',       type: 'url',       max: 200 },
+    { key: 'shopInstagram',     col: 'shop_instagram',      type: 'url',       max: 200 },
+    { key: 'shopTiktok',        col: 'shop_tiktok',         type: 'url',       max: 200 },
+    { key: 'shopYoutube',       col: 'shop_youtube',        type: 'url',       max: 200 },
+    { key: 'shopWebsite',       col: 'shop_website',        type: 'url',       max: 200 },
+    { key: 'shopDelivery',      col: 'shop_delivery',       type: 'flag' },
+    { key: 'shopPickup',        col: 'shop_pickup',         type: 'flag' },
+    { key: 'shopDeliveryTime',  col: 'shop_delivery_time',  type: 'text',      max: 60 },
+    { key: 'shopDeliveryFee',   col: 'shop_delivery_fee',   type: 'text',      max: 60 },
+    { key: 'shopDeliveryZones', col: 'shop_delivery_zones', type: 'text',      max: 200 },
+    { key: 'shopFreeDelivery',  col: 'shop_free_delivery',  type: 'text',      max: 60 },
+    { key: 'shopPayments',      col: 'shop_payments',       type: 'tags',      allowed: PAYMENT_IDS, max: PAYMENT_IDS.length },
+    { key: 'shopReturns',       col: 'shop_returns',        type: 'flag' },
+    { key: 'shopReturnDays',    col: 'shop_return_days',    type: 'text',      max: 60 },
+    { key: 'shopWarranty',      col: 'shop_warranty',       type: 'text',      max: 160 },
+    { key: 'shopFeatures',      col: 'shop_features',       type: 'tags',      allowed: FEATURE_IDS, max: FEATURE_IDS.length },
+    { key: 'shopFounded',       col: 'shop_founded',        type: 'text',      max: 10 },
+    { key: 'shopLegal',         col: 'shop_legal',          type: 'text',      max: 80 },
+    { key: 'shopGallery',       col: 'shop_gallery',        type: 'list',      max: MAX_GALLERY }
+];
+const SHOP_FIELD_BY_KEY = new Map(SHOP_FIELDS.map(f => [f.key, f]));
+
+/* Drapeaux que l'administration seule peut poser (badge « vérifiée »). */
+const SHOP_ADMIN_FLAGS = new Set(['shopVerified']);
+
+/* ---- Petits utilitaires de normalisation ---- */
+const flat = (v, max) => String(v == null ? '' : v).replace(/\s+/g, ' ').trim().slice(0, max);
+const rich = (v, max) => String(v == null ? '' : v).trim().slice(0, max);
+const isEmail = v => /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(String(v || '').trim());
+const isHttpUrl = v => /^https?:\/\/[^\s"'<>\s]{4,400}$/i.test(String(v || '').trim());
+const digitsOf = v => String(v == null ? '' : v).replace(/\D/g, '');
+
+/* Liste stockée dans une colonne texte, séparée par « | » : la même
+   écriture fonctionne sur SQLite, sur Firestore et dans le JSON de repli. */
+function readList(stored, allowed, max){
+    const raw = Array.isArray(stored)
+        ? stored
+        : String(stored == null ? '' : stored).split('|');
+    const out = [];
+    for (const v of raw){
+        const s = String(v == null ? '' : v).trim();
+        if (!s || out.includes(s)) continue;
+        if (allowed && !allowed.includes(s)) continue;
+        out.push(s);
+        if (out.length >= (max || 50)) break;
+    }
+    return out;
+}
+const listField = list => readList(list, null, 50).join('|');
+
+/* Horaires : un objet { mon:{o,c,closed}, … } sérialisé en JSON.
+   Un jour sans horaire valide est considéré comme « fermé ». */
+function readHours(stored){
+    let data = stored;
+    if (typeof data === 'string'){
+        if (!data.trim()) return {};
+        try { data = JSON.parse(data); } catch (e){ return {}; }
+    }
+    if (!data || typeof data !== 'object' || Array.isArray(data)) return {};
+    const out = {};
+    for (const d of SHOP_DAYS){
+        const r = data[d.id];
+        if (!r || typeof r !== 'object') continue;
+        const o = String(r.o ?? r.open ?? '').slice(0, 5);
+        const c = String(r.c ?? r.close ?? '').slice(0, 5);
+        const ok = v => /^([01]\d|2[0-3]):[0-5]\d$/.test(v);
+        if (r.closed || !(ok(o) && ok(c))) out[d.id] = { closed: true, o: ok(o) ? o : '08:00', c: ok(c) ? c : '18:00' };
+        else out[d.id] = { closed: false, o, c };
+    }
+    return out;
+}
+const hoursField = obj => JSON.stringify(readHours(obj || {}));
+
+/* Applique la validation d'un champ à une valeur reçue.
+   Renvoie { value } si la valeur est acceptable, ou { error } sinon. */
+function checkShopField(f, raw){
+    switch (f.type){
+        case 'flag':   return { value: raw ? 1 : 0 };
+        /* « list » et « tags » se stockent pareil ; la seule différence est
+           qu'une liste peut être libre (les photos) ou fermée (les
+           catégories, les moyens de paiement, les atouts). */
+        case 'list':
+        case 'tags':   return { value: readList(raw, f.allowed, f.max).join('|') };
+        case 'hours':  return { value: hoursField(raw) };
+        case 'url':    return isHttpUrl(raw) ? { value: flat(raw, f.max) } : { error: 'Lien invalide (commencez par https://)' };
+        case 'email':  return !raw ? { value: '' } : isEmail(raw) ? { value: flat(raw, f.max) } : { error: 'Adresse email invalide' };
+        case 'tel':    return !raw ? { value: '' } : digitsOf(raw).length >= 6 && digitsOf(raw).length <= 15
+                                ? { value: flat(raw, f.max) } : { error: 'Numéro de téléphone invalide' };
+        case 'longtext': return { value: rich(raw, f.max) };
+        default:       return { value: flat(raw, f.max) };
+    }
+}
+
+/* Transforme le corps de la requête en patch SQL.
+   Retourne { patch } ou { error }. */
+function shopPatchFrom(body, { allowAdminFlags = false } = {}){
+    const patch = {};
+    /* le nom de la boutique a sa propre règle : 3 caractères minimum */
+    if (body.shopName !== undefined){
+        const name = flat(body.shopName, 60);
+        if (name.length < 3) return { error: 'Nom de boutique trop court' };
+        patch.shop_name = name;
+    }
+    for (const f of SHOP_FIELDS){
+        if (body[f.key] === undefined) continue;
+        const r = checkShopField(f, body[f.key]);
+        if (r.error) return { error: r.error };
+        patch[f.col] = r.value;
+    }
+    if (allowAdminFlags){
+        for (const key of SHOP_ADMIN_FLAGS){
+            if (body[key] === undefined) continue;
+            patch[key === 'shopVerified' ? 'shop_verified' : key] = body[key] ? 1 : 0;
+        }
+    }
+    return { patch };
+}
+
+/* La fiche complète, en camelCase, prête pour le front. */
+function publicShop(u){
     if (!u) return null;
-    return {
-        id: u.id, username: u.username, email: u.email, shopName: u.shop_name,
-        shopDesc: u.shop_desc, shopCity: u.shop_city, phone: u.phone,
-        avatar: u.avatar, banner: u.banner, createdAt: u.created_at,
-        isAdmin: !!u.is_admin, isBanned: !!u.banned
+    const out = {
+        id: u.id, username: u.username, email: u.email,
+        shopName: u.shop_name, shopDesc: u.shop_desc, shopCity: u.shop_city,
+        phone: u.phone, avatar: u.avatar, banner: u.banner,
+        createdAt: u.created_at,
+        isAdmin: !!u.is_admin, isBanned: !!u.banned,
+        shopVerified: !!u.shop_verified
     };
+    for (const f of SHOP_FIELDS){
+        if (out[f.key] !== undefined) continue;                 /* déjà traité ci-dessus */
+        const stored = u[f.col];
+        if (f.type === 'flag')       out[f.key] = !!stored;
+        else if (f.type === 'list')  out[f.key] = readList(stored, null, f.max);
+        else if (f.type === 'tags')  out[f.key] = readList(stored, f.allowed, f.max);
+        else if (f.type === 'hours') out[f.key] = readHours(stored);
+        else                         out[f.key] = String(stored == null ? '' : stored);
+    }
+    return out;
+}
+
+/* ---- Taux de complétion de la fiche ----
+   Une checklist de ce qui rend une vitrine crédible. Le vendeur voit ce
+   qu'il lui reste à renseigner ; la vitrine publique peut l'afficher aussi. */
+const SHOP_CHECKLIST = [
+    { key: 'shopSlogan',        label: 'Accroche de la boutique' },
+    { key: 'shopDesc',          label: 'Description courte',        min: 40 },
+    { key: 'shopCats',          label: 'Catégories specialties' },
+    { key: 'shopAbout',         label: 'Présentation détaillée',    min: 120 },
+    { key: 'avatar',            label: 'Logo de la boutique' },
+    { key: 'banner',            label: 'Bannière de couverture' },
+    { key: 'phone',             label: 'Téléphone',                 digits: 9 },
+    { key: 'shopEmail',         label: 'Email de contact' },
+    { key: 'shopWhatsapp',      label: 'Numéro WhatsApp',           digits: 9 },
+    { key: 'shopAddress',       label: 'Adresse' },
+    { key: 'shopLandmark',      label: 'Point de repère' },
+    { key: 'shopDelivery',      label: 'Livraison à domicile' },
+    { key: 'shopDeliveryTime',  label: 'Délai de livraison' },
+    { key: 'shopDeliveryFee',   label: 'Frais de livraison' },
+    { key: 'shopDeliveryZones', label: 'Zones desservies' },
+    { key: 'shopPayments',      label: 'Moyen de paiement' },
+    { key: 'shopHours',         label: 'Horaires d\'ouverture' },
+    { key: 'shopReturnDays',    label: 'Politique de retour' },
+    { key: 'shopWarranty',      label: 'Garantie' },
+    { key: 'shopFeatures',      label: 'Atouts de la boutique' },
+    { key: 'shopGallery',       label: 'Galerie photos' },
+    { key: 'shopFounded',       label: 'Année d\'ouverture' }
+];
+
+function shopChecklistDone(u){
+    const shop = publicShop(u);
+    return SHOP_CHECKLIST.map(c => {
+        const v = c.key === 'shopDelivery' ? (u.shop_delivery ? '1' : '') : shop[c.key];
+        const filled = c.digits ? digitsOf(v).length >= c.digits
+            : c.min ? String(v || '').length >= c.min
+            : Array.isArray(v) ? v.length > 0
+            : typeof v === 'object' ? Object.keys(v || {}).length > 0
+            : !!String(v || '').trim();
+        return { key: c.key, label: c.label, done: filled };
+    });
+}
+
+function shopScore(u){
+    const list = shopChecklistDone(u);
+    const done = list.filter(c => c.done).length;
+    return {
+        score: list.length ? Math.round(done / list.length * 100) : 0,
+        done, total: list.length,
+        missing: list.filter(c => !c.done)
+    };
+}
+
+function publicUser(u){
+    return publicShop(u);
+}
+
+/* La boutique est-elle ouverte à l'instant présent ?
+   L'heure de référence est celle de Lubumbashi (UTC+2), la ville par défaut
+   du site. Renvoie null quand aucun horaire n'a été renseigné : ni l'affiche
+   « ouvert » ni l'affiche « fermé » ne doivent être montrées dans ce cas. */
+function isOpenNow(hours){
+    const list = readHours(hours);
+    if (!Object.keys(list).length) return null;
+    const now = new Date(Date.now() + 2 * 3600e3);
+    const day = list[SHOP_DAYS[(now.getUTCDay() + 6) % 7].id];   /* dimanche = index 0 */
+    if (!day || day.closed) return false;
+    const mins = now.getUTCHours() * 60 + now.getUTCMinutes();
+    const to = s => Number(String(s).slice(0, 2)) * 60 + Number(String(s).slice(3, 5));
+    /* une boutique qui ferme après minuit reste ouverte le soir */
+    return to(day.c) >= to(day.o) ? mins >= to(day.o) && mins <= to(day.c)
+                                  : mins >= to(day.o) || mins <= to(day.c);
 }
 
 /* Vue complète d'un ensemble de comptes, réservée à l'administration.
@@ -367,6 +634,22 @@ async function buildOrderLines(items){
 
 const newOrderRef = () => 'BE-' + Date.now().toString().slice(-8) + '-' + Math.floor(Math.random() * 90 + 10);
 
+/* Met à jour la valeur stockée d'un champ, sans l'écrire : sert au
+   « aperçu » du taux de complétion pendant la saisie. */
+function shopPreviewRow(base, body){
+    const row = { ...base };
+    if (body.shopName !== undefined) row.shop_name = flat(body.shopName, 60);
+    if (body.avatar !== undefined)   row.avatar   = flat(body.avatar, 400);
+    if (body.banner !== undefined)   row.banner   = flat(body.banner, 400);
+    for (const f of SHOP_FIELDS){
+        if (body[f.key] === undefined) continue;
+        const r = checkShopField(f, body[f.key]);
+        if (r.error) continue;              /* champ invalide : on garde l'ancienne valeur */
+        row[f.col] = r.value;
+    }
+    return row;
+}
+
 /* ==========================================================
    ROUTES API
    ========================================================== */
@@ -425,7 +708,11 @@ const routes = {
         if (!shopName) generated.shopName = shop;
 
         const salt = crypto.randomBytes(16).toString('hex');
-        const user = await db.insert('users', {
+        /* Les réglages de boutique éventuellement fournis par le formulaire
+           d'inscription passent par la même validation que la page « Mon
+           compte » : il n'y a qu'une seule règle à maintenir. */
+        const extra = shopPatchFrom(body).patch || {};
+        const user = await db.insert('users', Object.assign({
             username: uname,
             email: mail,
             password_hash: hashPassword(password, salt),
@@ -437,7 +724,7 @@ const routes = {
             avatar: '', banner: '',
             is_admin: 0, banned: 0,
             created_at: nowISO()
-        });
+        }, extra));
 
         const token = newToken();
         await db.insert('sessions', {
@@ -477,25 +764,54 @@ const routes = {
     'GET /api/me': async (req, res) => {
         const auth = await currentUser(req);
         if (!auth) return err(res, 401, 'Non connecté');
-        ok(res, { user: publicUser(auth.user) });
+        ok(res, {
+            user: publicShop(auth.user),
+            score: shopScore(auth.user),
+            options: {
+                categories: SHOP_CATEGORIES,
+                payments: SHOP_PAYMENTS,
+                features: SHOP_FEATURES,
+                days: SHOP_DAYS,
+                maxGallery: MAX_GALLERY
+            }
+        });
     },
 
+    /* Mise à jour de la fiche boutique.
+       Une seule entrée pour TOUS les paramètres : la liste et les règles
+       vivent dans SHOP_FIELDS, donc ajouter un réglage côté serveur ne
+       demande qu'une ligne de plus dans ce tableau. */
     'PATCH /api/me': async (req, res) => {
         const auth = await currentUser(req);
         if (!auth) return err(res, 401, 'Non connecté');
         const b = await readBody(req);
-        const patch = {};
-        if (b.shopName !== undefined) {
-            if (String(b.shopName).trim().length < 3) return err(res, 400, 'Nom de boutique trop court');
-            patch.shop_name = String(b.shopName).trim();
+        const { patch, error } = shopPatchFrom(b);
+        if (error) return err(res, 400, error);
+        /* le logo et la bannière ne passent pas par SHOP_FIELDS : ils sont
+       posés depuis le téléverseur, donc seulement des URL sont acceptées */
+        if (b.avatar !== undefined){
+            if (b.avatar && !isHttpUrl(b.avatar)) return err(res, 400, 'Lien du logo invalide');
+            patch.avatar = flat(b.avatar, 400);
         }
-        if (b.shopDesc !== undefined) patch.shop_desc = String(b.shopDesc).trim();
-        if (b.shopCity  !== undefined) patch.shop_city  = String(b.shopCity).trim();
-        if (b.phone     !== undefined) patch.phone      = String(b.phone).trim();
-        if (b.avatar    !== undefined) patch.avatar     = String(b.avatar);
-        if (b.banner    !== undefined) patch.banner     = String(b.banner);
+        if (b.banner !== undefined){
+            if (b.banner && !isHttpUrl(b.banner)) return err(res, 400, 'Lien de la bannière invalide');
+            patch.banner = flat(b.banner, 400);
+        }
+        if (!Object.keys(patch).length) return err(res, 400, 'Aucune modification demandée');
+
         const user = await db.update('users', auth.user.id, patch);
-        ok(res, { user: publicUser(user) });
+        ok(res, { user: publicShop(user), score: shopScore(user) });
+    },
+
+    /* Taux de complétion « en direct », pendant la saisie des réglages.
+       Rien n'est écrit : la fiche est recalculée dans un objet temporaire
+       puis renvoyée avec la liste de ce qu'il reste à renseigner. */
+    'POST /api/shops/preview': async (req, res) => {
+        const auth = await currentUser(req);
+        if (!auth) return err(res, 401, 'Non connecté');
+        const b = await readBody(req);
+        const row = shopPreviewRow(auth.user, b);
+        ok(res, { score: shopScore(row), preview: publicShop(row) });
     },
 
     /* ---------- PRODUITS ---------- */
@@ -666,7 +982,7 @@ const routes = {
     },
 
     /* ---------- BOUTIQUES ---------- */
-    /* Liste des boutiques, éventuellement restreintes à une catégorie.
+    /* Liste des boutiques, éventuellement restreinte à une catégorie.
        Sans catégorie : toutes les vitrines de la plateforme.
        Avec ?cat=Électronique : uniquement les boutiques qui ont publié au
        moins un article visible dans cette catégorie, avec leurs statistiques
@@ -676,6 +992,8 @@ const routes = {
         const cat = url.searchParams.get('cat');
         const q = (url.searchParams.get('q') || '').toLowerCase().trim();
         const showHidden = (auth && auth.user.is_admin) || url.searchParams.get('all') === '1';
+        const onlyVerified = url.searchParams.get('verified') === '1';
+        const onlyDelivery = url.searchParams.get('delivery') === '1';
         const scoped = !!cat && cat !== 'Toutes';
 
         const where = {};
@@ -683,51 +1001,180 @@ const routes = {
         if (!showHidden) where.published = 1;
 
         const users = await db.all('users', {}, { orderBy: 'created_at DESC' });
-        const [products, allLikes] = await Promise.all([db.all('products', where), db.all('likes')]);
+        const [products, allLikes, orders] = await Promise.all([db.all('products', where), db.all('likes'), db.all('orders')]);
 
-        /* Une seule lecture des articles et des J'aime : chaque boutique reçoit
-           son nombre d'articles, ses J'aime, ses prix extrêmes et ses catégories. */
+        /* Une seule lecture des articles, des J'aime et des commandes :
+           chaque boutique reçoit son nombre d'articles, ses J'aime, ses
+           abonnés, ses ventes, ses prix extrêmes et ses catégories. */
         const stats = new Map();
-        for (const p of products){
-            const k = Number(p.owner_id);
-            const e = stats.get(k) || { n: 0, likes: 0, min: null, max: null, cats: new Set() };
-            e.n++;
-            e.min = e.min == null ? p.price : Math.min(e.min, p.price);
-            e.max = e.max == null ? p.price : Math.max(e.max, p.price);
-            e.cats.add(p.category);
-            stats.set(k, e);
-        }
+        const bump = id => {
+            const k = Number(id);
+            let e = stats.get(k);
+            if (!e){ e = { list: [], likes: 0, sales: 0, fset: new Set() }; stats.set(k, e); }
+            return e;
+        };
+        for (const p of products) bump(p.owner_id).list.push(p);
+
+        const ownerOf = new Map(products.map(p => [Number(p.id), Number(p.owner_id)]));
         for (const l of allLikes){
-            const e = stats.get(Number(l.product_id));
-            if (e) e.likes++;
+            const seller = ownerOf.get(Number(l.product_id));
+            if (seller == null) continue;
+            const e = stats.get(seller);
+            if (!e) continue;
+            e.likes++;
+            if (l.user_id != null) e.fset.add(Number(l.user_id));
+        }
+        for (const o of orders){
+            for (const line of parseItems(o.items)){
+                const seller = line.ownerId != null ? Number(line.ownerId) : ownerOf.get(Number(line.id));
+                if (seller == null) continue;
+                const e = stats.get(seller);
+                if (!e) continue;
+                e.sales += line.qty || 1;
+            }
         }
 
         let shops = users
             .filter(u => !u.banned)                                  /* un compte suspendu n'a pas de vitrine */
             .filter(u => !scoped || stats.has(Number(u.id)))         /* en catégorie : seulement les boutiques concernées */
             .map(u => {
-                const e = stats.get(Number(u.id)) || { n: 0, likes: 0, min: null, max: null, cats: new Set() };
+                const e = stats.get(Number(u.id)) || { list: [], likes: 0, sales: 0, fset: new Set() };
+                let min = null, max = null, ratingSum = 0, reviews = 0, stock = 0;
+                const cats = new Set();
+                for (const p of e.list){
+                    reviews += Number(p.reviews) || 0;
+                    ratingSum += (Number(p.rating) || 0) * (Number(p.reviews) || 0);
+                    stock += Number(p.stock) || 0;
+                    min = min == null ? Number(p.price) : Math.min(min, Number(p.price));
+                    max = max == null ? Number(p.price) : Math.max(max, Number(p.price));
+                    cats.add(p.category);
+                }
                 return {
-                    ...publicUser(u),
-                    productCount: e.n, likes: e.likes,
-                    minPrice: e.min, maxPrice: e.max,
-                    cats: [...e.cats]
+                    ...publicShop(u),
+                    productCount: e.list.length, likes: e.likes,
+                    sales: e.sales, followers: e.fset.size,
+                    reviews, rating: reviews ? Math.round(ratingSum / reviews * 10) / 10 : 0,
+                    stockTotal: stock,
+                    minPrice: min, maxPrice: max,
+                    cats: [...cats],
+                    score: shopScore(u).score,
+                    openNow: isOpenNow(u.shop_hours)
                 };
-            });
+            })
+            .filter(s => !onlyVerified || s.shopVerified)
+            .filter(s => !onlyDelivery || s.shopDelivery);
 
         if (q)
-            shops = shops.filter(s => (s.shopName + ' ' + s.username + ' ' + (s.shopDesc || '')).toLowerCase().includes(q));
+            shops = shops.filter(s => [
+                s.shopName, s.username, s.shopDesc, s.shopSlogan, s.shopCity,
+                s.shopAddress, ...(Array.isArray(s.shopCats) ? s.shopCats : [])
+            ].join(' ').toLowerCase().includes(q));
 
         const sort = url.searchParams.get('sort') || (scoped ? 'products' : 'recent');
         shops.sort({
             products: (a, b) => b.productCount - a.productCount || b.likes - a.likes,
             likes:    (a, b) => b.likes - a.likes || b.productCount - a.productCount,
             name:     (a, b) => String(a.shopName).localeCompare(String(b.shopName), 'fr'),
-            recent:   (a, b) => String(b.createdAt).localeCompare(String(a.createdAt))
-        }[sort]);
+            recent:   (a, b) => String(b.createdAt).localeCompare(String(a.createdAt)),
+            rating:   (a, b) => (b.rating - a.rating) || (b.reviews - a.reviews) || b.productCount - a.productCount,
+            sales:    (a, b) => b.sales - a.sales || b.productCount - a.productCount,
+            score:    (a, b) => b.score - a.score || b.productCount - a.productCount,
+            open:     (a, b) => (b.openNow === true) - (a.openNow === true) || b.productCount - a.productCount
+        }[sort] || ((a, b) => b.productCount - a.productCount));
 
         ok(res, { shops, cat: cat || 'Toutes', total: shops.length });
     },
+
+    /* Vitrine complète d'une boutique : fiche, statistiques, articles et
+       quelques boutiques similaires pour continuer la visite. */
+    'GET /api/shops/:username': async (req, res, url, m) => {
+        const owner = await db.one('users', { username: String(m.username).toLowerCase() });
+        if (!owner) return err(res, 404, 'Boutique introuvable');
+        const auth = await currentUser(req);
+        const showHidden = (auth && auth.user.is_admin) || url.searchParams.get('all') === '1';
+        const where = { owner_id: owner.id };
+        if (!showHidden) where.published = 1;
+        const rows = await db.all('products', where, { orderBy: 'created_at DESC' });
+        const products = await decorateAll(rows, auth ? auth.user.id : null);
+        const allLikes = await db.all('likes');
+        const orders = await db.all('orders');
+
+        const ids = new Set(rows.map(p => Number(p.id)));
+        const followers = new Set();
+        let likes = 0;
+        for (const l of allLikes){
+            if (!ids.has(Number(l.product_id))) continue;
+            likes++;
+            if (l.user_id != null) followers.add(Number(l.user_id));
+        }
+        let sales = 0, revenue = 0;
+        for (const o of orders){
+            for (const line of parseItems(o.items)){
+                if (!ids.has(Number(line.id))) continue;
+                sales += line.qty || 1;
+                revenue += (line.price || 0) * (line.qty || 1);
+            }
+        }
+        const reviews = products.reduce((s, p) => s + (p.reviews || 0), 0);
+        const rating = reviews
+            ? Math.round(products.reduce((s, p) => s + (p.rating || 0) * (p.reviews || 0), 0) / reviews * 10) / 10
+            : 0;
+        const score = shopScore(owner);
+
+        /* boutiques similaires : mêmes catégories, le plus de produits d'abord */
+        const myCats = new Set(products.map(p => p.cat));
+        let related = [];
+        try {
+            const all = await db.all('users', {}, { orderBy: 'created_at DESC' });
+            const others = all.filter(u => !u.banned && !sameId(u.id, owner.id));
+            const counts = new Map();
+            for (const p of await db.all('products', showHidden ? {} : { published: 1 })){
+                if (sameId(p.owner_id, owner.id)) continue;
+                const k = Number(p.owner_id);
+                if (!counts.has(k)) counts.set(k, { n: 0, common: 0 });
+                const e = counts.get(k);
+                e.n++;
+                if (myCats.has(p.category)) e.common++;
+            }
+            related = others
+                .map(u => ({ u, e: counts.get(Number(u.id)) || { n: 0, common: 0 } }))
+                .filter(x => x.e.n > 0)
+                .sort((a, b) => b.e.common - a.e.common || b.e.n - a.e.n)
+                .slice(0, 4)
+                .map(x => ({
+                    ...publicShop(x.u),
+                    productCount: x.e.n,
+                    common: x.e.common
+                }));
+        } catch (e){ /* la liste secondaire ne doit jamais faire échouer la vitrine */ }
+
+        const cats = [...new Set(products.map(p => p.cat))];
+        ok(res, {
+            shop: {
+                ...publicShop(owner),
+                isOwner: !!(auth && sameId(auth.user.id, owner.id)),
+                productCount: products.length,
+                likes,
+                followers: followers.size,
+                sales,
+                revenue,
+                reviews,
+                rating,
+                score: score.score,
+                scoreDone: score.done,
+                scoreTotal: score.total,
+                checklist: score.missing,
+                openNow: isOpenNow(owner.shop_hours),
+                minPrice: products.length ? Math.min(...products.map(p => p.price)) : null,
+                maxPrice: products.length ? Math.max(...products.map(p => p.price)) : null,
+                stockTotal: products.reduce((s, p) => s + (p.stock || 0), 0),
+                cats
+            },
+            products,
+            related
+        });
+    },
+
 
     'GET /api/shops/:username': async (req, res, url, m) => {
         const owner = await db.one('users', { username: String(m.username).toLowerCase() });
@@ -876,6 +1323,11 @@ const routes = {
         }
         if (b.shopName !== undefined && String(b.shopName).trim().length >= 3)
             patch.shop_name = String(b.shopName).trim();
+        /* l'administration peut aussi corriger la fiche et poser le badge
+           « boutique vérifiée », que le vendeur ne peut pas s'attribuer */
+        const { patch: shopPatch, error: shopError } = shopPatchFrom(b, { allowAdminFlags: true });
+        if (shopError) return err(res, 400, shopError);
+        Object.assign(patch, shopPatch);
         if (!Object.keys(patch).length) return err(res, 400, 'Aucune modification demandée');
         ok(res, { user: await adminUser(await db.update('users', target.id, patch)) });
     },

@@ -54,7 +54,41 @@ CREATE TABLE IF NOT EXISTS users (
     banner        TEXT    NOT NULL DEFAULT '',
     is_admin      INTEGER NOT NULL DEFAULT 0,
     banned        INTEGER NOT NULL DEFAULT 0,
-    created_at    TEXT    NOT NULL
+    created_at    TEXT    NOT NULL,
+    /* ---------- fiche détaillée de la boutique ----------
+       Volontairement des colonnes simples (texte / nombre) : la même
+       structure marche sur SQLite, sur le fichier JSON de repli et sur
+       Firestore, sansConversion ni requête spécifique par moteur.
+       Les listes (catégories, paiements, atouts, photos) sont stockées
+       en texte séparé par des virgules ou des « | ». */
+    shop_slogan      TEXT    NOT NULL DEFAULT '',
+    shop_cats        TEXT    NOT NULL DEFAULT '',
+    shop_about       TEXT    NOT NULL DEFAULT '',
+    shop_address     TEXT    NOT NULL DEFAULT '',
+    shop_landmark    TEXT    NOT NULL DEFAULT '',
+    shop_email       TEXT    NOT NULL DEFAULT '',
+    shop_whatsapp    TEXT    NOT NULL DEFAULT '',
+    shop_facebook    TEXT    NOT NULL DEFAULT '',
+    shop_instagram   TEXT    NOT NULL DEFAULT '',
+    shop_tiktok      TEXT    NOT NULL DEFAULT '',
+    shop_youtube     TEXT    NOT NULL DEFAULT '',
+    shop_website     TEXT    NOT NULL DEFAULT '',
+    shop_hours       TEXT    NOT NULL DEFAULT '',
+    shop_delivery    INTEGER NOT NULL DEFAULT 0,
+    shop_pickup      INTEGER NOT NULL DEFAULT 0,
+    shop_delivery_time TEXT  NOT NULL DEFAULT '',
+    shop_delivery_fee  TEXT  NOT NULL DEFAULT '',
+    shop_delivery_zones TEXT  NOT NULL DEFAULT '',
+    shop_free_delivery TEXT  NOT NULL DEFAULT '',
+    shop_payments    TEXT    NOT NULL DEFAULT '',
+    shop_returns     INTEGER NOT NULL DEFAULT 0,
+    shop_return_days TEXT    NOT NULL DEFAULT '',
+    shop_warranty    TEXT    NOT NULL DEFAULT '',
+    shop_features    TEXT    NOT NULL DEFAULT '',
+    shop_founded     TEXT    NOT NULL DEFAULT '',
+    shop_legal       TEXT    NOT NULL DEFAULT '',
+    shop_gallery     TEXT    NOT NULL DEFAULT '',
+    shop_verified    INTEGER NOT NULL DEFAULT 0
 );
 CREATE TABLE IF NOT EXISTS sessions (
     token      TEXT PRIMARY KEY,
@@ -109,7 +143,39 @@ CREATE INDEX IF NOT EXISTS idx_sess_user   ON sessions(user_id);
 const MIGRATIONS = {
     users: [
         ['is_admin', 'INTEGER NOT NULL DEFAULT 0'],
-        ['banned',    'INTEGER NOT NULL DEFAULT 0']
+        ['banned',    'INTEGER NOT NULL DEFAULT 0'],
+        /* Fiche détaillée de la boutique — voir le commentaire du SCHEMA.
+           Une colonne absente est ajoutée telle quelle, avec sa valeur par
+           défaut : les boutiques déjà enregistrées gardent toutes leurs
+           informations et apparaissent simplement comme « à compléter ». */
+        ['shop_slogan',        "TEXT NOT NULL DEFAULT ''"],
+        ['shop_cats',          "TEXT NOT NULL DEFAULT ''"],
+        ['shop_about',         "TEXT NOT NULL DEFAULT ''"],
+        ['shop_address',       "TEXT NOT NULL DEFAULT ''"],
+        ['shop_landmark',      "TEXT NOT NULL DEFAULT ''"],
+        ['shop_email',         "TEXT NOT NULL DEFAULT ''"],
+        ['shop_whatsapp',      "TEXT NOT NULL DEFAULT ''"],
+        ['shop_facebook',      "TEXT NOT NULL DEFAULT ''"],
+        ['shop_instagram',     "TEXT NOT NULL DEFAULT ''"],
+        ['shop_tiktok',        "TEXT NOT NULL DEFAULT ''"],
+        ['shop_youtube',       "TEXT NOT NULL DEFAULT ''"],
+        ['shop_website',       "TEXT NOT NULL DEFAULT ''"],
+        ['shop_hours',         "TEXT NOT NULL DEFAULT ''"],
+        ['shop_delivery',      'INTEGER NOT NULL DEFAULT 0'],
+        ['shop_pickup',        'INTEGER NOT NULL DEFAULT 0'],
+        ['shop_delivery_time', "TEXT NOT NULL DEFAULT ''"],
+        ['shop_delivery_fee',  "TEXT NOT NULL DEFAULT ''"],
+        ['shop_delivery_zones',"TEXT NOT NULL DEFAULT ''"],
+        ['shop_free_delivery', "TEXT NOT NULL DEFAULT ''"],
+        ['shop_payments',      "TEXT NOT NULL DEFAULT ''"],
+        ['shop_returns',       'INTEGER NOT NULL DEFAULT 0'],
+        ['shop_return_days',   "TEXT NOT NULL DEFAULT ''"],
+        ['shop_warranty',      "TEXT NOT NULL DEFAULT ''"],
+        ['shop_features',      "TEXT NOT NULL DEFAULT ''"],
+        ['shop_founded',       "TEXT NOT NULL DEFAULT ''"],
+        ['shop_legal',         "TEXT NOT NULL DEFAULT ''"],
+        ['shop_gallery',       "TEXT NOT NULL DEFAULT ''"],
+        ['shop_verified',      'INTEGER NOT NULL DEFAULT 0']
     ],
     products: [
         ['images', "TEXT NOT NULL DEFAULT ''"],
