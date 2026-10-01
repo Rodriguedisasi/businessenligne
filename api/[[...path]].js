@@ -1,1 +1,0 @@
-const server = require('../server.js'); module.exports = (req, res) => { try { server.emit('request', req, res); } catch (e) { if (!res.headersSent) { res.statusCode = 500; res.end('ERR'); } } };
