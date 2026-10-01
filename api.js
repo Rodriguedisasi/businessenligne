@@ -65,10 +65,13 @@ const BE = (() => {
         state.loaded = true;
         return state.user;
     }
+    /* Renvoie { user, generated } : le formulaire d'inscription affiche le
+       nom d'identifiant que le serveur a déduit de l'email, et generated
+       est absent d'une réponse d'erreur. */
     const register = async payload => {
         const d = await req('POST', '/api/register', payload);
         setToken(d.token); state.user = d.user; state.loaded = true;
-        return d.user;
+        return { user: d.user, generated: d.generated || {} };
     };
     const login = async (ident, password) => {
         const d = await req('POST', '/api/login', { ident, password });
