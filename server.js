@@ -1965,7 +1965,7 @@ if (require.main === module){
                le catalogue officiel si la base contient déjà des produits. */
             const seed = await require('./seed')();
             if (seed.generated)
-                console.log('\n  ⚠  NOTEZ CE MOT DE PASSE, il ne sera plus réaffiché :\n     ' + seed.password + '\n');
+                console.log("Mot de passe admin généré (non affiché pour sécurité)");
         }
         /* La boutique officielle dispose du tableau de surveillance */
         const official = await db.one('users', { username: 'businessenligne' });
