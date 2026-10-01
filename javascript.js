@@ -2493,6 +2493,17 @@ async function initShopPage(){
             : esc(shop.shopName.charAt(0).toUpperCase());
         if (shop.banner) $('#shBanner').src = shop.banner;
 
+        /* Boutique suspendue : la page reste visible (on ne cache rien
+           discrètement), mais on explique pourquoi elle est fermée. Le
+           motif est celui écrit par l'administration. */
+        const susp = $('#shSuspended');
+        if (susp){
+            susp.hidden = !shop.suspended;
+            if (shop.suspended)
+                susp.innerHTML = `<i class="fas fa-store-slash"></i><div><b>${esc(t('Boutique suspendue'))}</b>
+                    <span>${esc(shop.shopSuspendedReason || t("Cette boutique est temporairement fermée par l'administration."))}</span></div>`;
+        }
+
         /* étiquettes : catégories, ouvert/fermé, services */
         const tags = [];
         (shop.shopCats || []).forEach(c => tags.push(`<span class="sh-tag cat">${esc(t(c))}</span>`));
@@ -2819,6 +2830,7 @@ async function initAdminPage(){
     if (T.outOfStock) alerts.push(['danger', t('{0} article(s) en rupture de stock', [nfmt(T.outOfStock)]), t('Ruptures')]);
     if (T.lowStock) alerts.push(['warn',   t('{0} article(s) en stock faible (≤ 3)', [nfmt(T.lowStock)]), t('Stock')]);
     if (T.banned)    alerts.push(['info',   t('{0} compte(s) suspendu(s)', [nfmt(T.banned)]), t('Modération')]);
+    if (T.shopsSuspended) alerts.push(['warn', t('{0} boutique(s) suspendue(s)', [nfmt(T.shopsSuspended)]), t('Modération')]);
     $('#adminAlerts').innerHTML = alerts.length
         ? alerts.map(a => `<div class="admin-alert ${a[0]}"><i class="fas fa-circle-info"></i>${a[1]}<span>${a[2]}</span></div>`).join('')
         : `<div class="admin-alert ok"><i class="fas fa-circle-check"></i>${t('Tout est en ordre : aucun point de vigilance.')}</div>`;
@@ -2908,7 +2920,11 @@ async function initAdminPage(){
         if (name === 'commandes')  loadOrders();
     };
     $$('#adminTabs a').forEach(a => a.onclick = e => { e.preventDefault(); show(a.dataset.atab); });
-    show(TABS.includes(location.hash.slice(1)) ? location.hash.slice(1) : 'apercu');
+    /* L'onglet demandé par l'ancre est ouvert en fin de tâche : les listes
+       et leurs paramètres de recherche sont déclarés plus bas dans cette
+       fonction, un appel immédiat les trouverait encore dans leur zone morte
+       (charger admin.html#utilisateurs directement plantait). */
+    queueMicrotask(() => show(TABS.includes(location.hash.slice(1)) ? location.hash.slice(1) : 'apercu'));
 
     /* ======================================================
        UTILISATEURS
@@ -2930,7 +2946,7 @@ async function initAdminPage(){
                     <div class="avatar xs">${u.avatar ? `<img src="${u.avatar}" alt="">` : u.shopName.charAt(0).toUpperCase()}</div>
                     <div>
                         <b>${u.shopName}</b>
-                        <span>@${u.username}${u.isAdmin ? ' <i class="tag-admin">admin</i>' : ''}${u.banned ? ` <i class="tag-out">${t('suspendu')}</i>` : ''}</span>
+                        <span>@${u.username}${u.isAdmin ? ' <i class="tag-admin">admin</i>' : ''}${u.banned ? ` <i class="tag-out">${t('suspendu')}</i>` : ''}${u.shopSuspended ? ` <i class="tag-out" title="${esc(u.shopSuspendedReason || '')}">${t('boutique suspendue')}</i>` : ''}</span>
                     </div>
                 </div>
             </td>
@@ -2942,8 +2958,9 @@ async function initAdminPage(){
             <td class="num"><b>${fmt(u.revenue)}</b></td>
             <td class="num muted">${fmt(u.spent)}</td>
             <td class="muted">${dj(u.createdAt)}</td>
-            <td class="cell-actions">
+<td class="cell-actions">
                 <a class="btn btn-outline btn-sm" href="magasin.html?u=${encodeURIComponent(u.username)}" title="${t('Voir la boutique')}"><i class="fas fa-eye"></i></a>
+                <button class="btn btn-outline btn-sm" data-u-mod="${u.id}" title="${t('Modérer la boutique')}"><i class="fas fa-shield-halved"></i></button>
                 <button class="btn btn-outline btn-sm" data-u-admin="${u.id}" title="${t(u.isAdmin ? 'Retirer le rôle admin' : 'Nommer administrateur')}"><i class="fas fa-shield-halved"></i></button>
                 <button class="btn btn-outline btn-sm" data-u-ban="${u.id}" title="${t(u.banned ? 'Réactiver le compte' : 'Suspendre le compte')}"><i class="fas ${u.banned ? 'fa-unlock' : 'fa-ban'}"></i></button>
                 <button class="btn btn-outline btn-sm danger" data-u-del="${u.id}" title="${t('Supprimer le compte')}"><i class="fas fa-trash-alt"></i></button>
@@ -2951,9 +2968,211 @@ async function initAdminPage(){
         </tr>`).join('');
     }
 
+/* ======================================================
+       MODÉRATION D'UNE BOUTIQUE
+       ======================================================
+       Un seul panneau sert les deux sanctions, qui ne se confondent pas :
+       le compte suspendu ne peut plus se connecter, la boutique suspendue
+       continue de fonctionner mais sa vitrine, ses articles et ses photos
+       sont retirés du site tant que le motif n'est pas corrigé. */
+    let modData = null;
+
+    const modOpen = () => {
+        const m = $('#modModal');
+        if (!m) return;
+        m.classList.add('open');
+        document.body.classList.add('modal-open');
+    };
+    const modClose = () => {
+        const m = $('#modModal');
+        if (!m) return;
+        m.classList.remove('open');
+        $('#modReasonBox').hidden = true;
+        modData = null;
+        if (!$('#modal')?.classList.contains('open')) document.body.classList.remove('modal-open');
+    };
+
+    /* Une vignette avec son retrait : le retrait passe par le serveur, qui
+       vérifie que la photo appartient bien à la cible demandée. */
+    const modPhoto = (url, label, kind, id) => `
+        <figure class="mod-photo">
+            <img src="${url}" alt="" loading="lazy">
+            <figcaption>${label}</figcaption>
+            <button type="button" class="mod-del" data-ph="${url}" data-kind="${kind}" data-id="${id}"
+                    title="${t('Retirer cette photo')}"><i class="fas fa-trash-alt"></i></button>
+        </figure>`;
+
+    const roleLabel = role => role === 'logo' ? t('Logo')
+                              : role === 'banniere' ? t('Bannière') : t('Galerie');
+
+    function modRender(){
+        if (!modData) return;
+        const u = modData.user;
+
+        $('#modAvatar').innerHTML = u.avatar ? `<img src="${u.avatar}" alt="">` : u.shopName.charAt(0).toUpperCase();
+        $('#modName').textContent = u.shopName;
+        $('#modMeta').textContent = `@${u.username} · ${u.email} · ${u.shopCity || '—'}`;
+
+        $('#modBadges').innerHTML = [
+            u.isAdmin ? `<i class="tag-admin">${t('admin')}</i>` : '',
+            u.banned ? `<i class="tag-out">${t('Compte suspendu')}</i>` : '',
+            u.shopSuspended ? `<i class="tag-out">${t('Boutique suspendue')}</i>` : '',
+            u.shopVerified ? `<i class="tag-admin">${t('Boutique vérifiée')}</i>` : '',
+            `<i class="tag-out">${nfmt(modData.products.length)} ${t('articles')}</i>`
+        ].filter(Boolean).join('');
+
+        /* Boutons : on inverse l'état affiché, la confirmation vient après. */
+        $('#modBanTxt').textContent = u.banned ? t('Réactiver le compte') : t('Suspendre le compte');
+        $('#modBanHint').textContent = u.banned
+            ? t('Le vendeur pourra de nouveau se connecter.')
+            : t('Coupe la connexion et la vitrine.');
+        $('#modShopTxt').textContent = u.shopSuspended ? t('Réactiver la boutique') : t('Suspendre la boutique');
+        $('#modShopHint').textContent = u.shopSuspended
+            ? t('La vitrine et les articles seront de nouveau visibles.')
+            : t('Le compte reste utilisable, la vitrine disparaît.');
+
+        /* Motif : affiché quand il existe, sinon la saisie est demandée */
+        const box = $('#modReasonBox');
+        if (u.shopSuspended && u.shopSuspendedReason){
+            box.hidden = false;
+            $('#modReasonLabel').textContent = t('Motif de la suspension') + (u.shopSuspendedAt ? ' · ' + dj(u.shopSuspendedAt) : '');
+            $('#modReason').value = u.shopSuspendedReason;
+            $('#modReason').readOnly = true;
+        } else {
+            box.hidden = true;
+        }
+
+        const shopPhotos = modData.photos || [];
+        $('#modPhotoCount').textContent = shopPhotos.length ? `(${nfmt(shopPhotos.length)})` : '';
+        $('#modPhotos').innerHTML = shopPhotos.length
+            ? shopPhotos.map(p => modPhoto(p.url, roleLabel(p.role), 'shop', u.id)).join('')
+            : `<p class="muted">${t('Cette boutique n\'a pas encore de photo.')}</p>`;
+
+        $('#modProdCount').textContent = modData.products.length ? `(${nfmt(modData.products.length)})` : '';
+        $('#modProducts').innerHTML = modData.products.length
+            ? modData.products.map(p => `<div class="mod-prod">
+                  <div class="mod-prod-info">
+                      <b>${p.title}</b>
+                      <span>${t(p.cat)} · ${fmt(p.price)} · ${nfmt(p.stock)} ${t('en stock')}</span>
+                  </div>
+                  ${p.published ? `<i class="tag-admin">${t('Publié')}</i>` : `<i class="tag-out">${t('Masqué')}</i>`}
+                  <button type="button" class="btn btn-outline btn-sm" data-p-vis="${p.id}"
+                          title="${t(p.published ? 'Masquer l\'article' : 'Publier l\'article')}">
+                      <i class="fas ${p.published ? 'fa-eye-slash' : 'fa-eye'}"></i></button>
+                  <button type="button" class="btn btn-outline btn-sm danger" data-p-del="${p.id}"
+                          title="${t('Supprimer l\'article')}"><i class="fas fa-trash-alt"></i></button>
+                  <div class="mod-prod-photos">${(p.images || []).map(u2 => modPhoto(u2, t('Photo'), 'product', p.id)).join('')}</div>
+              </div>`).join('')
+            : `<p class="muted">${t('Aucun article dans cette boutique.')}</p>`;
+    }
+
+    async function modLoad(id){
+        modOpen();
+        $('#modName').textContent = '…';
+        $('#modMeta').textContent = '';
+        $('#modPhotos').innerHTML = '';
+        $('#modProducts').innerHTML = `<p class="muted">${t('Chargement…')}</p>`;
+        try {
+            modData = await BE.adminUser(id);
+            modRender();
+        } catch (err){
+            modData = null;
+            $('#modProducts').innerHTML = `<p class="muted">${t('Erreur')}: ${err.message}</p>`;
+            toast('❌ ' + err.message);
+        }
+    }
+
+    /* Le panneau reflects toujours l'état du serveur : après chaque action
+       on recharge la fiche plutôt que de deviner l'effet du patch. */
+    async function modAfter(action){
+        try {
+            toast(t(action));
+            await refresh();
+            await modLoad(modData.user.id);
+            loadUsers();
+        } catch (err){ toast('❌ ' + err.message); }
+    }
+
+    $('#modClose').onclick = modClose;
+    $('#modModal').addEventListener('click', e => { if (e.target === $('#modModal')) modClose(); });
+
+    /* Sanctions */
+    $('#modBan').onclick = async () => {
+        if (!modData) return;
+        const u = modData.user;
+        const ban = !u.banned;
+        if (ban && !confirm(t('Suspendre le compte « {0} » ? Il sera déconnecté et ne pourra plus se connecter.', [u.shopName]))) return;
+        if (!ban && !confirm(t('Réactiver le compte « {0} » ?', [u.shopName]))) return;
+        try { await BE.patchUser(u.id, { banned: ban }); modAfter(ban ? 'Compte suspendu.' : 'Compte réactivé.'); }
+        catch (err){ toast('❌ ' + err.message); }
+    };
+
+    /* Suspension de boutique : le motif est demandé avant l'envoi, puis
+       la fiche est rechargée pour afficher ce qui a réellement été enregistré. */
+    $('#modShop').onclick = () => {
+        if (!modData) return;
+        const u = modData.user;
+        if (u.shopSuspended){
+            if (!confirm(t('Réactiver la boutique « {0} » ? Ses articles redeviendront visibles.', [u.shopName]))) return;
+            BE.patchUser(u.id, { shopSuspended: false })
+              .then(() => modAfter('Boutique réactivée.'))
+              .catch(err => toast('❌ ' + err.message));
+            return;
+        }
+        const box = $('#modReasonBox'), input = $('#modReason');
+        box.hidden = false;
+        $('#modReasonLabel').textContent = t('Motif de la suspension');
+        input.readOnly = false;
+        input.value = '';
+        input.placeholder = t('Expliquez au vendeur ce qui doit être corrigé');
+        input.focus();
+    };
+
+    $('#modReasonOk').onclick = async () => {
+        if (!modData) return;
+        const reason = $('#modReason').value.trim();
+        try {
+            await BE.patchUser(modData.user.id, { shopSuspended: true, shopSuspendedReason: reason });
+            $('#modReasonBox').hidden = true;
+            modAfter('Boutique suspendue.');
+        } catch (err){ toast('❌ ' + err.message); }
+    };
+    $('#modReasonNo').onclick = () => { $('#modReasonBox').hidden = true; };
+
+    /* Retrait d'une photo, masquage ou suppression d'un article */
+    $('#modModal').addEventListener('click', async e => {
+        const btn = e.target.closest('button[data-ph], button[data-p-vis], button[data-p-del]');
+        if (!btn || !modData) return;
+        try {
+            if (btn.dataset.ph){
+                if (!confirm(t('Retirer cette photo du site ?'))) return;
+                const r = await BE.removePhoto({ kind: btn.dataset.kind, id: Number(btn.dataset.id), url: btn.dataset.ph });
+                toast(t('Photo retirée.'));
+                if (r && r.fileDeleted) toast(t('Fichier supprimé.'));
+                await refresh();
+                await modLoad(modData.user.id);
+            } else if (btn.dataset.pVis){
+                const p = modData.products.find(x => String(x.id) === btn.dataset.pVis);
+                if (!p) return;
+                await BE.editAsAdmin(p.id, { published: !p.published });
+                toast(t(p.published ? 'Article masqué.' : 'Article publié.'));
+                await refresh();
+                await modLoad(modData.user.id);
+            } else {
+                if (!confirm(t('Supprimer définitivement l\'article « {0} » ?', [modData.products.find(x => String(x.id) === btn.dataset.pDel)?.title || '']))) return;
+                await BE.deleteAsAdmin(btn.dataset.pDel);
+                toast(t('🗑️ Article supprimé.'));
+                await refresh();
+                await modLoad(modData.user.id);
+                loadProducts();
+            }
+        } catch (err){ toast('❌ ' + err.message); }
+    });
+
     $('#usersTable').addEventListener('click', async e => {
         const btn = e.target.closest('button');
         if (!btn) return;
+        if (btn.dataset.uMod){ modLoad(btn.dataset.uMod).catch(er => toast(er.message)); return; }
         const id = btn.dataset.uAdmin || btn.dataset.uBan || btn.dataset.uDel;
         if (!id) return;
         const row = btn.closest('tr');

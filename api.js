@@ -131,6 +131,9 @@ const BE = (() => {
     const adminUsers    = async (params = {}) => (await req('GET', '/api/admin/users' + qs(params))).users;
     const adminProducts = async (params = {}) => (await req('GET', '/api/admin/products' + qs(params))).products;
     const adminOrders   = async () => (await req('GET', '/api/admin/orders')).orders;
+    /* Fiche de modération : le compte, ses articles et toutes ses photos. */
+    const adminUser   = id => req('GET', '/api/admin/users/' + id);
+    const removePhoto = payload => req('POST', '/api/admin/photos/remove', payload);
     const patchUser   = async (id, patch) => (await req('PATCH', '/api/admin/users/' + id, patch)).user;
     const deleteUser  = id => req('DELETE', '/api/admin/users/' + id);
     const createUser  = async payload => (await req('POST', '/api/admin/users', payload)).user;
@@ -158,6 +161,7 @@ const BE = (() => {
         products, product, publish, editProduct, deleteProduct,
         toggleLike, likes, order, orders, shops, shop, upload,
         overview, adminUsers, adminProducts, adminOrders, adminCatalog,
+        adminUser, removePhoto,
         patchUser, deleteUser, createUser, bulkUsers,
         deleteAsAdmin, editAsAdmin, bulkProducts, adminPublish,
         setOrderStatus, deleteOrder, createOrder

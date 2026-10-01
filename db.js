@@ -88,7 +88,14 @@ CREATE TABLE IF NOT EXISTS users (
     shop_founded     TEXT    NOT NULL DEFAULT '',
     shop_legal       TEXT    NOT NULL DEFAULT '',
     shop_gallery     TEXT    NOT NULL DEFAULT '',
-    shop_verified    INTEGER NOT NULL DEFAULT 0
+    shop_verified    INTEGER NOT NULL DEFAULT 0,
+    /* ---------- Suspension de la boutique seule ----------
+       Distincte de « banned », qui coupe le compte entier. Ici le vendeur
+       garde son accès : c'est sa vitrine, ses publications et ses envois de
+       photos qui sont bloqués, le temps que l'administration corrige. */
+    shop_suspended       INTEGER NOT NULL DEFAULT 0,
+    shop_suspended_reason TEXT   NOT NULL DEFAULT '',
+    shop_suspended_at     TEXT   NOT NULL DEFAULT ''
 );
 CREATE TABLE IF NOT EXISTS sessions (
     token      TEXT PRIMARY KEY,
@@ -175,7 +182,10 @@ const MIGRATIONS = {
         ['shop_founded',       "TEXT NOT NULL DEFAULT ''"],
         ['shop_legal',         "TEXT NOT NULL DEFAULT ''"],
         ['shop_gallery',       "TEXT NOT NULL DEFAULT ''"],
-        ['shop_verified',      'INTEGER NOT NULL DEFAULT 0']
+        ['shop_verified',      'INTEGER NOT NULL DEFAULT 0'],
+        ['shop_suspended',       'INTEGER NOT NULL DEFAULT 0'],
+        ['shop_suspended_reason',"TEXT NOT NULL DEFAULT ''"],
+        ['shop_suspended_at',    "TEXT NOT NULL DEFAULT ''"]
     ],
     products: [
         ['images', "TEXT NOT NULL DEFAULT ''"],

@@ -341,6 +341,63 @@
     <div class="foot-bottom">© 2026 BusinessEnLigne | Réalisé par <b style="color:#fff">Rodrigue Disasi</b></div>
 </footer>
 
+<!-- ============ MODÉRATION D'UNE BOUTIQUE ============ -->
+<div class="modal" id="modModal">
+    <div class="modal-card mod-card">
+        <button class="modal-close" id="modClose" aria-label="Fermer"><i class="fas fa-xmark"></i></button>
+
+        <div class="mod-head">
+            <div class="cell-user">
+                <div class="avatar" id="modAvatar"></div>
+                <div>
+                    <h2 id="modName">—</h2>
+                    <p class="muted" id="modMeta">—</p>
+                </div>
+            </div>
+            <div class="mod-badges" id="modBadges"></div>
+        </div>
+
+        <!-- Sanctions -->
+        <div class="mod-actions" id="modActions">
+            <div class="mod-action">
+                <button type="button" class="btn btn-outline" id="modBan">
+                    <i class="fas fa-ban"></i> <span id="modBanTxt">Suspendre le compte</span>
+                </button>
+                <small id="modBanHint">Coupe la connexion et la vitrine.</small>
+            </div>
+            <div class="mod-action">
+                <button type="button" class="btn btn-outline" id="modShop">
+                    <i class="fas fa-store-slash"></i> <span id="modShopTxt">Suspendre la boutique</span>
+                </button>
+                <small id="modShopHint">Le compte reste utilisable, la vitrine disparaît.</small>
+            </div>
+        </div>
+
+        <!-- Motif, demandé au moment de suspendre la boutique -->
+        <div class="mod-reason" id="modReasonBox" hidden>
+            <label for="modReason" id="modReasonLabel">Motif de la suspension</label>
+            <textarea id="modReason" rows="2" maxlength="200"
+                      placeholder="Expliquez au vendeur ce qui doit être corrigé"></textarea>
+            <div class="mod-reason-row">
+                <button type="button" class="btn btn-cta btn-sm" id="modReasonOk">Confirmer</button>
+                <button type="button" class="btn btn-ghost btn-sm" id="modReasonNo">Annuler</button>
+            </div>
+        </div>
+
+        <!-- Photos -->
+        <div class="mod-section">
+            <h3><i class="fas fa-images"></i> Photos de la boutique <span id="modPhotoCount"></span></h3>
+            <div class="mod-photos" id="modPhotos"></div>
+        </div>
+
+        <!-- Articles -->
+        <div class="mod-section">
+            <h3><i class="fas fa-box"></i> Articles <span id="modProdCount"></span></h3>
+            <div id="modProducts"></div>
+        </div>
+    </div>
+</div>
+
 <div class="overlay" id="overlay"></div>
 <div class="toast-wrap" id="toastWrap"></div>
 

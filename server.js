@@ -209,6 +209,39 @@ async function requireAdmin(req, res){
     return auth.user;
 }
 
+/* ---- Suspension d'une boutique ----------------------------------
+   Deux sanctions coexistent, volontairement distinctes :
+
+     banned          le compte est coupé : plus de connexion, plus de vitrine ;
+     shop_suspended  le compte fonctionne, mais sa vitrine, ses articles,
+                     ses commandes et ses envois de photos sont coupés.
+
+   Un vendeur suspendu garde donc son tableau de bord pour comprendre ce qui
+   bloque, et l'administration garde la main sur ses contenus. */
+const SHOP_SUSPENDED_MSG = "Votre boutique est suspendue par l'administration. Contactez le support pour la réactiver.";
+
+const shopIsBlocked = u => !!(u && (u.banned || u.shop_suspended));
+
+/* Message d'erreur adapté : le compte suspendu est simply déconnecté
+   (voir currentUser), la boutique suspendue reçoit une explication. */
+function shopBlockedError(res, user){
+    return err(res, 403, user.banned ? 'Ce compte a été suspendu. Contactez l\'administration.'
+                                    : SHOP_SUSPENDED_MSG);
+}
+
+/* Identifiants des boutiques suspendues : une seule lecture, réutilisée
+   pour filtrer les listes publiques (articles, commandes, vitrines). */
+async function suspendedShops(){
+    const rows = await db.all('users');
+    return new Set(rows.filter(u => u.shop_suspended).map(u => Number(u.id)));
+}
+
+/* Test ponctuel, pour une route qui ne manipule qu'un article. */
+async function shopIsBlockedId(id){
+    const u = await db.one('users', { id: Number(id) });
+    return shopIsBlocked(u);
+}
+
 /* ==========================================================
    FICHE DÉTAILLÉE DE LA BOUTIQUE
    ------------------------------------------------------------
@@ -357,10 +390,11 @@ function checkShopField(f, raw){
            catégories, les moyens de paiement, les atouts). */
         case 'list':
         case 'tags':   return { value: readList(raw, f.allowed, f.max).join('|') };
-        /* une liste d'images : seules les vraies URL http(s) sont gardées,
+        /* une liste d'images : seules les vraies adresses d'image sont gardées,
            pour qu'une valeur glissée dans le champ ne puisse pas produire
-           autre chose qu'une photo */
-        case 'urlList': return { value: readList(raw, null, f.max).filter(isHttpUrl).join('|') };
+           autre chose qu'une photo. « /uploads/... » est accepté comme
+           http(s) : c'est ce que renvoie le téléverseur du site. */
+        case 'urlList': return { value: readList(raw, null, f.max).filter(isPhotoUrl).join('|') };
         case 'hours':  return { value: hoursField(raw) };
         case 'url':    return isHttpUrl(raw) ? { value: flat(raw, f.max) } : { error: 'Lien invalide (commencez par https://)' };
         case 'email':  return !raw ? { value: '' } : isEmail(raw) ? { value: flat(raw, f.max) } : { error: 'Adresse email invalide' };
@@ -405,7 +439,12 @@ function publicShop(u){
         phone: u.phone, avatar: u.avatar, banner: u.banner,
         createdAt: u.created_at,
         isAdmin: !!u.is_admin, isBanned: !!u.banned,
-        shopVerified: !!u.shop_verified
+        shopVerified: !!u.shop_verified,
+        /* la boutique suspendue reste décrite : le vendeur voit le motif,
+           et la vitrine publique peut expliquer pourquoi elle est fermée */
+        shopSuspended: !!u.shop_suspended,
+        shopSuspendedReason: String(u.shop_suspended_reason || ''),
+        shopSuspendedAt: String(u.shop_suspended_at || '')
     };
     for (const f of SHOP_FIELDS){
         if (out[f.key] !== undefined) continue;                 /* déjà traité ci-dessus */
@@ -551,6 +590,9 @@ async function adminUsers(users){
             ...publicUser(u),
             isAdmin: !!u.is_admin,
             banned: !!u.banned,
+            shopSuspended: !!u.shop_suspended,
+            shopSuspendedReason: String(u.shop_suspended_reason || ''),
+            shopSuspendedAt: String(u.shop_suspended_at || ''),
             lastLogin: lastLogin.get(id) || null,
             productCount: products.length,
             likesReceived: likesReceived.get(id) || 0,
@@ -566,6 +608,23 @@ async function adminUsers(users){
 
 /* Cas d'un seul compte */
 const adminUser = async u => (await adminUsers([u]))[0];
+
+/* Toutes les photos d'une boutique, avec l'endroit où elles se trouvent :
+   la modération doit pouvoir nommer la cible (« retirez celle-ci ») sans
+   deviner si c'est le logo, la bannière ou une photo de la galerie.
+   Les articles, eux, exposent déjà leurs photos via shapeProduct(). */
+function shopPhotoList(u){
+    const out = [];
+    const push = (role, url) => {
+        if (!isPhotoUrl(url)) return;
+        if (out.some(p => p.url === url)) return;
+        out.push({ role, url });
+    };
+    push('logo', u.avatar);
+    push('banniere', u.banner);
+    for (const url of readList(u.shop_gallery, null, MAX_GALLERY)) push('galerie', url);
+    return out;
+}
 
 /* Suppression en cascade d'un compte et de tout ce qui s'y rattache :
    ses articles, les J'aime reçus, ses J'aime, ses commandes et ses sessions. */
@@ -625,11 +684,14 @@ async function decorateAll(rows, meId){
 const parseItems = json => { try { return JSON.parse(json) || []; } catch (e){ return []; } };
 
 async function buildOrderLines(items){
+    /* une boutique suspendue ne peut plus recevoir de commande : le panier
+       du visiteur ignore ses articles au lieu d'échouer à la validation */
+    const blocked = await suspendedShops();
     let total = 0;
     const lines = [];
     for (const it of items){
         const p = await db.one('products', { id: Number(it.id) });
-        if (!p) continue;
+        if (!p || blocked.has(Number(p.owner_id))) continue;
         const qty = Math.max(1, Math.min(99, Math.round(Number(it.qty) || 1)));
         total += p.price * qty;
         lines.push({ id: p.id, title: p.title, price: p.price, qty, image: p.image, ownerId: p.owner_id });
@@ -789,17 +851,22 @@ const routes = {
     'PATCH /api/me': async (req, res) => {
         const auth = await currentUser(req);
         if (!auth) return err(res, 401, 'Non connecté');
+        /* boutique suspendue : la fiche reste consultable, plus modifiable —
+           l'administration doit pouvoir garder la main pendant la correction */
+        if (auth.user.shop_suspended) return shopBlockedError(res, auth.user);
         const b = await readBody(req);
         const { patch, error } = shopPatchFrom(b);
         if (error) return err(res, 400, error);
-        /* le logo et la bannière ne passent pas par SHOP_FIELDS : ils sont
-       posés depuis le téléverseur, donc seulement des URL sont acceptées */
+/* le logo et la bannière ne passent pas par SHOP_FIELDS : ils sont
+           posés depuis le téléverseur, donc seulement des adresses d'image
+           sont acceptées — y compris « /uploads/... », ce que renvoie le
+           téléverseur et ce qu'efficacement propose le sélecteur du site */
         if (b.avatar !== undefined){
-            if (b.avatar && !isHttpUrl(b.avatar)) return err(res, 400, 'Lien du logo invalide');
+            if (b.avatar && !isPhotoUrl(b.avatar)) return err(res, 400, 'Lien du logo invalide');
             patch.avatar = flat(b.avatar, 400);
         }
         if (b.banner !== undefined){
-            if (b.banner && !isHttpUrl(b.banner)) return err(res, 400, 'Lien de la bannière invalide');
+            if (b.banner && !isPhotoUrl(b.banner)) return err(res, 400, 'Lien de la bannière invalide');
             patch.banner = flat(b.banner, 400);
         }
         if (!Object.keys(patch).length) return err(res, 400, 'Aucune modification demandée');
@@ -837,7 +904,15 @@ const routes = {
         if (!showHidden) where.published = 1;
 
         const rows = await db.all('products', where, { orderBy, limit: 200 });
-        const list = await decorateAll(rows, auth ? auth.user.id : null);
+        /* Les articles d'une boutique suspendue sortent des listes publiques.
+           Contrairement au simple masquage d'un article, « ?all=1 » ne
+           suffit pas ici : seul un administrateur peut les voir, sinon un
+           visiteur contournerait la suspension en ajoutant le paramètre. */
+        const blockedShops = await suspendedShops();
+        const visible = (auth && auth.user.is_admin)
+            ? rows
+            : rows.filter(p => !blockedShops.has(Number(p.owner_id)));
+        const list = await decorateAll(visible, auth ? auth.user.id : null);
         ok(res, { products: list, total: list.length });
     },
 
@@ -845,12 +920,17 @@ const routes = {
         const auth = await currentUser(req);
         const p = await db.one('products', { id: Number(m.id) });
         if (!p) return err(res, 404, 'Article introuvable');
+        /* l'article d'une boutique suspendue n'est servi qu'à l'administration :
+           « ?all=1 » ne doit pas suffire à contourner une suspension */
+        if (!(auth && auth.user.is_admin) && await shopIsBlockedId(p.owner_id))
+            return err(res, 404, 'Article introuvable');
         ok(res, { product: await decorate(p, auth ? auth.user.id : null) });
     },
 
     'POST /api/products': async (req, res) => {
         const auth = await currentUser(req);
         if (!auth) return err(res, 401, 'Connectez-vous pour publier un article');
+        if (auth.user.shop_suspended) return shopBlockedError(res, auth.user);
         const b = await readBody(req);
 
         if (!b.title || String(b.title).trim().length < 3) return err(res, 400, 'Le titre doit contenir au moins 3 caractères');
@@ -891,6 +971,7 @@ const routes = {
     'PATCH /api/products/:id': async (req, res, url, m) => {
         const auth = await currentUser(req);
         if (!auth) return err(res, 401, 'Non connecté');
+        if (auth.user.shop_suspended) return shopBlockedError(res, auth.user);
         const p = await db.one('products', { id: Number(m.id) });
         if (!p) return err(res, 404, 'Article introuvable');
         if (!sameId(p.owner_id, auth.user.id)) return err(res, 403, "Vous ne pouvez modifier que vos propres articles");
@@ -1041,6 +1122,10 @@ const routes = {
 
         let shops = users
             .filter(u => !u.banned)                                  /* un compte suspendu n'a pas de vitrine */
+            /* une boutique suspendue disparaît de la liste publique ; comme
+               ses articles, elle ne réapparaît que pour un administrateur,
+               jamais via « ?all=1 » */
+            .filter(u => (auth && auth.user.is_admin) || !u.shop_suspended)
             .filter(u => !scoped || stats.has(Number(u.id)))         /* en catégorie : seulement les boutiques concernées */
             .map(u => {
                 const e = stats.get(Number(u.id)) || { list: [], likes: 0, sales: 0, fset: new Set() };
@@ -1107,15 +1192,19 @@ const routes = {
         const owner = await db.one('users', { username: String(m.username).toLowerCase() });
         if (!owner) return err(res, 404, 'Boutique introuvable');
         const auth = await currentUser(req);
-        const showHidden = (auth && auth.user.is_admin) || url.searchParams.get('all') === '1';
+        const isAdmin = !!(auth && auth.user.is_admin);
+        /* une boutique suspendue garde sa page : on y explique la suspension
+           au lieu d'un 404 trompeur, mais on n'y montre aucun article. */
+        const blocked = !!owner.shop_suspended && !isAdmin;
         const where = { owner_id: owner.id };
-        if (!showHidden) where.published = 1;
+        if (!isAdmin && !blocked) where.published = 1;
         const rows = await db.all('products', where, { orderBy: 'created_at DESC' });
-        const products = await decorateAll(rows, auth ? auth.user.id : null);
+        const visible = blocked ? [] : rows;
+        const products = await decorateAll(visible, auth ? auth.user.id : null);
         const allLikes = await db.all('likes');
         const orders = await db.all('orders');
 
-        const ids = new Set(rows.map(p => Number(p.id)));
+        const ids = new Set(visible.map(p => Number(p.id)));
         const followers = new Set();
         let likes = 0;
         for (const l of allLikes){
@@ -1142,9 +1231,9 @@ const routes = {
         let related = [];
         try {
             const all = await db.all('users', {}, { orderBy: 'created_at DESC' });
-            const others = all.filter(u => !u.banned && !sameId(u.id, owner.id));
+            const others = all.filter(u => !shopIsBlocked(u) && !sameId(u.id, owner.id));
             const counts = new Map();
-            for (const p of await db.all('products', showHidden ? {} : { published: 1 })){
+            for (const p of await db.all('products', isAdmin ? {} : { published: 1 })){
                 if (sameId(p.owner_id, owner.id)) continue;
                 const k = Number(p.owner_id);
                 if (!counts.has(k)) counts.set(k, { n: 0, common: 0 });
@@ -1169,6 +1258,7 @@ const routes = {
             shop: {
                 ...publicShop(owner),
                 isOwner: !!(auth && sameId(auth.user.id, owner.id)),
+                suspended: blocked,
                 productCount: products.length,
                 likes,
                 followers: followers.size,
@@ -1195,6 +1285,9 @@ const routes = {
     'POST /api/upload': async (req, res) => {
         const auth = await currentUser(req);
         if (!auth) return err(res, 401, 'Connectez-vous pour envoyer une image');
+        /* une boutique suspendue n'ajoute plus de photos : c'est souvent
+           exactement ce que l'administration cherche à bloquer */
+        if (auth.user.shop_suspended) return shopBlockedError(res, auth.user);
         const { dataUrl } = await readBody(req);
         if (!dataUrl) return err(res, 400, 'Aucune image reçue');
 
@@ -1259,6 +1352,7 @@ const routes = {
                 users: users.length,
                 admins: users.filter(u => u.is_admin).length,
                 banned: users.filter(u => u.banned).length,
+                shopsSuspended: users.filter(u => u.shop_suspended && !u.banned).length,
                 newUsers7d: users.filter(u => u.created_at >= week).length,
                 products: products.length,
                 outOfStock: products.filter(p => p.stock === 0).length,
@@ -1297,6 +1391,24 @@ const routes = {
         ok(res, { users: list.sort(cmp), total: list.length });
     },
 
+    /* ---------- ADMIN : fiche de modération d'un compte ----------
+   Tout ce qu'il faut pour juger une boutique : ses coordonnées, ses
+   statistiques, et surtout la liste de ses articles avec leurs photos. */
+'GET /api/admin/users/:id': async (req, res, url, m) => {
+        const me = await requireAdmin(req, res);
+        if (!me) return;
+        const target = await db.one('users', { id: Number(m.id) });
+        if (!target) return err(res, 404, 'Compte introuvable');
+        const rows = await db.all('products', { owner_id: target.id }, { orderBy: 'created_at DESC' });
+        const products = await decorateAll(rows, null);
+        ok(res, {
+            user: await adminUser(target),
+            products,
+            photos: shopPhotoList(target),
+            total: products.length
+        });
+    },
+
     'PATCH /api/admin/users/:id': async (req, res, url, m) => {
         const me = await requireAdmin(req, res);
         if (!me) return;
@@ -1317,6 +1429,21 @@ const routes = {
         }
         if (b.shopName !== undefined && String(b.shopName).trim().length >= 3)
             patch.shop_name = String(b.shopName).trim();
+        /* Suspension de la boutique seule : le compte garde son accès, la
+           vitrine et les publications disparaissent tant que le vendeur
+           n'a pas corrigé ce qui motive la décision. Le motif lui est
+           renvoyé dans /api/me, il doit donc être lisible. */
+        if (b.shopSuspended !== undefined){
+            if (b.shopSuspended){
+                patch.shop_suspended = 1;
+                patch.shop_suspended_reason = flat(b.shopSuspendedReason, 200);
+                patch.shop_suspended_at = nowISO();
+            } else {
+                patch.shop_suspended = 0;
+                patch.shop_suspended_reason = '';
+                patch.shop_suspended_at = '';
+            }
+        }
         /* l'administration peut aussi corriger la fiche et poser le badge
            « boutique vérifiée », que le vendeur ne peut pas s'attribuer */
         const { patch: shopPatch, error: shopError } = shopPatchFrom(b, { allowAdminFlags: true });
@@ -1397,6 +1524,18 @@ const routes = {
             if (!u) continue;
             if (action === 'ban')        { await db.update('users', id, { banned: 1 }); await db.remove('sessions', { user_id: id }); done++; }
             else if (action === 'unban') { await db.update('users', id, { banned: 0 }); done++; }
+            else if (action === 'suspendShop'){
+                await db.update('users', id, {
+                    shop_suspended: 1,
+                    shop_suspended_reason: 'Suspendue depuis la liste des comptes',
+                    shop_suspended_at: nowISO()
+                });
+                done++;
+            }
+            else if (action === 'reactivateShop'){
+                await db.update('users', id, { shop_suspended: 0, shop_suspended_reason: '', shop_suspended_at: '' });
+                done++;
+            }
             else if (action === 'admin') { if (await db.count('users', { is_admin: 1 }) > 1 || !u.is_admin) { await db.update('users', id, { is_admin: 1 }); done++; } }
             else if (action === 'unadmin'){ await db.update('users', id, { is_admin: 0 }); done++; }
             else if (action === 'delete') {
@@ -1555,6 +1694,55 @@ const routes = {
         await db.remove('likes', { product_id: p.id });
         await db.remove('products', { id: p.id });
         ok(res, { ok: true, id: p.id });
+    },
+
+    /* ---------- ADMIN : retirer une photo ---------- */
+    'POST /api/admin/photos/remove': async (req, res) => {
+        if (!await requireAdmin(req, res)) return;
+        const b = await readBody(req);
+        const photo = String(b.url || '').trim().slice(0, 400);
+        if (!photo) return err(res, 400, 'Aucune photo indiquée');
+        if (!isPhotoUrl(photo)) return err(res, 400, 'Adresse de photo invalide');
+
+        /* On ne retire jamais « n'importe où » : la photo doit appartenir
+           à la cible annoncée, sinon un administrateur pourrait vider la
+           galerie d'une autre boutique en envoyant son identifiant. */
+        let table, id, patch;
+        if (b.kind === 'product'){
+            const p = await db.one('products', { id: Number(b.id) });
+            if (!p) return err(res, 404, 'Article introuvable');
+            const list = readPhotos(p.images, p.image);
+            if (!list.includes(photo)) return err(res, 404, 'Cette photo ne fait pas partie de cet article');
+            const kept = photosField(list.filter(u => u !== photo), null);
+            table = 'products'; id = p.id;
+            patch = { image: kept.image, images: kept.images };
+        } else if (b.kind === 'shop'){
+            const u = await db.one('users', { id: Number(b.id) });
+            if (!u) return err(res, 404, 'Compte introuvable');
+            patch = {};
+            if (u.avatar === photo)  patch.avatar = '';
+            if (u.banner === photo) patch.banner = '';
+            const gallery = readList(u.shop_gallery, null, MAX_GALLERY);
+            if (gallery.includes(photo)) patch.shop_gallery = gallery.filter(x => x !== photo).join('|');
+            if (!Object.keys(patch).length)
+                return err(res, 404, 'Cette photo ne fait pas partie de cette boutique');
+            table = 'users'; id = u.id;
+        } else {
+            return err(res, 400, 'Type de photo inconnu (shop ou product)');
+        }
+
+        await db.update(table, id, patch);
+
+        /* Le fichier lui-même disparaît quand il est stocké chez nous.
+           Une URL extérieure (Facebook, Unsplash…) n'est évidemment pas
+           touchée : on se contente de décrocher le lien. */
+        let fileDeleted = false;
+        const local = /^\/uploads\/([\w.-]+)$/.exec(photo);
+        if (local){
+            try { fileDeleted = await photos.remove(local[1]); }
+            catch (e){ console.warn('[moderation] suppression de', local[1], '—', e.message); }
+        }
+        ok(res, { ok: true, kind: b.kind, id, fileDeleted });
     },
 
     'GET /api/admin/orders': async (req, res) => {

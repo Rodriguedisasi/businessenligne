@@ -51,6 +51,10 @@ const localBackend = {
     name: 'disque local',
     async put(name, buf){ fs.writeFileSync(path.join(UPLOAD_DIR, name), buf); },
     async has(name){ return fs.existsSync(path.join(UPLOAD_DIR, name)); },
+    async remove(name){
+        try { fs.unlinkSync(path.join(UPLOAD_DIR, name)); return true; }
+        catch (e){ if (e.code === 'ENOENT') return false; throw e; }
+    },
     stream(name){ return fs.createReadStream(path.join(UPLOAD_DIR, name)); }
 };
 
@@ -79,6 +83,12 @@ function cloudBackend(bucket){
             },
             async has(name){
                 try { await object(name).getMetadata(); return true; }
+                catch (e){ if (String(e.code) === '404') return false; throw e; }
+            },
+            /* pas de « ignoreNotFound » : on distingue « absent » de « erreur »,
+               ce qui compte quand l'administration supprime une photo */
+            async remove(name){
+                try { await object(name).delete(); return true; }
                 catch (e){ if (String(e.code) === '404') return false; throw e; }
             },
             stream(name){ return object(name).createReadStream(); }
@@ -125,6 +135,19 @@ function firestoreBackend(){
         async has(name){
             const s = await manifest(name).get();
             return s.exists;
+        },
+        /* le fichier = son manifeste et tous ses morceaux : on les efface
+           dans le même lot, sinon la photo laisserait derrière elle des
+           morceaux orphelins qui occuperaient la base pour rien */
+        async remove(name){
+            const s = await manifest(name).get();
+            if (!s.exists) return false;
+            const { chunks } = s.data();
+            const batch = store.batch();
+            for (let i = 0; i < chunks; i++) batch.delete(chunkRef(name, i));
+            batch.delete(manifest(name));
+            await batch.commit();
+            return true;
         },
         /* Le reste du serveur s'attend à un flux renvoyé immédiatement :
            la lecture Firestore étant asynchrone, on renvoie un flux vide
@@ -194,6 +217,7 @@ const photos = {
     bucket: bucketName,
     put: (name, buf, mime) => get().put(name, buf, mime),
     has: name => get().has(name),
+    remove: name => get().remove(name),
     stream: name => get().stream(name),
     read: readAll
 };
