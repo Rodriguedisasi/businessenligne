@@ -98,6 +98,16 @@ function inspectCredentials(cred){
 
 const isAvailable = () => admin.isInstalled() && (!!findCredentials() || hasRuntimeCredentials());
 
+/* Pourquoi Firestore est-il inutilisable ? Sans ce détail, un secret
+   d'environnement mal renseigné se lit comme un simple « identifiants
+   manquants », impossible à corriger depuis les journaux d'hébergement. */
+function unavailableReason(){
+    if (!admin.isInstalled()) return 'firebase-admin n\'est pas installé (npm install firebase-admin)';
+    if (findCredentials() || hasRuntimeCredentials()) return null;
+    if (credProblem) return 'Identifiants Firebase illisibles — ' + credProblem;
+    return 'Aucun identifiant Firebase trouvé (attendu : service-account.json ou FIREBASE_SERVICE_ACCOUNT)';
+}
+
 /* Collections Firestore : documents dont l'id est numérique auto-incrémenté */
 const NUMERIC = new Set(['users', 'products', 'orders']);
 const PAIR    = new Set(['likes']);
@@ -373,4 +383,4 @@ function createFirestore(){
 
 const initFirestore = () => makeFirestoreDriver(createFirestore());
 
-module.exports = { initFirestore, createFirestore, isAvailable, findCredentials, hasRuntimeCredentials, inspectCredentials, REQUIRED_FIELDS, CREDENTIAL_FILES, DATABASE_ID };
+module.exports = { initFirestore, createFirestore, isAvailable, unavailableReason, findCredentials, hasRuntimeCredentials, inspectCredentials, REQUIRED_FIELDS, CREDENTIAL_FILES, DATABASE_ID };

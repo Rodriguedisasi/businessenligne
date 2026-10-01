@@ -343,12 +343,39 @@ function makeJsonDriver(){
    ========================================================== */
 function createLocalDriver(){ return sqlite ? makeSqliteDriver() : makeJsonDriver(); }
 
+/* Détecte une fonction sans serveur persistant (Vercel, Cloud Functions,
+   App Hosting). process.exit() y tue la fonction entière : chaque requête
+   répond alors « FUNCTION_INVOCATION_FAILED », sans le moindre journal. */
+function isServerless(){
+    return !!(process.env.VERCEL
+        || process.env.AWS_LAMBDA_FUNCTION_NAME
+        || process.env.FUNCTION_TARGET
+        || process.env.K_SERVICE);
+}
+
+/* Pilote de secours : la base n'a pas pu être ouverte, mais le site doit
+   rester lisible. Chaque appel échoue avec un message qui explique la cause,
+   ce qui la remonte dans les journaux de la plateforme. */
+function makeDownDriver(reason){
+    const fail = () => {
+        const e = new Error(reason);
+        e.status = 503;
+        return Promise.reject(e);
+    };
+    const down = { driver: 'indisponible', projectId: null };
+    ['all', 'one', 'insert', 'insertMany', 'update', 'remove', 'count', 'reset', 'query', 'tx']
+        .forEach(name => { down[name] = fail; });
+    return down;
+}
+
 function createFirestoreDriver(){
     /* Chargé à la demande : Firestore n'est utile que si des identifiants
        sont présents, inutile de payer son chargement en mode local. */
     const firestore = require('./db-firestore');
-    if (!firestore.isAvailable())
-        throw new Error('Aucun identifiant Firebase trouvé (attendu : service-account.json ou FIREBASE_SERVICE_ACCOUNT) — lancez « npm run firebase:check » pour le diagnostic');
+    if (!firestore.isAvailable()){
+        const why = firestore.unavailableReason ? firestore.unavailableReason() : 'identifiants Firebase introuvables';
+        throw new Error(why + ' — lancez « npm run firebase:check » pour le diagnostic');
+    }
     return firestore.initFirestore();
 }
 
@@ -358,9 +385,12 @@ function pickDriver(){
         try { return createFirestoreDriver(); }
         catch (e){
             if (want === 'firebase'){
-                /* Firebase demandé explicitement : on s'arrête avec la marche
-                   à suivre, plutôt qu'avec une pile d'appels incompréhensible. */
                 console.error('\n  ❌ ' + e.message + '\n');
+                /* En fonction serveurless, tuer le processus fait échouer
+                   toutes les requêtes sans explication : on garde donc le
+                   site en ligne et l'erreur est renvoyée à chaque appel. */
+                if (isServerless())
+                    return makeDownDriver('Base de données indisponible : ' + e.message);
                 console.error('     1. Console Firebase → Paramètres du projet → Comptes de service');
                 console.error('     2. « Générer une clé privée » (format JSON)');
                 console.error('     3. Renommez le fichier téléchargé « service-account.json »');

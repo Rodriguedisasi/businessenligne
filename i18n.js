@@ -960,6 +960,155 @@ const ATTRS = ['placeholder', 'title', 'aria-label', 'alt', 'data-ph'];
 const SRC_TEXT = new WeakMap();
 const SRC_ATTR = new WeakMap();
 
+/* La vitrine détaillée d'une boutique (« Mon magasin ») : libellés de la
+   page publique, des réglages et de la jauge de complétion.
+   Traduction anglaise ajoutée ; le swahili et le lingala retombent sur le
+   français tant qu'elles ne sont pas saisies. */
+Object.assign(DICT, {
+    /* --- éléments de la vitrine --- */
+    'Boutique vérifiée':                     ['Verified shop', 'Duka limehakikiwa', 'Duka ekotambami'],
+    'Boutique vérifiée par la modération':   ['Shop verified by our moderation team'],
+    'Boutiques vérifiées':                   ['Verified shops'],
+    'Boutiques les plus détaillées':         ['Most detailed shops'],
+    'Mieux notées':                          ['Best rated', 'Zilizo na nota nzuri'],
+    'Plus de ventes':                        ['Most sales'],
+    'Ouvertes maintenant':                   ['Open now'],
+    'Ouvert':                                ['Open', 'Imefunguka', 'Epupuka'],
+    'Fermé':                                 ['Closed', 'Imefungwa', 'Fungama'],
+    'horaires non précisés':                 ['opening hours not provided'],
+    'Note moyenne des articles':             ['Average item rating'],
+    'note':                                  ['rating', 'nota'],
+    'fourchette':                            ['range'],
+    'Fourchette de prix':                    ['Price range'],
+    'Articles en stock':                     ['Items in stock'],
+    'Membre depuis':                         ['Member since'],
+    'depuis {0}':                            ['since {0}'],
+    'Vitrine complète à {0} %':              ['Shop profile {0}% complete'],
+    'Vitrine renseignée':                    ['Profile completed'],
+    'Vitrine renseignée à {0} %':            ['Profile {0}% completed'],
+    'Confiance':                             ['Trust'],
+    'Signalez toute information trompeuse à la modération.':
+        ['Report any misleading information to moderation.'],
+    'Plus votre boutique est détaillée, plus les acheteurs vous font confiance.':
+        ['The more detail you add, the more buyers will trust you.'],
+    'Votre vitrine est complète : les acheteurs ont toutes les informations.':
+        ['Your shop profile is complete: buyers have every detail.'],
+    'Tout est renseigné.':                   ['Everything is filled in.'],
+    '{0} sur {1} informations renseignées':  ['{0} of {1} details filled in'],
+
+    /* --- onglets et tableaux --- */
+    'Informations':                          ['Information'],
+    'Galerie':                               ['Gallery', 'Picha'],
+    'Paiement & livraison':                  ['Payment & delivery'],
+    'Réseaux sociaux':                       ['Social media', 'Mitandao ya kijamii', 'Mitandao'],
+    'Horaires définis':                      ['Opening hours set'],
+    'Horaires non communiqués.':             ['Opening hours not provided.'],
+    "Aujourd'hui : {0}":                     ['Today: {0}'],
+    'Voir tous les horaires':                ['See all opening hours'],
+    'Voir sur la carte':                     ['View on the map'],
+    'Contact':                               ['Contact'],
+    'Identifiant':                           ['Username'],
+    'Nom de la boutique':                    ['Shop name'],
+    'Catégories':                             ['Categories', 'Makundi'],
+    'Ville':                                 ['City', 'Jiji'],
+    'Adresse':                               ['Address', 'Anwani'],
+    'Point de repère':                       ['Landmark'],
+    'Boutique ouverte depuis':               ['Shop opened in'],
+    'Identifiants légaux':                   ['Legal details'],
+    'Identifiants légaux (NIF / RCCM)':      ['Legal details (NIF / RCCM)'],
+    'Téléphone':                             ['Phone', 'Simu'],
+    'Numéro de téléphone':                   ['Phone number'],
+    'WhatsApp':                              ['WhatsApp'],
+    'Appeler':                               ['Call', 'Piga simu'],
+    'Site web':                              ['Website'],
+    'Oui':                                   ['Yes', 'Ndiyo', 'Oi'],
+    'Non':                                   ['No', 'Hapana', 'Tata'],
+    'Oui{0}':                                ['Yes{0}'],
+    'Non précisé':                           ['Not specified'],
+    'Aucune boutique':                      ['No shop'],
+    'Aucun article ici':                     ['No item here'],
+    "Aucun résultat pour « {0} ».":          ['No result for "{0}".'],
+    'Autres boutiques à découvrir':          ['Other shops to discover'],
+
+    /* --- livraison et paiement --- */
+    'Livraison à domicile':                  ['Home delivery', 'Usafirishaji nyumbani'],
+    'Retrait en boutique':                   ['Pickup in store'],
+    'Retrait':                               ['Pickup'],
+    'Retours acceptés':                      ['Returns accepted'],
+    "J'accepte les retours":                  ['I accept returns'],
+    'Zones desservies':                      ['Areas served', 'Maeneo yanayohudumiwa'],
+    'Livraison offerte dès…':                ['Free delivery from…'],
+    'Frais de livraison':                    ['Delivery fees'],
+    'Délai de livraison':                    ['Delivery time'],
+    'délai : {0}':                           ['time: {0}'],
+    'Dès {0}':                               ['From {0}'],
+    'Garantie':                              ['Warranty'],
+    'Garanties & service client':            ['Warranty & customer service'],
+    'Délai de retour':                       ['Return period'],
+    'Moyens de paiement non précisés.':      ['Payment methods not specified.'],
+    'Paiement : {0}':                        ['Payment: {0}'],
+    "Cette boutique n'a pas encore précisé ses conditions de livraison.":
+        ['This shop has not specified its delivery terms yet.'],
+    "Cette boutique n'a pas encore renseigné ses informations.":
+        ['This shop has not filled in its details yet.'],
+
+    /* --- réglages de la boutique --- */
+    'Identité':                              ['Identity'],
+    'Coordonnées':                           ['Contact details'],
+    'Logo':                                  ['Logo'],
+    'Bannière de couverture':                ['Cover banner'],
+    'Accroche (slogan)':                     ['Tagline (slogan)'],
+    'Catégories spécialités':                ['Specialist categories'],
+    'Choisissez au moins une catégorie.':    ['Choose at least one category.'],
+    'Description courte':                    ['Short description'],
+    'Présentation détaillée':                ['Detailed presentation'],
+    'Atouts de la boutique':                 ['Shop strengths'],
+    'Choisissez au moins un atout.':         ['Choose at least one strength.'],
+    'Année d\'ouverture':                    ['Year opened'],
+    'Année invalide (ex. : 2019).':          ['Invalid year (e.g. 2019).'],
+    'Adresse / quartier':                    ['Address / neighbourhood'],
+    'Email de contact':                      ['Contact email'],
+    'Livraison & retrait':                   ['Delivery & pickup'],
+    'Horaires d\'ouverture':                 ['Opening hours'],
+    'Galerie de la boutique':                ['Shop gallery'],
+    'Enregistrer ma boutique':               ['Save my shop'],
+    'Où vous trouver et comment vous joindre.': ['Where to find you and how to reach you.'],
+    'Expliquez comment vous livrez vos articles.': ['Explain how you deliver your items.'],
+    "Le nom, le logo et l'accroche apparaissent en haut de votre vitrine.":
+        ['The name, logo and tagline appear at the top of your shop page.'],
+    "Le bandeau « ouvert / fermé » de votre vitrine se met à jour tout seul.":
+        ['The open/closed badge on your shop page updates by itself.'],
+    "Photos de l'équipe, de la boutique, de vos rayon et de vos nouveautés.":
+        ['Photos of your team, your shop, your shelves and your new arrivals.'],
+    'Vos visiteurs peuvent retrouver vos autres comptes.':
+        ['Your visitors can find your other accounts.'],
+    'Appliquer le lundi à toute la semaine': ['Apply Monday hours to the whole week'],
+    'Ajouter une image':                     ['Add an image'],
+    'Ajouter une photo':                     ['Add a photo'],
+    'Changer':                               ['Change', 'Badilisha'],
+    'Retirer':                               ['Remove', 'Ondoa'],
+    'Agrandir la photo':                     ['Enlarge photo'],
+    '{0} photos au maximum':                 ['Maximum {0} photos'],
+    'png, jpg, gif ou webp — 3 Mo max':      ['png, jpg, gif or webp — max 3 MB'],
+
+    /* --- messages --- */
+    'Maximum 60 caractères.':                ['Maximum 60 characters.'],
+    'Maximum 80 caractères.':                ['Maximum 80 characters.'],
+    'Maximum 90 caractères.':                ['Maximum 90 characters.'],
+    'Maximum 120 caractères.':               ['Maximum 120 characters.'],
+    'Maximum 140 caractères.':               ['Maximum 140 characters.'],
+    'Maximum 160 caractères.':               ['Maximum 160 characters.'],
+    'Maximum 200 caractères.':               ['Maximum 200 characters.'],
+    'Maximum 600 caractères.':               ['Maximum 600 characters.'],
+    'Maximum 2500 caractères.':              ['Maximum 2500 characters.'],
+    'Numéro invalide.':                      ['Invalid number.'],
+    'Lien invalide (https://…).':            ['Invalid link (https://…).'],
+    '✅ Horaires appliqués à toute la semaine.': ['✅ Hours applied to the whole week.'],
+    '✅ Lien copié.':                        ['✅ Link copied.'],
+    'Bonjour {0}, je trouve vos articles sur BusinessEnLigne.':
+        ['Hello {0}, I found your items on BusinessEnLine.'],
+});
+
 /* t('texte') : traduit une chaîne écrite dans le JavaScript.
    Les {0}, {1}… sont remplacés par les arguments fournis. */
 function t(src, vars){

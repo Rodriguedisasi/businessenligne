@@ -1091,9 +1091,18 @@ function initAuthPage(){
         b.innerHTML = `<i class="far fa-eye${show2 ? '-slash' : ''}"></i>`;
     });
 
-    const mark = (id, valid) => { $('#' + id).classList.toggle('invalid', !valid); return valid; };
+    /* Un champ peut ne pas avoir de .f-row (case à cocher des conditions) :
+       on ne lève alors aucune erreur, sinon le formulaire resterait muet. */
+    const mark = (id, valid) => {
+        const row = $('#' + id);
+        if (row) row.classList.toggle('invalid', !valid);
+        return valid;
+    };
     $$('#registerForm input, #registerForm textarea').forEach(el =>
-        el.addEventListener('input', () => el.closest('.f-row').classList.remove('invalid')));
+        el.addEventListener('input', () => {
+            const row = el.closest('.f-row') || el.closest('.check-row');
+            if (row) row.classList.remove('invalid');
+        }));
 
     /* ---------- INSCRIPTION ----------
        L'email suffit : l'identifiant et le nom de la boutique
@@ -1365,7 +1374,7 @@ function makeImagePicker(zone, onChange){
 }
 
 /* ---------- GALERIE DE LA BOUTIQUE ---------- */
-function makeShopGallery(zone, initial){
+function makeShopGallery(zone, initial, onChange){
     let photos = (Array.isArray(initial) ? initial : []).filter(Boolean).slice(0, SHOP_MAX_GALLERY);
     const file = document.createElement('input');
     file.type = 'file';
@@ -1382,7 +1391,7 @@ function makeShopGallery(zone, initial){
             + (photos.length < SHOP_MAX_GALLERY
                 ? `<button type="button" class="gal-add"><i class="fas fa-plus"></i><span>${t('Ajouter une photo')}</span>
                      <em>${nfmt(photos.length)}/${nfmt(SHOP_MAX_GALLERY)}</em></button>`
-                : `<span class="gal-full">${t('{0} photosmaximum', [nfmt(SHOP_MAX_GALLERY)])}</span>`);
+                : `<span class="gal-full">${t('{0} photos au maximum', [nfmt(SHOP_MAX_GALLERY)])}</span>`);
     };
     const send = async list => {
         const room = SHOP_MAX_GALLERY - photos.length;
@@ -1391,12 +1400,13 @@ function makeShopGallery(zone, initial){
         try {
             for (const f of list.slice(0, room)) photos.push(await BE.upload(f));
             paint();
+            onChange && onChange();
         } catch (e){ toast('❌ ' + e.message); }
         finally { zone.classList.remove('busy'); file.value = ''; }
     };
     zone.addEventListener('click', e => {
         const del = e.target.closest('[data-del]');
-        if (del){ photos.splice(+del.dataset.del, 1); paint(); return; }
+        if (del){ photos.splice(+del.dataset.del, 1); paint(); onChange && onChange(); return; }
         file.click();
     });
     ['dragenter', 'dragover'].forEach(ev => zone.addEventListener(ev, e => { e.preventDefault(); zone.classList.add('over'); }));
@@ -1588,16 +1598,28 @@ async function initAccountPage(){
     buildHoursGrid($('#hoursGrid'));
     bindCharCounters(shopForm());
 
-    const logo = makeImagePicker($('#logoPick'));
-    const banner = makeImagePicker($('#bannerPick'));
-    const gallery = makeShopGallery($('#galleryPick'), me.shopGallery);
+    /* Le formulaire ne contient pas de champ pour le logo, la bannière, la
+       galerie et les horaires : leurs valeurs viennent des widgets et doivent
+       être fusionnées avant chaque envoi (aperçu comme enregistrement). */
+    let logo, banner, gallery;
+    const draft = () => Object.assign(collectShopForm(), {
+        avatar:      logo.get(),
+        banner:      banner.get(),
+        shopGallery: gallery.list(),
+        shopHours:   hoursGet($('#hoursGrid'))
+    });
+
+    logo    = makeImagePicker($('#logoPick'),    () => liveScore(draft()));
+    banner  = makeImagePicker($('#bannerPick'),  () => liveScore(draft()));
+    gallery = makeShopGallery($('#galleryPick'), me.shopGallery, () => liveScore(draft()));
+    $('#hoursGrid').addEventListener('change', () => liveScore(draft()));
 
     /* « appliquer le lundi à toute la semaine » */
     $('#hoursCopy').onclick = () => {
         const mon = hoursGet($('#hoursGrid')).mon;
         hoursSet($('#hoursGrid'), Object.fromEntries(SHOP_DAYS.map(d => [d.id, mon])));
         toast(t('✅ Horaires appliqués à toute la semaine.'));
-        liveScore(collectShopForm());
+        liveScore(draft());
     };
 
     fillShopForm(me);
@@ -1611,24 +1633,15 @@ async function initAccountPage(){
             const row = el.closest('.f-row');
             if (row) row.classList.remove('invalid');
         }));
-    shopForm().addEventListener('input', () => liveScore(collectShopForm()));
-    shopForm().addEventListener('change', () => liveScore(collectShopForm()));
+    shopForm().addEventListener('input', () => liveScore(draft()));
+    shopForm().addEventListener('change', () => liveScore(draft()));
 
     shopForm().addEventListener('submit', async e => {
         e.preventDefault();
         if (!validateShopForm()) return toast('⚠️ ' + t('Merci de corriger les champs en rouge.'));
 
-        const draft = collectShopForm();
-        /* les trois blocs gérés par des widgets (logo, bannière, galerie,
-           horaires) n'ont pas de champ dans le formulaire : leurs valeurs
-           viennent du widget et écrasent la clé vide lue dans le HTML */
-        draft.avatar       = logo.get();
-        draft.banner       = banner.get();
-        draft.shopGallery  = gallery.list();
-        draft.shopHours    = hoursGet($('#hoursGrid'));
-
         try {
-            const res = await BE.updateProfile(draft);
+            const res = await BE.updateProfile(draft());
             const u = res.user || res;
             refreshAccountUI();
             $('#meShop').textContent = u.shopName;
@@ -2077,6 +2090,40 @@ async function initPublishPage(){
 /* ==========================================================
    PAGE PUBLIQUE D'UNE BOUTIQUE
    ========================================================== */
+
+/* Une ligne « libellé : valeur » dans les tableaux d'informations. */
+function infoRow(icon, label, value, extra){
+    if (value === undefined || value === null || value === '' || (Array.isArray(value) && !value.length)) return '';
+    return `<div class="it-row">${extra || `<i class="fas ${icon}"></i>`}
+        <span class="it-label">${esc(t(label))}</span>
+        <span class="it-value">${value}</span></div>`;
+}
+/* Un bloc titré, avec une ligne par information disponible. */
+function infoBlock(rows){
+    const body = rows.filter(Boolean).join('');
+    return body ? `<div class="info-table">${body}</div>` : '';
+}
+/* Découpe un texte long en paragraphes, sans casser les URL. */
+const paragraphs = txt => String(txt || '')
+    .split(/\n{2,}/).map(s => s.trim()).filter(Boolean)
+    .map(p => `<p>${esc(p).replace(/\n/g, '<br>')}</p>`).join('');
+
+const HOURS_TEXT = h => h.closed ? t('Fermé') : `${h.o} – ${h.c}`;
+
+function socialLinks(shop){
+    const rows = [
+        ['Facebook',  'faFacebook',  'fa-facebook',   shop.shopFacebook],
+        ['Instagram', 'faInstagram', 'fa-instagram',  shop.shopInstagram],
+        ['TikTok',    'faTiktok',    'fa-tiktok',     shop.shopTiktok],
+        ['YouTube',   'faYoutube',   'fa-youtube',    shop.shopYoutube],
+        ['Site web',  '',            'fa-globe',      shop.shopWebsite]
+    ].filter(r => r[3]);
+    return rows.length
+        ? `<ul class="sh-social">${rows.map(r => `<li><a href="${esc(r[3])}" target="_blank" rel="noopener nofollow">
+               <i class="${r[1] ? 'fab ' + r[1] : 'fas ' + r[2]}"></i><span>${esc(t(r[0]))}</span></a></li>`).join('')}</ul>`
+        : '';
+}
+
 async function initShopPage(){
     refreshAccountUI();
 
@@ -2100,10 +2147,19 @@ async function initShopPage(){
                          <select class="sh-sort" id="shopsSort">
                              <option value="products">${t("Plus d'articles")}</option>
                              <option value="likes">${t("Plus de J'aime")}</option>
+                             <option value="rating">${t('Mieux notées')}</option>
+                             <option value="sales">${t('Plus de ventes')}</option>
+                             <option value="score">${t('Boutiques les plus détaillées')}</option>
+                             <option value="open">${t('Ouvertes maintenant')}</option>
                              <option value="name">${t('Nom (A-Z)')}</option>
                              <option value="recent">${t('Plus récentes')}</option>
                          </select>
                      </span>
+                 </div>
+                 <div class="sh-filters">
+                     <label class="chk"><input type="checkbox" id="fVerified"><span><i class="fas fa-badge-check"></i>${t('Boutiques vérifiées')}</span></label>
+                     <label class="chk"><input type="checkbox" id="fDelivery"><span><i class="fas fa-truck"></i>${t('Livraison à domicile')}</span></label>
+                     <label class="chk"><input type="checkbox" id="fHasPhone"><span><i class="fas fa-phone"></i>${t('Numéro de téléphone')}</span></label>
                  </div>
                  <p class="sh-intro" id="shopsIntro"></p>
                  <div id="shopsList" class="shop-grid"></div>
@@ -2114,14 +2170,18 @@ async function initShopPage(){
 
         const query  = $('#shopsQuery');
         const sorter = $('#shopsSort');
+        const toggles = { verified: $('#fVerified'), delivery: $('#fDelivery'), hasPhone: $('#fHasPhone') };
         const paint = async () => {
             const q = query.value.trim();
             try {
                 const params2 = { sort: sorter.value };
                 if (wantedCat !== 'Toutes') params2.cat = wantedCat;
                 if (q) params2.q = q;
+                if (toggles.verified.checked) params2.verified = '1';
+                if (toggles.delivery.checked) params2.delivery = '1';
                 const all = await BE.shops(params2);
-                const list = all.filter(s => s.productCount > 0 || wantedCat === 'Toutes');
+                const list = all.filter(s => (s.productCount > 0 || wantedCat === 'Toutes')
+                    && (!toggles.hasPhone.checked || s.phone));
                 $('#shopsIntro').textContent = list.length
                     ? t(list.length > 1
                         ? '{0} boutiques — cliquez pour voir les photos, les prix et les articles publiés.'
@@ -2142,12 +2202,13 @@ async function initShopPage(){
         let shopTimer;
         query.addEventListener('input', () => { clearTimeout(shopTimer); shopTimer = setTimeout(paint, 250); });
         sorter.addEventListener('change', paint);
+        Object.values(toggles).forEach(el => el.addEventListener('change', paint));
         await paint();
         return;
     }
 
     try {
-        const { shop, products } = await BE.shop(username);
+        const { shop, products, related } = await BE.shop(username);
         $('#shopHeader').hidden = false;
         $('#shopBody').hidden = false;
 
@@ -2161,30 +2222,93 @@ async function initShopPage(){
             if (b) b.textContent = shop.shopName + (startCat === 'Toutes' ? '' : ' — ' + startCat);
         }
 
-        $('#shName').textContent = shop.shopName;
-        $('#shMeta').textContent = `@${shop.username} · ${t('{0} article(s)', [nfmt(shop.productCount)])} · ${shop.shopCity || 'Lubumbashi'}`;
+        /* ---------- en-tête ---------- */
+        const isMe = BE.user() && BE.user().username === shop.username;
+        $('#shName').childNodes[0].nodeValue = shop.shopName;
+        $('#shVerified').hidden = !shop.shopVerified;
+        if (shop.shopSlogan){ $('#shSlogan').hidden = false; $('#shSlogan').textContent = shop.shopSlogan; }
+        $('#shMeta').innerHTML = [
+            `<span><i class="fas fa-at"></i> @${esc(shop.username)}</span>`,
+            `<span><i class="fas fa-box"></i> ${esc(t('{0} article(s)', [nfmt(shop.productCount)]))}</span>`,
+            `<span><i class="fas fa-map-marker-alt"></i> ${esc(shop.shopCity || 'Lubumbashi')}</span>`,
+            shop.shopFounded ? `<span><i class="fas fa-calendar"></i> ${esc(t('depuis {0}', [shop.shopFounded]))}</span>` : ''
+        ].filter(Boolean).join('');
         $('#shDesc').textContent = shop.shopDesc || t("Cette boutique n'a pas encore de description.");
         $('#shArticles').textContent = nfmt(shop.productCount);
         $('#shLikes').textContent = nfmt(shop.likes);
         $('#shSince').textContent = new Date(shop.createdAt).getFullYear();
         $('#shAvatar').innerHTML = shop.avatar
-            ? `<img src="${shop.avatar}" alt="${shop.shopName}">`
-            : shop.shopName.charAt(0).toUpperCase();
+            ? `<img src="${esc(shop.avatar)}" alt="${esc(shop.shopName)}">`
+            : esc(shop.shopName.charAt(0).toUpperCase());
         if (shop.banner) $('#shBanner').src = shop.banner;
-        if (BE.user() && BE.user().username === shop.username) $('#shPublish').hidden = false;
 
-        /* « Suivre » = j'aime la boutique, comme sur les réseaux */
+        /* étiquettes : catégories, ouvert/fermé, services */
+        const tags = [];
+        (shop.shopCats || []).forEach(c => tags.push(`<span class="sh-tag cat">${esc(t(c))}</span>`));
+        tags.push(openBadge(shop));
+        if (shop.shopDelivery) tags.push(`<span class="sh-tag"><i class="fas fa-truck"></i>${t('Livraison')}</span>`);
+        if (shop.shopPickup)   tags.push(`<span class="sh-tag"><i class="fas fa-hand-hold"></i>${t('Retrait')}</span>`);
+        if (shop.shopReturns)  tags.push(`<span class="sh-tag"><i class="fas fa-rotate-left"></i>${t('Retours')}</span>`);
+        if (shop.rating)       tags.push(`<span class="sh-tag"><i class="fas fa-star"></i>${shop.rating} / 5</span>`);
+        $('#shTags').innerHTML = tags.join('');
+
+        /* ---------- barre de statistiques ---------- */
+        const stat = (icon, value, label, title) =>
+            `<div class="sb-item"${title ? ` title="${esc(t(title))}"` : ''}><i class="fas ${icon}"></i>
+                <b>${value}</b><span>${esc(t(label))}</span></div>`;
+        $('#shStatbar').innerHTML = [
+            stat('fa-box', nfmt(shop.productCount), 'articles'),
+            stat('fa-heart', nfmt(shop.likes), "J'aime"),
+            stat('fa-users', nfmt(shop.followers), 'abonnés'),
+            stat('fa-star', shop.rating ? shop.rating : '—', t('note'), t('Note moyenne des articles')),
+            stat('fa-cart-shopping', nfmt(shop.sales), 'ventes'),
+            stat('fa-cubes', nfmt(shop.stockTotal), t('en stock')),
+            shop.minPrice != null
+                ? `<div class="sb-item wide" title="${esc(t('Fourchette de prix'))}"><i class="fas fa-tags"></i>
+                     <b>${fmt(shop.minPrice)}${shop.maxPrice > shop.minPrice ? ' – ' + fmt(shop.maxPrice) : ''}</b>
+                     <span>${esc(t('fourchette'))}</span></div>`
+                : ''
+        ].filter(Boolean).join('');
+
+        /* ---------- barre de couverture : badge de complétude ---------- */
+        $('#shBadges').innerHTML = [
+            shop.shopVerified ? `<span class="cov-badge v"><i class="fas fa-badge-check"></i>${t('Boutique vérifiée')}</span>` : '',
+            `<span class="cov-badge"><i class="fas fa-gauge-high"></i>${t('Vitrine complète à {0} %', [nfmt(shop.score)])}</span>`
+        ].filter(Boolean).join('');
+
+        /* ---------- boutons d'action ---------- */
+        if (shop.phone){
+            const call = $('#callBtn');
+            call.hidden = false;
+            call.href = telLink(shop.phone);
+        }
+        if (shop.shopWhatsapp || shop.phone){
+            const wa = $('#waBtn');
+            wa.hidden = false;
+            wa.href = waLink(shop.shopWhatsapp || shop.phone,
+                t('Bonjour {0}, je trouve vos articles sur BusinessEnLigne.', [shop.shopName]));
+        }
+        if (isMe){
+            $('#shPublish').hidden = false;
+            $('#shEdit').hidden = false;
+        }
+        $('#shareBtn').onclick = async () => {
+            const data = { title: shop.shopName, text: shop.shopSlogan || shop.shopDesc || shop.shopName, url: location.href };
+            try {
+                if (navigator.share) await navigator.share(data);
+                else { await navigator.clipboard.writeText(location.href); toast(t('✅ Lien copié.')); }
+            } catch (e){ /* l'utilisateur a annulé */ }
+        };
+
+        /* « Suivre » = aimer les articles de la boutique, comme sur les réseaux */
         const follow = $('#followBtn');
         const followed = PRODUCTS.some(p => p.likedByMe && p.owner && p.owner.username === shop.username);
-        const paint = on => {
-            follow.innerHTML = on
-                ? `<i class="fas fa-heart"></i> ${t('Vous suivez')}`
-                : `<i class="far fa-heart"></i> ${t('Suivre')}`;
-            follow.style.background = on ? '#fff1f1' : '';
-            follow.style.borderColor = on ? '#ffafcb' : '';
-            follow.style.color = on ? '#cc0c39' : '';
+        const paintFollow = on => {
+            follow.classList.toggle('on', on);
+            follow.innerHTML = (on ? '<i class="fas fa-heart"></i>' : '<i class="far fa-heart"></i>')
+                + ' ' + (on ? t('Vous suivez') : t('Suivre'));
         };
-        paint(followed);
+        paintFollow(followed);
         follow.onclick = async () => {
             if (!requireLogin(t('Connectez-vous pour suivre une boutique'))) return;
             const mine = PRODUCTS.filter(p => p.owner && p.owner.username === shop.username);
@@ -2196,29 +2320,204 @@ async function initShopPage(){
             } catch (err){ toast('❌ ' + err.message); }
         };
 
-        /* filtres par catégorie */
-        const cats = ['Toutes', ...new Set(products.map(p => p.cat))];
-        const paintChips = active => {
-            $('#shopFilters').innerHTML = cats.map(c =>
-                `<a href="#" class="chip ${c === active ? 'active' : ''}" data-sc="${c}">${c === 'Toutes' ? t('Tous les articles') : t(c)}</a>`).join('');
+        /* ---------- onglets ---------- */
+        $('#shopTabs').addEventListener('click', e => {
+            const a = e.target.closest('[data-tab]');
+            if (!a) return;
+            e.preventDefault();
+            $$('#shopTabs a').forEach(x => x.classList.toggle('active', x === a));
+            ['apropos', 'infos', 'livraison', 'horaires', 'galerie'].forEach(k =>
+                $('#panel-' + k).hidden = k !== a.dataset.tab);
+        });
+        /* un onglet sans contenu ne doit pas être proposé */
+        const has = {
+            infos: !!($('#shInfos').innerHTML || ''),
+            livraison: !!($('#shShip').innerHTML || ''),
+            horaires: !!($('#shHours').innerHTML || ''),
+            galerie: !!($('#shGal').innerHTML || '')
         };
-        const paintGrid = cat => {
-            const list = products.map(normalize).filter(p => cat === 'Toutes' || p.cat === cat);
+        Object.keys(has).forEach(k => { if (!has[k]) $('[data-tab="' + k + '"]')?.remove(); });
+
+        /* ---------- À PROPOS ---------- */
+        $('#shAbout').innerHTML = shop.shopAbout
+            ? paragraphs(shop.shopAbout)
+            : `<p class="muted">${t("Cette boutique n'a pas encore rédigé de présentation détaillée.")}</p>`;
+        $('#shFeats').innerHTML = (shop.shopFeatures || []).length
+            ? shop.shopFeatures.map(f => {
+                const info = featInfo(f);
+                return `<span class="feat-pill"><i class="fas ${info ? info.icon : 'fa-check'}"></i>${esc(featLabel(f))}</span>`;
+            }).join('')
+            : '';
+
+        /* ---------- INFORMATIONS ---------- */
+        $('#shInfos').innerHTML = [
+            infoRow('fa-at', 'Identifiant', '@' + esc(shop.username)),
+            infoRow('fa-store', 'Nom de la boutique', esc(shop.shopName)),
+            infoRow('fa-tag', 'Catégories', (shop.shopCats || []).map(c => `<span class="sh-tag cat">${esc(t(c))}</span>`).join(' ')),
+            infoRow('fa-map-marker-alt', 'Ville', esc(shop.shopCity || '')),
+            infoRow('fa-location-dot', 'Adresse', esc(shop.shopAddress || '')),
+            infoRow('fa-sign-hanging', 'Point de repère', esc(shop.shopLandmark || '')),
+            infoRow('fa-calendar', 'Boutique ouverte depuis', esc(shop.shopFounded || '')),
+            infoRow('fa-clock', 'Membre depuis', dj(shop.createdAt, { day: 'numeric', month: 'long', year: 'numeric' })),
+            infoRow('fa-file-shield', 'Identifiants légaux', esc(shop.shopLegal || '')),
+            infoRow('fa-phone', 'Téléphone', shop.phone
+                ? `<a href="${esc(telLink(shop.phone))}">${esc(shop.phone)}</a>` : ''),
+            infoRow('fa-envelope', 'Email', shop.shopEmail
+                ? `<a href="mailto:${esc(shop.shopEmail)}">${esc(shop.shopEmail)}</a>` : ''),
+            infoRow('fa-cubes', t('Articles en stock'), nfmt(shop.stockTotal))
+        ].join('') || `<p class="muted">${t('Cette boutique n\'a pas encore renseigné ses informations.')}</p>`;
+
+        /* ---------- LIVRAISON & PAIEMENT ---------- */
+        const shipRows = [
+            infoRow('fa-truck', 'Livraison à domicile', shop.shopDelivery
+                ? t('Oui{0}', [shop.shopDeliveryTime ? ' — ' + t('délai : {0}', [shop.shopDeliveryTime]) : ''])
+                : t('Non'), shop.shopDelivery),
+            infoRow('fa-hand-hold', 'Retrait en boutique', shop.shopPickup ? t('Oui') : t('Non'), shop.shopPickup),
+            infoRow('fa-money-bill', 'Frais de livraison', esc(shop.shopDeliveryFee || ''), shop.shopDeliveryFee),
+            infoRow('fa-gift', 'Livraison offerte', shop.shopFreeDelivery
+                ? t('Dès {0}', [shop.shopFreeDelivery]) : '', shop.shopFreeDelivery),
+            infoRow('fa-route', 'Zones desservies', esc(shop.shopDeliveryZones || ''), shop.shopDeliveryZones),
+            infoRow('fa-rotate-left', 'Retours acceptés', shop.shopReturns
+                ? t('Oui{0}', [shop.shopReturnDays ? ' — ' + shop.shopReturnDays : '']) : t('Non'), shop.shopReturns),
+            infoRow('fa-shield-halved', 'Garantie', esc(shop.shopWarranty || ''), shop.shopWarranty)
+        ];
+        const payChips = (shop.shopPayments || []).map(id => {
+            const info = payInfo(id);
+            return `<span class="pay-pill"><i class="fas ${info ? info.icon : 'fa-money'}"></i>${esc(payLabel(id))}</span>`;
+        }).join('');
+        const shipBlock = $('#shShip');
+        shipBlock.innerHTML = (shipRows.filter(Boolean).length || payChips)
+            ? shipRows.filter(Boolean).join('')
+              + (payChips ? `<div class="it-row block"><i class="fas fa-credit-card"></i>
+                    <span class="it-label">${esc(t('Moyens de paiement'))}</span>
+                    <span class="it-value">${payChips}</span></div>` : '')
+            : `<p class="muted">${t('Cette boutique n\'a pas encore précisé ses conditions de livraison.')}</p>`;
+
+        /* ---------- HORAIRES ---------- */
+        const hoursKeys = Object.keys(shop.shopHours || {});
+        if (hoursKeys.length){
+            const today = SHOP_DAYS[(new Date().getDay() + 6) % 7].id;
+            $('#shHours').innerHTML = SHOP_DAYS.map(d => {
+                const h = (shop.shopHours || {})[d.id];
+                return `<div class="ht-row${d.id === today ? ' today' : ''}">
+                    <span class="ht-day">${esc(t(d.label))}</span>
+                    <span class="ht-val${h && h.closed ? ' off' : ''}">${esc(h ? HOURS_TEXT(h) : t('Non précisé'))}</span>
+                </div>`;
+            }).join('');
+        }
+
+        /* ---------- GALERIE ---------- */
+        const gal = (shop.shopGallery || []).filter(Boolean);
+        $('#shGal').innerHTML = gal.length
+            ? gal.map((u, i) => `<a href="${esc(u)}" target="_blank" rel="noopener"
+                   title="${esc(t('Agrandir la photo'))}"><img src="${esc(u)}"
+                   alt="${esc(shop.shopName)} — ${nfmt(i + 1)}" loading="lazy"></a>`).join('')
+            : '';
+
+        /* ---------- About : taux de remplissage ---------- */
+        $('#shCompleteness').innerHTML = `<i class="fas fa-gauge-high"></i> ${esc(t('Vitrine renseignée à {0} %', [nfmt(shop.score)]))}`;
+
+        /* ---------- colonne latérale ---------- */
+        $('#shContact').innerHTML = `<div class="sh-card-h"><i class="fas fa-address-card"></i>${t('Contact')}</div>` + [
+            infoRow('fa-map-marker-alt', 'Adresse', esc([shop.shopAddress, shop.shopCity].filter(Boolean).join(', '))),
+            infoRow('fa-sign-hanging', 'Repère', esc(shop.shopLandmark || '')),
+            infoRow('fa-phone', 'Téléphone', shop.phone ? `<a href="${esc(telLink(shop.phone))}">${esc(shop.phone)}</a>` : ''),
+            infoRow('fab fa-whatsapp', 'WhatsApp', shop.shopWhatsapp
+                ? `<a href="${esc(waLink(shop.shopWhatsapp))}" target="_blank" rel="noopener">${esc(shop.shopWhatsapp)}</a>` : ''),
+            infoRow('fa-envelope', 'Email', shop.shopEmail
+                ? `<a href="mailto:${esc(shop.shopEmail)}">${esc(shop.shopEmail)}</a>` : '')
+        ].join('') + (shop.shopAddress || shop.phone || shop.shopEmail
+            ? `<a class="btn btn-outline btn-block" target="_blank" rel="noopener"
+                 href="https://www.google.com/maps/search/${encodeURIComponent([shop.shopAddress, shop.shopCity].filter(Boolean).join(' '))}">
+                 <i class="fas fa-map-location-dot"></i> ${t('Voir sur la carte')}</a>` : '');
+
+        const todayH = (shop.shopHours || {})[SHOP_DAYS[(new Date().getDay() + 6) % 7].id];
+        $('#shOpen').innerHTML = `<div class="sh-card-h"><i class="fas fa-clock"></i>${t('Horaires')}</div>`
+            + (hoursKeys.length
+                ? `<p class="sh-open-line">${openBadge(shop)}</p>
+                   ${todayH ? `<p class="muted">${esc(t('Aujourd\'hui : {0}', [HOURS_TEXT(todayH)]))}</p>` : ''}
+                   <a href="#" data-tab-go="horaires">${t('Voir tous les horaires')} <i class="fas fa-chevron-right"></i></a>`
+                : `<p class="muted">${t('Horaires non communiqués.')}</p>`);
+
+        $('#shPayBox').innerHTML = `<div class="sh-card-h"><i class="fas fa-credit-card"></i>${t('Paiement & livraison')}</div>`
+            + (payChips
+                ? `<div class="pay-list">${payChips}</div>`
+                : `<p class="muted">${t('Moyens de paiement non précisés.')}</p>`)
+            + (shipRows.filter(Boolean).length ? `<div class="mini-rows">${shipRows.filter(Boolean).slice(0, 4).join('')}</div>` : '');
+
+        const social = socialLinks(shop);
+        $('#shSocial').innerHTML = social
+            ? `<div class="sh-card-h"><i class="fas fa-share-nodes"></i>${t('Réseaux sociaux')}</div>${social}`
+            : '';
+
+        $('#shTrust').innerHTML = `<div class="sh-card-h"><i class="fas fa-shield-halved"></i>${t('Confiance')}</div>` + [
+            infoRow('fa-gauge-high', t('Vitrine renseignée'), `<b>${nfmt(shop.score)} %</b>`),
+            infoRow('fa-user-check', t('Membre depuis'), dj(shop.createdAt, { month: 'long', year: 'numeric' })),
+            infoRow('fa-file-shield', 'Identifiants légaux', esc(shop.shopLegal || ''), shop.shopLegal),
+            shop.shopVerified
+                ? `<div class="trust-ok"><i class="fas fa-badge-check"></i>${t('Boutique vérifiée par la modération')}</div>`
+                : `<p class="muted" style="font-size:12px">${t('Signalez toute information trompeuse à la modération.')}</p>`
+        ].filter(Boolean).join('');
+        $('#shSocial').hidden = !$('#shSocial').innerHTML;
+
+        /* raccourci « voir tous les horaires » */
+        $('#shopBody').addEventListener('click', e => {
+            const go = e.target.closest('[data-tab-go]');
+            if (!go) return;
+            e.preventDefault();
+            $('[data-tab="' + go.dataset.tabGo + '"]')?.click();
+        });
+
+        /* ---------- articles ---------- */
+        const cats = ['Toutes', ...new Set(products.map(p => p.cat))];
+        let activeCat = startCat;
+        let sortMode = 'recent';
+        const queryBox = $('#shQuery');
+        const sorter = $('#shSort');
+
+        const paintChips = () => {
+            $('#shopFilters').innerHTML = cats.map(c =>
+                `<a href="#" class="chip ${c === activeCat ? 'active' : ''}" data-sc="${esc(c)}">${c === 'Toutes' ? t('Tous les articles') : esc(t(c))} (${nfmt(products.filter(p => c === 'Toutes' || p.cat === c).length)})</a>`).join('');
+        };
+        const paintGrid = () => {
+            const q = queryBox.value.trim().toLowerCase();
+            let list = products.map(normalize)
+                .filter(p => activeCat === 'Toutes' || p.cat === activeCat)
+                .filter(p => !q || (p.name + ' ' + p.desc).toLowerCase().includes(q));
+            const cmp = {
+                recent: (a, b) => String(b.createdAt || '').localeCompare(String(a.createdAt || '')),
+                asc:    (a, b) => a.price - b.price,
+                desc:   (a, b) => b.price - a.price,
+                note:   (a, b) => b.rating - a.rating || b.reviews - a.reviews
+            }[sortMode];
+            list = list.slice().sort(cmp);
             $('#shCount').textContent = nfmt(list.length) + ' ' + t(list.length > 1 ? 'articles' : 'article');
             $('#shopGrid').innerHTML = list.length
                 ? list.map(cardHTML).join('')
-                : `<div class="empty-state" style="grid-column:1/-1"><i class="fas fa-box-open"></i><h3>${t('Aucun article ici')}</h3></div>`;
+                : `<div class="empty-state" style="grid-column:1/-1"><i class="fas fa-box-open"></i>
+                     <h3>${t('Aucun article ici')}</h3>
+                     ${q ? `<p>${t('Aucun résultat pour « {0} ».', [esc(q)])}</p>` : ''}</div>`;
             initGalleries($('#shopGrid'));
         };
         $('#shopFilters').addEventListener('click', e => {
             const c = e.target.closest('[data-sc]');
             if (!c) return;
             e.preventDefault();
-            paintChips(c.dataset.sc);
-            paintGrid(c.dataset.sc);
+            activeCat = c.dataset.sc;
+            paintChips();
+            paintGrid();
         });
-        paintChips(startCat);
-        paintGrid(startCat);
+        let qTimer;
+        queryBox.addEventListener('input', () => { clearTimeout(qTimer); qTimer = setTimeout(paintGrid, 220); });
+        sorter.addEventListener('change', () => { sortMode = sorter.value; paintGrid(); });
+        paintChips();
+        paintGrid();
+
+        /* ---------- autres boutiques ---------- */
+        if (related && related.length){
+            $('#shRelatedBox').hidden = false;
+            $('#shRelated').innerHTML = related.map(s => shopCardHTML(s, 'Toutes')).join('');
+        }
 
     } catch (err){
         $('#shopNotFound').hidden = false;
@@ -2931,7 +3230,7 @@ function initHome(){
         toast('✅ Message envoyé, nous vous répondons sous 24h.');
     });
     $$('#contactForm input, #contactForm textarea').forEach(el =>
-        el.addEventListener('input', () => el.closest('.f-row').classList.remove('invalid')));
+        el.addEventListener('input', () => el.closest('.f-row')?.classList.remove('invalid')));
 
     /* --- reprise d'une recherche envoyée depuis une page catégorie --- */
     const pending = localStorage.getItem('businessenligne_search');

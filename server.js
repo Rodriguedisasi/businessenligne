@@ -1737,9 +1737,11 @@ const server = http.createServer(async (req, res) => {
         if (!match) return err(res, 404, 'Route inconnue : ' + req.method + ' ' + pathname);
         try {
             await routes[match.key](req, res, url, match.params);
-        } catch (e){
+        }         catch (e){
             console.error('[api]', e);
-            if (!res.headersSent) err(res, 500, e.message || 'Erreur serveur');
+            /* e.status permet à une panne de configuration de répondre 503
+               (« service indisponible ») au lieu d'une erreur opaque. */
+            if (!res.headersSent) err(res, e.status || 500, e.message || 'Erreur serveur');
         }
         return;
     }
