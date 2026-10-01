@@ -12,7 +12,9 @@ data/
 boutique.json
 
 # Images téléversées : uniquement le dossier racine.
-/uploads/   # /api/uploads/ DOIT rester versionné (fonction qui sert les photos sur Vercel)
+/uploads/
+# /api/uploads/ DOIT rester versionné : c'est la fonction qui sert
+# les photos sur Vercel, elle ne doit jamais étre ignorée.
 
 node_modules/
 npm-debug.log*
