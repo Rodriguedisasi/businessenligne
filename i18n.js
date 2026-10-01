@@ -1030,6 +1030,37 @@ Object.assign(DICT, {
     "Aucun résultat pour « {0} ».":          ['No result for "{0}".'],
     'Autres boutiques à découvrir':          ['Other shops to discover'],
 
+    /* --- liste des magasins --- */
+    'Tous les magasins en ligne':            ['All online shops', 'Duka zote za mtandaoni'],
+    '{0} boutiques en ligne — cliquez sur une boutique pour découvrir sa vitrine et ses informations.':
+        ['{0} shops online — click a shop to discover its storefront and details.'],
+    'Tous les articles publiés par les vendeurs':
+        ['All items published by sellers', 'Bidhaa zote zilizochapishwa na wauzaji'],
+    'Rechercher une boutique':               ['Search a shop', 'Tafuta duka', 'Tala boutiki'],
+    'Rechercher un article de vendeur':      ['Search a seller\'s item', 'Tafuta bidhaa ya muuzaji'],
+    'Toutes les boutiques':                  ['All shops', 'Duka zote', 'Boutiki bonso'],
+    'Avec des articles':                     ['With items', 'Zenye bidhaa', 'Bina vitungu'],
+    'Magasins en ligne — {0}':               ['Online shops — {0}'],
+    'Aucune boutique ne correspond à cette recherche.':
+        ['No shop matches this search.', 'Hakuna duka linalofanana na utafutaji huu.'],
+    '{0} boutiques — chaque carte montre la fiche complète du vendeur et ses derniers articles.':
+        ['{0} shops — each card shows the seller\'s full profile and their latest items.'],
+    '{0} boutique — la carte montre la fiche complète du vendeur et ses derniers articles.':
+        ['{0} shop — the card shows the seller\'s full profile and their latest items.'],
+    '{0} article(s) mis en ligne par nos vendeurs — cliquez sur la boutique sous l\'article pour ouvrir sa vitrine.':
+        ['{0} item(s) listed by our sellers — click the shop under the item to open its storefront.'],
+    'Aucun article publié':                  ['No item published', 'Hakuna bidhaa iliyochapishwa'],
+    "Les vendeurs n'ont encore rien publié ici.":
+        ['Sellers have not published anything here yet.'],
+    'Vitrine à {0} %':                       ['Profile {0}%'],
+    'Vérifiée':                              ['Verified', 'Imethibitishwa'],
+    'Horaires du jour':                      ['Today\'s hours', 'Saa za leo'],
+    'Ouverte en':                            ['Opened in'],
+    'Retours sous':                          ['Returns within'],
+    'Email':                                 ['Email', 'Barua pepe'],
+    'Voir ses {0} articles':                 ['See their {0} items', 'Ona bidhaa zao {0}', 'Tala vitungu vyao {0}'],
+    '{0} articles':                          ['{0} items', 'Bidhaa {0}', 'Vitungu {0}'],
+
     /* --- livraison et paiement --- */
     'Livraison à domicile':                  ['Home delivery', 'Usafirishaji nyumbani'],
     'Retrait en boutique':                   ['Pickup in store'],

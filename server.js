@@ -589,7 +589,7 @@ function shapeProduct(p, likes, likedByMe, owner){
         prime: !!p.prime, rating: p.rating, reviews: p.reviews, createdAt: p.created_at,
         likes, likedByMe,
         published: p.published === undefined ? 1 : !!p.published,
-        owner: owner ? { username: owner.username, shopName: owner.shop_name, avatar: owner.avatar, city: owner.shop_city } : null
+        owner: owner ? { username: owner.username, shopName: owner.shop_name, avatar: owner.avatar, city: owner.shop_city, verified: !!owner.shop_verified } : null
     };
 }
 
@@ -1054,6 +1054,16 @@ const routes = {
                     max = max == null ? Number(p.price) : Math.max(max, Number(p.price));
                     cats.add(p.category);
                 }
+                /* Aperçu des derniers articles publiés : la carte de la
+                   boutique montre ainsi ce qu'elle propose réellement. */
+                const preview = e.list
+                    .slice()
+                    .sort((a, b) => String(b.created_at || '').localeCompare(String(a.created_at || '')))
+                    .slice(0, 4)
+                    .map(p => ({
+                        id: p.id, title: p.title, image: p.image,
+                        price: Number(p.price) || 0, cat: p.category
+                    }));
                 return {
                     ...publicShop(u),
                     productCount: e.list.length, likes: e.likes,
@@ -1062,6 +1072,7 @@ const routes = {
                     stockTotal: stock,
                     minPrice: min, maxPrice: max,
                     cats: [...cats],
+                    preview,
                     score: shopScore(u).score,
                     openNow: isOpenNow(u.shop_hours)
                 };

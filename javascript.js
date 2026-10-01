@@ -405,9 +405,11 @@ function cardHTML(p){
     const badge = p.badge === 'deal' ? `<span class="badge badge-deal">${t('Promotion')} ${off}%</span>`
         : p.badge === 'new' ? `<span class="badge badge-new">${t('Nouveau')}</span>`
         : p.badge === 'best' ? `<span class="badge badge-best">${t('Meilleure vente')}</span>` : '';
-    const owner = p.owner && p.owner.username !== 'businessenligne'
+    const owner = p.owner && p.owner.username
         ? `<a class="owner-tag" href="magasin.html?u=${encodeURIComponent(p.owner.username)}" onclick="event.stopPropagation()">
-               <i class="fas fa-store"></i> <b>${p.owner.shopName}</b>
+               <i class="fas fa-store"></i> <b>${esc(p.owner.shopName || p.owner.username)}</b>
+               ${p.owner.verified ? '<i class="fas fa-badge-check sc-v" title="' + t('Boutique vérifiée') + '"></i>' : ''}
+               ${p.owner.city ? `<span class="owner-city">${esc(p.owner.city)}</span>` : ''}
            </a>` : '';
     const like = `<button class="like-btn ${p.likedByMe ? 'on' : ''}" data-like="${p.id}" title="${t("J'aime")}">
             <i class="${p.likedByMe ? 'fas' : 'far'} fa-heart"></i>
@@ -674,6 +676,7 @@ function openModal(id){
     /* tableau des détails saisis par le vendeur + infos sur l'article */
     paintInfo(p);
     $('#mList').innerHTML = featsOf(p).map(f => `<li><i class="fas fa-check"></i><span>${esc(f)}</span></li>`).join('');
+    paintSeller(p);
     $('#mStock').innerHTML = p.stock <= 10
         ? `<span style="color:#b12704">${t('Plus que {0} en stock', [nfmt(p.stock)])}</span>`
         : `<span style="color:#007600">${t('En stock')}</span>`;
@@ -683,6 +686,38 @@ function openModal(id){
     $('#modal').classList.add('open');
     if (overlay) overlay.classList.add('show');
     document.body.classList.add('modal-open');
+}
+
+/* ---------------- VENDEUR DE L'ARTICLE ----------------
+   La fiche article rappelle qui vend l'article et donne accès direct
+   à la vitrine du vendeur. Le bloc est ajouté une seule fois par fiche. */
+function paintSeller(p){
+    const info = $('.modal-info');
+    if (!info) return;
+    let box = $('#mSeller');
+    const o = p.owner;
+    if (!o || !o.username){
+        if (box) box.remove();
+        return;
+    }
+    if (!box){
+        box = document.createElement('div');
+        box.id = 'mSeller';
+        box.className = 'm-seller';
+        info.insertBefore(box, $('#mList'));
+    }
+    const face = o.avatar
+        ? `<img src="${esc(o.avatar)}" alt="${esc(o.shopName || o.username)}" loading="lazy">`
+        : esc(String(o.shopName || o.username).charAt(0).toUpperCase());
+    box.innerHTML = `
+        <a class="ms-id" href="magasin.html?u=${encodeURIComponent(o.username)}">
+            <span class="ms-avatar">${face}</span>
+            <span class="ms-txt">
+                <b>${esc(o.shopName || o.username)}${o.verified ? ' <i class="fas fa-badge-check sc-v"></i>' : ''}</b>
+                <span class="ms-sub"><i class="fas fa-at"></i> ${esc(o.username)}${o.city ? ' · <i class="fas fa-map-marker-alt"></i> ' + esc(o.city) : ''}</span>
+            </span>
+            <span class="ms-go"><i class="fas fa-arrow-right"></i></span>
+        </a>`;
 }
 
 /* ---------------- CHECKOUT ---------------- */
@@ -914,7 +949,136 @@ function shopCardHTML(s, cat){
                 ${perks.length ? `<span class="sc-perks">${perks.join('')}</span>` : ''}
             </span>
         </span>
-    </a>`;
+</a>`;
+}
+
+/* Une ligne d'information dans la grande carte de boutique. */
+function shopInfoRow(icon, label, value, html){
+    if (!value) return '';
+    return `<div class="sb-info-row"><i class="fas ${icon}"></i>
+        <span class="sb-info-l">${esc(t(label))}</span>
+        <span class="sb-info-v">${html || esc(value)}</span></div>`;
+}
+
+/* La grande carte de la liste des magasins : elle montre toute la fiche
+   publiée par le vendeur — couv ure, présentation, contact, livraison,
+   paiement, horaires, atouts, statistiques — et un aperçu de ses articles.
+   Un clic sur la carte ou sur l'un de ses boutons ouvre la vitrine. */
+function shopCardRichHTML(s, cat){
+    const keep = cat && cat !== 'Toutes' ? '&cat=' + encodeURIComponent(cat) : '';
+    const base = 'magasin.html?u=' + encodeURIComponent(s.username);
+    const href = base + keep;
+    const name = s.shopName || s.username;
+    const city = s.shopCity || 'Lubumbashi';
+    const face = s.avatar
+        ? `<img src="${esc(s.avatar)}" alt="${esc(name)}" loading="lazy">`
+        : esc(String(name).charAt(0).toUpperCase());
+    const cover = s.banner
+        ? `<img src="${esc(s.banner)}" alt="" loading="lazy">`
+        : `<span class="sb-cover-ini">${esc(String(name).charAt(0).toUpperCase())}</span>`;
+
+    /* étiquettes : catégories specialties puis services */
+    let tags = (Array.isArray(s.shopCats) ? s.shopCats : []).slice(0, 4)
+        .map(c => `<span class="sh-tag cat">${esc(t(c))}</span>`).join('');
+    if (s.shopDelivery) tags += `<span class="sh-tag"><i class="fas fa-truck"></i>${t('Livraison')}</span>`;
+    if (s.shopPickup)   tags += `<span class="sh-tag"><i class="fas fa-hand-hold"></i>${t('Retrait')}</span>`;
+    if (s.shopReturns)  tags += `<span class="sh-tag"><i class="fas fa-rotate-left"></i>${t('Retours')}</span>`;
+
+    /* atouts déclarés par le vendeur */
+    const feats = (s.shopFeatures || []).slice(0, 4).map(f => {
+        const info = featInfo(f);
+        return `<span class="feat-pill"><i class="fas ${info ? info.icon : 'fa-check'}"></i>${esc(featLabel(f))}</span>`;
+    }).join('');
+
+    /* moyens de paiement */
+    const pays = (s.shopPayments || []).map(id => {
+        const info = payInfo(id);
+        return `<span class="pay-pill"><i class="fas ${info ? info.icon : 'fa-money'}"></i>${esc(payLabel(id))}</span>`;
+    }).join('');
+
+    /* horaires du jour */
+    const todayH = (s.shopHours || {})[SHOP_DAYS[(new Date().getDay() + 6) % 7].id];
+
+    /* aperçu des derniers articles publiés par la boutique */
+    const prev = (s.preview || []).map(p =>
+        `<a class="sb-prev-item" href="${base}&p=${encodeURIComponent(p.id)}"
+            title="${esc(p.title)} — ${esc(fmt(p.price))}">
+            <img src="${esc(p.image)}" alt="${esc(p.title)}" loading="lazy">
+            <span>${esc(fmt(p.price))}</span>
+        </a>`).join('');
+
+    const stat = (icon, value, label) =>
+        `<div class="sb-stat"><i class="fas ${icon}"></i><b>${value}</b><span>${esc(t(label))}</span></div>`;
+
+    const phone = s.phone
+        ? `<a class="btn btn-outline btn-sm" href="${esc(telLink(s.phone))}"><i class="fas fa-phone"></i> ${t('Appeler')}</a>` : '';
+    const wa = s.shopWhatsapp || s.phone
+        ? `<a class="btn btn-wa btn-sm" target="_blank" rel="noopener"
+               href="${esc(waLink(s.shopWhatsapp || s.phone, t('Bonjour {0}, je trouve vos articles sur BusinessEnLigne.', [name])))}">
+               <i class="fab fa-whatsapp"></i> WhatsApp</a>` : '';
+
+    return `<article class="shop-card shop-big" data-shop="${esc(s.username)}">
+        <a class="sb-cover" href="${href}" aria-label="${esc(name)}">${cover}
+            <span class="sb-cover-fade"></span>
+            <span class="sb-cover-badges">
+                ${s.shopVerified ? `<span class="cov-badge v"><i class="fas fa-badge-check"></i>${t('Vérifiée')}</span>` : ''}
+                <span class="cov-badge"><i class="fas fa-gauge-high"></i>${t('Vitrine à {0} %', [nfmt(s.score)])}</span>
+                ${openBadge(s)}
+            </span>
+        </a>
+        <div class="sb-main">
+            <a class="sb-id" href="${href}">
+                <span class="sc-avatar big">${face}</span>
+                <span class="sb-id-txt">
+                    <b>${esc(name)}${s.shopVerified ? ' <i class="fas fa-badge-check sc-v"></i>' : ''}</b>
+                    ${s.shopSlogan ? `<span class="sb-slogan">${esc(s.shopSlogan)}</span>` : ''}
+                    <span class="sb-user"><i class="fas fa-at"></i> ${esc(s.username)}
+                        <i class="fas fa-map-marker-alt"></i> ${esc(city)}
+                        <i class="fas fa-calendar"></i> ${esc(t('depuis {0}', [new Date(s.createdAt).getFullYear()]))}</span>
+                </span>
+            </a>
+            ${s.shopDesc ? `<p class="sb-desc">${esc(s.shopDesc)}</p>`
+                         : `<p class="sb-desc muted">${t("Cette boutique n'a pas encore de description.")}</p>`}
+            ${tags ? `<div class="shop-tags sb-tags">${tags}</div>` : ''}
+            ${s.shopAbout ? `<div class="sb-about">${paragraphs(String(s.shopAbout).split('\n\n').slice(0, 1).join('\n\n'))}</div>` : ''}
+            ${feats ? `<div class="shop-feats sb-feats">${feats}</div>` : ''}
+            <div class="sb-infos">
+                ${shopInfoRow('fa-location-dot', 'Adresse', s.shopAddress)}
+                ${shopInfoRow('fa-compass', 'Point de repère', s.shopLandmark)}
+                ${shopInfoRow('fa-phone', 'Téléphone', s.phone, s.phone ? `<a href="${esc(telLink(s.phone))}">${esc(s.phone)}</a>` : '')}
+                ${shopInfoRow('fa-comment-dots', 'WhatsApp', s.shopWhatsapp)}
+                ${shopInfoRow('fa-envelope', 'Email', s.shopEmail, s.shopEmail ? `<a href="mailto:${esc(s.shopEmail)}">${esc(s.shopEmail)}</a>` : '')}
+                ${shopInfoRow('fa-globe', 'Site web', s.shopWebsite, s.shopWebsite ? `<a href="${esc(s.shopWebsite)}" target="_blank" rel="noopener nofollow">${esc(String(s.shopWebsite).replace(/^https?:\/\//, ''))}</a>` : '')}
+                ${shopInfoRow('fa-calendar-days', 'Ouverte en', s.shopFounded)}
+                ${shopInfoRow('fa-truck-fast', 'Délai de livraison', s.shopDeliveryTime)}
+                ${shopInfoRow('fa-coins', 'Frais de livraison', s.shopDeliveryFee)}
+                ${shopInfoRow('fa-map-location-dot', 'Zones desservies', Array.isArray(s.shopDeliveryZones) ? s.shopDeliveryZones.join(', ') : s.shopDeliveryZones)}
+                ${shopInfoRow('fa-undo', 'Retours sous', s.shopReturnDays)}
+                ${shopInfoRow('fa-shield-halved', 'Garantie', s.shopWarranty)}
+                ${shopInfoRow('fa-id-card', 'Identifiants légaux', s.shopLegal)}
+                ${shopInfoRow('fa-clock', 'Horaires du jour', todayH ? HOURS_TEXT(todayH) : t('Horaires non communiqués'))}
+            </div>
+            ${pays ? `<div class="pay-list sb-pay">${pays}</div>` : ''}
+            ${s.shopGallery && s.shopGallery.length ? `<div class="sb-gal">${s.shopGallery.slice(0, 6).map(g =>
+                `<img src="${esc(g)}" alt="" loading="lazy">`).join('')}</div>` : ''}
+            <div class="sb-stats">
+                ${stat('fa-box', nfmt(s.productCount), 'articles')}
+                ${stat('fa-heart', nfmt(s.likes), "J'aime")}
+                ${stat('fa-users', nfmt(s.followers), 'abonnés')}
+                ${stat('fa-cart-shopping', nfmt(s.sales), 'ventes')}
+                ${stat('fa-star', s.rating || '—', t('note'))}
+                ${stat('fa-cubes', nfmt(s.stockTotal), t('en stock'))}
+                ${stat('fa-tags', s.minPrice != null ? `${fmt(s.minPrice)}${s.maxPrice > s.minPrice ? ' – ' + fmt(s.maxPrice) : ''}` : '—', t('fourchette'))}
+            </div>
+            ${prev ? `<div class="sb-prev">${prev}<span class="sb-prev-more">
+                <a href="${href}">${t('Voir ses {0} articles', [nfmt(s.productCount)])}</a></span></div>` : ''}
+            <div class="sb-actions">
+                <a class="btn btn-cta" href="${href}"><i class="fas fa-store"></i> ${t('Voir la boutique')}</a>
+                ${phone}${wa}
+                ${socialLinks(s)}
+            </div>
+        </div>
+    </article>`;
 }
 
 /* Liste des boutiques qui vendent dans la catégorie affichée.
@@ -930,16 +1094,21 @@ async function renderCatShops(){
 
     if (!window.BE){ box.hidden = true; return; }
 
-    grid.innerHTML = '<span class="sh-sk on"></span>'.repeat(8);
+grid.innerHTML = '<span class="sh-sk on"></span>'.repeat(8);
     try {
         const all = await BE.shops(cat === 'Toutes' ? { sort: 'products' } : { cat });
-        const shops = all.filter(s => s.productCount > 0);
+        /* une boutique publiée reste visible même si elle n'a pas encore
+           d'article : on la place après celles qui vendent déjà. */
+        const shops = all.slice().sort((a, b) => (b.productCount > 0) - (a.productCount > 0));
         if (!shops.length){ box.hidden = true; return; }
 
         box.hidden = false;
         const total = shops.reduce((s, x) => s + x.productCount, 0);
-        $('#catShopsCount').innerHTML = t('{0} boutiques proposent {1} articles — cliquez sur une boutique pour voir ses photos et ses prix.',
-            [nfmt(shops.length), nfmt(total)]);
+        $('#catShopsCount').textContent = total
+            ? t('{0} boutiques proposent {1} articles — cliquez sur une boutique pour voir ses photos et ses prix.',
+                [nfmt(shops.length), nfmt(total)])
+            : t('{0} boutiques en ligne — cliquez sur une boutique pour découvrir sa vitrine et ses informations.',
+                [nfmt(shops.length)]);
 
         const shown = shops.slice(0, 12);
         grid.innerHTML = shown.map(s => shopCardHTML(s, cat)).join('') +
@@ -2156,21 +2325,46 @@ async function initShopPage(){
                          </select>
                      </span>
                  </div>
-                 <div class="sh-filters">
-                     <label class="chk"><input type="checkbox" id="fVerified"><span><i class="fas fa-badge-check"></i>${t('Boutiques vérifiées')}</span></label>
-                     <label class="chk"><input type="checkbox" id="fDelivery"><span><i class="fas fa-truck"></i>${t('Livraison à domicile')}</span></label>
-                     <label class="chk"><input type="checkbox" id="fHasPhone"><span><i class="fas fa-phone"></i>${t('Numéro de téléphone')}</span></label>
-                 </div>
-                 <p class="sh-intro" id="shopsIntro"></p>
-                 <div id="shopsList" class="shop-grid"></div>
-             </div>`;
+<div class="sh-filters">
+                      <label class="chk"><input type="checkbox" id="fVerified"><span><i class="fas fa-badge-check"></i>${t('Boutiques vérifiées')}</span></label>
+                      <label class="chk"><input type="checkbox" id="fDelivery"><span><i class="fas fa-truck"></i>${t('Livraison à domicile')}</span></label>
+                      <label class="chk"><input type="checkbox" id="fHasPhone"><span><i class="fas fa-phone"></i>${t('Numéro de téléphone')}</span></label>
+                      <label class="chk"><input type="checkbox" id="fHasArticles"><span><i class="fas fa-box"></i>${t('Avec des articles')}</span></label>
+                      <label class="chk"><input type="checkbox" id="fOpen"><span><i class="fas fa-clock"></i>${t('Ouvertes maintenant')}</span></label>
+                  </div>
+                  <p class="sh-intro" id="shopsIntro"></p>
+                  <div id="shopsList" class="shops-rich"></div>
+              </div>
+
+              <!-- ============ ARTICLES PUBLIÉS PAR LES VENDEURS ============ -->
+              <div class="box" id="sellerBox" hidden>
+                  <div class="box-head">
+                      <h3 id="sellerTitle">${t('Tous les articles publiés par les vendeurs')}</h3>
+                      <span class="sh-tools">
+                          <label class="sh-search"><i class="fas fa-search"></i>
+                              <input type="search" id="sellerQuery" placeholder="${t('Rechercher un article de vendeur')}" autocomplete="off"></label>
+                          <select class="sh-sort" id="sellerShop">
+                              <option value="">${t('Toutes les boutiques')}</option>
+                          </select>
+                          <select class="sh-sort" id="sellerSort">
+                              <option value="recent">${t('Plus récents')}</option>
+                              <option value="price">${t('Prix croissant')}</option>
+                              <option value="desc">${t('Prix décroissant')}</option>
+                              <option value="note">${t('Mieux notés')}</option>
+                          </select>
+                      </span>
+                  </div>
+                  <p class="sh-intro" id="sellerIntro"></p>
+                  <div class="p-grid" id="sellerGrid"></div>
+              </div>`;
 
         $('#shopsTitle').textContent = wantedCat === 'Toutes' ? t('Tous les magasins en ligne') : t('Magasins en ligne — {0}', [wantedCat]);
         $('#shopsList').innerHTML = '<span class="sh-sk on"></span>'.repeat(8);
 
         const query  = $('#shopsQuery');
         const sorter = $('#shopsSort');
-        const toggles = { verified: $('#fVerified'), delivery: $('#fDelivery'), hasPhone: $('#fHasPhone') };
+        const toggles = { verified: $('#fVerified'), delivery: $('#fDelivery'), hasPhone: $('#fHasPhone'),
+                          hasArticles: $('#fHasArticles'), open: $('#fOpen') };
         const paint = async () => {
             const q = query.value.trim();
             try {
@@ -2180,20 +2374,23 @@ async function initShopPage(){
                 if (toggles.verified.checked) params2.verified = '1';
                 if (toggles.delivery.checked) params2.delivery = '1';
                 const all = await BE.shops(params2);
-                const list = all.filter(s => (s.productCount > 0 || wantedCat === 'Toutes')
-                    && (!toggles.hasPhone.checked || s.phone));
+                const list = all.filter(s => (!toggles.hasArticles.checked || s.productCount > 0)
+                    && (!toggles.hasPhone.checked || s.phone)
+                    && (!toggles.open.checked || s.openNow === true));
                 $('#shopsIntro').textContent = list.length
                     ? t(list.length > 1
-                        ? '{0} boutiques — cliquez pour voir les photos, les prix et les articles publiés.'
-                        : '{0} boutique — cliquez pour voir les photos, les prix et les articles publiés.', [nfmt(list.length)])
+                        ? '{0} boutiques — chaque carte montre la fiche complète du vendeur et ses derniers articles.'
+                        : '{0} boutique — la carte montre la fiche complète du vendeur et ses derniers articles.', [nfmt(list.length)])
                     : '';
                 $('#shopsList').innerHTML = list.length
-                    ? list.map(s => shopCardHTML(s, wantedCat)).join('')
+                    ? list.map(s => shopCardRichHTML(s, wantedCat)).join('')
                     : `<div class="empty-state" style="grid-column:1/-1">
                            <i class="fas fa-store"></i><h3>${t('Aucune boutique')}</h3>
                            <p>${t('Aucune boutique ne correspond à cette recherche.')}</p>
                            <p style="margin-top:12px"><a class="btn btn-outline" href="publier.html">${t('Créer ma boutique')}</a></p>
                        </div>`;
+                shopNames = all.map(s => ({ username: s.username, name: s.shopName || s.username }));
+                paintSellerFilter();
             } catch (err){
                 $('#shopsList').innerHTML = `<div class="alert alert-err" style="grid-column:1/-1">
                     <i class="fas fa-triangle-exclamation"></i><div><b>${esc(err.message)}</b></div></div>`;
@@ -2203,6 +2400,54 @@ async function initShopPage(){
         query.addEventListener('input', () => { clearTimeout(shopTimer); shopTimer = setTimeout(paint, 250); });
         sorter.addEventListener('change', paint);
         Object.values(toggles).forEach(el => el.addEventListener('change', paint));
+
+        /* ---------- articles publiés par les vendeurs ---------- */
+        let shopNames = [];
+        const sellerBox   = $('#sellerBox');
+        const sellerQuery = $('#sellerQuery');
+        const sellerShop  = $('#sellerShop');
+        const sellerSort  = $('#sellerSort');
+        const paintSellerFilter = () => {
+            if (!sellerShop) return;
+            const keep = sellerShop.value;
+            sellerShop.innerHTML = `<option value="">${t('Toutes les boutiques')}</option>`
+                + shopNames.map(s => `<option value="${esc(s.username)}">${esc(s.name)}</option>`).join('');
+            sellerShop.value = keep;
+        };
+        const paintSeller = () => {
+            if (!sellerBox || sellerBox.hidden) return;
+            const q = sellerQuery.value.trim().toLowerCase();
+            const shop = sellerShop.value;
+            const list = PRODUCTS.filter(p => p.owner && p.owner.username !== 'businessenligne')
+                .filter(p => !shop || p.owner.username === shop)
+                .filter(p => !q || (p.name + ' ' + (p.desc || '') + ' ' + (p.owner.shopName || '')).toLowerCase().includes(q))
+                .sort({
+                    recent: (a, b) => String(b.createdAt || '').localeCompare(String(a.createdAt || '')),
+                    price:  (a, b) => a.price - b.price,
+                    desc:   (a, b) => b.price - a.price,
+                    note:   (a, b) => (b.rating - a.rating) || (b.reviews - a.reviews)
+                }[sellerSort.value] || ((a, b) => 0));
+            $('#sellerGrid').innerHTML = list.length
+                ? list.map(cardHTML).join('')
+                : `<div class="empty-state" style="grid-column:1/-1"><i class="fas fa-box-open"></i>
+                     <h3>${t('Aucun article publié')}</h3>
+                     <p>${t("Les vendeurs n'ont encore rien publié ici.")}</p>
+                     <p style="margin-top:12px"><a class="btn btn-outline" href="publier.html">${t('Publier un article')}</a></p>
+                   </div>`;
+            $('#sellerIntro').textContent = list.length
+                ? t('{0} article(s) mis en ligne par nos vendeurs — cliquez sur la boutique sous l\'article pour ouvrir sa vitrine.', [nfmt(list.length)])
+                : '';
+            initGalleries($('#sellerGrid'));
+        };
+        if (sellerBox){
+            let sellerTimer;
+            sellerQuery.addEventListener('input', () => { clearTimeout(sellerTimer); sellerTimer = setTimeout(paintSeller, 250); });
+            sellerShop.addEventListener('change', paintSeller);
+            sellerSort.addEventListener('change', paintSeller);
+            sellerBox.hidden = false;
+            paintSeller();
+        }
+
         await paint();
         return;
     }
@@ -2211,6 +2456,12 @@ async function initShopPage(){
         const { shop, products, related } = await BE.shop(username);
         $('#shopHeader').hidden = false;
         $('#shopBody').hidden = false;
+
+        /* les articles de la boutique rejoignent le catalogue global :
+           le panier et la fiche article en ont besoin pour les retrouver. */
+        products.forEach(p => {
+            if (!PRODUCTS.some(x => String(x.id) === String(p.id))) PRODUCTS.push(normalize(p));
+        });
 
         /* la catégorie d'origine (arrivee depuis une page catégorie) est
            pré-sélectionnée, et le fil d'Ariane la rappelle. */
@@ -2512,6 +2763,11 @@ async function initShopPage(){
         sorter.addEventListener('change', () => { sortMode = sorter.value; paintGrid(); });
         paintChips();
         paintGrid();
+
+        /* un lien vers « magasin.html?u=…&p=12 » ouvre l'article : c'est ce que
+           font les vignettes d'aperçu sur la carte de la boutique. */
+        const wanted = params.get('p');
+        if (wanted) setTimeout(() => openModal(wanted), 120);
 
         /* ---------- autres boutiques ---------- */
         if (related && related.length){
@@ -3137,9 +3393,10 @@ function initLangChange(){
             refresh();
         } else if (page === 'admin'){
             initAdminPage();
-        } else {
+} else {
             renderReviews();
             renderAll();
+            renderCatShops();
         }
         if ($('#modal').classList.contains('open')){
             const id = $('#modal').dataset.id;
@@ -3247,8 +3504,9 @@ function initHome(){
         localStorage.removeItem('businessenligne_search');
     }
 
-    renderReviews();
+renderReviews();
     renderAll();
+    renderCatShops();
 }
 
 let __booted = false;
