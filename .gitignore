@@ -11,8 +11,8 @@ data/
 *.db-wal
 boutique.json
 
-# Images téléversées
-uploads/
+# Images téléversées : uniquement le dossier racine.
+/uploads/   # /api/uploads/ DOIT rester versionné (fonction qui sert les photos sur Vercel)
 
 node_modules/
 npm-debug.log*
