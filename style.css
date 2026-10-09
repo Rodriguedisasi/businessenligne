@@ -3588,4 +3588,37 @@ footer{margin-top:24px;padding-top:32px;}
 }
 [data-mode="dark"] .foot-mid{border-top-color:color-mix(in srgb,var(--brand) 22%,rgba(255,255,255,.07));}
 
+/* --- filtres et onglets actifs : en sombre, l'encre navy se confondait
+   avec le fond ; on les remplit de la couleur de marque pour qu'ils ressortent --- */
+[data-mode="dark"] .chip.active,
+[data-mode="dark"] .shop-tabs a.active{
+    background:var(--brand);
+    border-color:var(--brand);
+    color:var(--on-brand);
+    box-shadow:0 10px 24px -12px var(--brand-glow);
+}
+[data-mode="dark"] .chip.active:hover,
+[data-mode="dark"] .shop-tabs a.active:hover{background:var(--brand-dark);color:var(--on-brand);}
+
+/* --- champs de saisie : mise au point lumineuse de la marque --- */
+[data-mode="dark"] input:focus,
+[data-mode="dark"] select:focus,
+[data-mode="dark"] textarea:focus,
+[data-mode="dark"] .admin-tools input[type=search]:focus,
+[data-mode="dark"] .admin-tools select:focus{
+    outline:none;
+    border-color:var(--brand);
+    box-shadow:0 0 0 3px var(--brand-glow);
+}
+
+/* --- cartes de statistiques admin : même relief que les autres cartes --- */
+[data-mode="dark"] .admin-kpi{
+    box-shadow:var(--shadow-1),inset 0 1px 0 rgba(255,255,255,.05);
+}
+[data-mode="dark"] .admin-kpi:hover{
+    border-color:color-mix(in srgb,var(--brand) 45%,var(--line-2));
+    box-shadow:0 0 0 1px var(--brand-glow),0 22px 44px -22px var(--brand-glow);
+}
+[data-mode="dark"] .admin-table tbody tr:hover{background:color-mix(in srgb,var(--brand) 7%,var(--bg-2));}
+
 
