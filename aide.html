@@ -1,0 +1,561 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Centre d'aide — BusinessEnLigne</title>
+    <!-- Bibliothèque d'icônes Font Awesome (CDN) : fournit les polices d'icônes <i class="fas fa-..."></i> -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <!-- Feuille de style unique du site : mise en page, couleurs, composants, responsive -->
+    <link rel="stylesheet" href="style.css">
+    <!-- Thème (clair / sombre / couleur) : chargé dans le <head> pour éviter tout clignotement -->
+    <script src="theme.js"></script>
+    <!-- Langue du site (français / english / kiswahili / lingala) : applyée avant le premier affichage -->
+    <script src="i18n.js"></script>
+</head>
+<body data-page="aide">
+
+<!-- ============ HEADER ============ -->
+<header class="header">
+    <div class="hdr-top">
+        <button class="menu-btn" id="menuBtn" aria-label="Menu"><i class="fas fa-bars"></i></button>
+
+        <a class="logo" href="index.html">
+            <span class="logo-top"><b class="lg-biz">business</b><span class="lg-on">enligne</span></span>
+        </a>
+
+        <form class="search-bar" id="searchForm" role="search">
+            <select class="search-cat" id="searchCat" aria-label="Catégorie">
+                <option value="">Toutes les catégories</option>
+                <option value="Électronique">Électronique</option>
+                <option value="Mode">Mode</option>
+                <option value="Maison">Maison</option>
+                <option value="Sport">Sport</option>
+                <option value="Beauté">Beauté</option>
+                <option value="Enfants">Enfants</option>
+                <option value="Livres">Livres</option>
+            </select>
+            <input class="search-input" id="searchInput" type="search" placeholder="Rechercher sur BusinessEnLigne" autocomplete="off">
+            <button class="search-btn" type="submit" aria-label="Rechercher"><i class="fas fa-search"></i></button>
+        </form>
+
+        <div class="hdr-right">
+            <button class="h-item h-theme hide-md" type="button" data-theme-open aria-haspopup="dialog" aria-expanded="false">
+                <small><i class="fas fa-palette h-theme-ic"></i> Thème</small>
+                <b data-theme-label>Orange</b>
+            </button>
+            <button class="h-item hide-md" type="button" data-lang-open aria-haspopup="dialog" aria-expanded="false"><small><i class="fas fa-globe"></i> <span data-lang-code>FR</span></small><b data-lang-label>Langue</b></button>
+            <div class="account-wrap">
+                <button class="h-item h-account" id="accountBtn" aria-haspopup="true" aria-expanded="false">
+                    <small>Bonjour, <b id="accName">Identifiez-vous</b></small>
+                    <b><span id="accAction">Créer un compte</span> <i class="fas fa-caret-down"></i></b>
+                </button>
+                <div class="account-menu" id="accountMenu">
+                    <div class="am-head">
+                        <i class="fas fa-user-circle"></i>
+                        <div>
+                            <b id="amName">Connectez-vous à votre compte</b>
+                            <a href="connexion.html">Connexion / Inscription</a>
+                        </div>
+                    </div>
+                    <ul>
+                        <li><a href="compte.html"><i class="fas fa-user"></i> Mon compte</a></li>
+                        <li><a href="compte.html#boutique"><i class="fas fa-store"></i> Mon magasin</a></li>
+                        <li><a href="publier.html"><i class="fas fa-square-plus"></i> Publier un article</a></li>
+                        <li><a href="compte.html#commandes"><i class="fas fa-box"></i> Mes commandes</a></li>
+                        <li><a href="compte.html#likes"><i class="fas fa-heart"></i> Mes J'aime</a></li>
+                    </ul>
+                    <button class="am-out" id="logoutBtn" type="button" hidden>
+                        <i class="fas fa-right-from-bracket"></i> Se déconnecter
+                    </button>
+                </div>
+            </div>
+            <a class="h-item hide-md" href="compte.html#commandes"><small>Retours</small><b>et commandes <i class="fas fa-caret-down"></i></b></a>
+            <a class="h-item h-cart" href="#" id="cartIcon">
+                <small class="c-top">Panier</small>
+                <i class="fas fa-shopping-cart"></i>
+                <span class="cart-count" id="cartItemCount">0</span>
+            </a>
+        </div>
+    </div>
+
+    <nav class="nav-bar">
+        <a class="nav-all" href="index.html"><i class="fas fa-bars"></i> Tout</a>
+        <a href="tous.html">Tous les produits</a>
+        <a href="magasin.html"><i class="fas fa-store"></i> Magasins en ligne</a>
+        <a href="index.html#deals">Offres du jour</a>
+        <a href="electronique.html">Électronique</a>
+        <a href="mode.html">Mode</a>
+        <a href="maison.html">Maison &amp; Cuisine</a>
+        <a href="sport.html">Sport</a>
+        <a href="beaute.html">Beauté</a>
+        <a href="enfants.html">Enfants</a>
+        <a href="livres.html">Livres</a>
+        <a href="index.html#avis">Vos avis</a>
+        <a href="#contact">Nous contacter</a>
+    </nav>
+</header>
+
+<!-- ============ MENU LATÉRAL ============ -->
+<aside class="side-menu" id="sideMenu">
+    <h3>Toutes les catégories</h3>
+    <ul>
+        <li><a href="electronique.html"><i class="fas fa-mobile-alt"></i> Électronique</a></li>
+        <li><a href="mode.html"><i class="fas fa-tshirt"></i> Mode &amp; Vêtements</a></li>
+        <li><a href="maison.html"><i class="fas fa-couch"></i> Maison &amp; Cuisine</a></li>
+        <li><a href="sport.html"><i class="fas fa-futbol"></i> Sport &amp; Loisirs</a></li>
+        <li><a href="beaute.html"><i class="fas fa-spa"></i> Beauté &amp; Santé</a></li>
+        <li><a href="enfants.html"><i class="fas fa-baby"></i> Enfants &amp; Bébé</a></li>
+        <li><a href="livres.html"><i class="fas fa-book"></i> Livres</a></li>
+        <li><a href="index.html#deals"><i class="fas fa-bolt"></i> Offres du jour</a></li>
+        <li><a href="#contact"><i class="fas fa-headset"></i> Service client</a></li>
+        <li><button type="button" data-theme-open><i class="fas fa-palette"></i> Changer de thème</button></li>
+        <li><button type="button" data-lang-open><i class="fas fa-globe"></i> Langue</button></li>
+    </ul>
+</aside>
+<div class="overlay" id="overlay"></div>
+
+<!-- ============ FIL D'ARIANE ============ -->
+<div class="container">
+    <nav class="crumb">
+        <a href="index.html">Accueil</a> <span>&rsaquo;</span>
+        <b>Centre d'aide</b>
+    </nav>
+</div>
+
+<!-- ============ CENTRE D'AIDE ============ -->
+<section class="section">
+    <div class="container">
+        <div class="help-layout">
+
+            <!-- Sommaire latéral -->
+            <aside class="help-nav">
+                <div class="help-nav-box">
+                    <h4><i class="fas fa-circle-question"></i> Aide</h4>
+                    <a href="#centre">Centre d'aide</a>
+                    <a href="#suivi">Suivi de commande</a>
+                    <a href="#retours">Retours et remboursements</a>
+                    <a href="#contact">Nous contacter</a>
+                </div>
+                <div class="help-nav-box">
+                    <h4><i class="fas fa-truck-fast"></i> Livraison &amp; paiement</h4>
+                    <a href="#livraison">Modes de livraison</a>
+                    <a href="#frais-port">Frais de port</a>
+                    <a href="#paiement">Moyens de paiement</a>
+                    <a href="#mobile-money">Mobile Money</a>
+                </div>
+                <div class="help-nav-box">
+                    <h4><i class="fas fa-star"></i> Nos services</h4>
+                    <a href="#prime">Prime</a>
+                    <a href="#vendeur">Programme vendeur</a>
+                    <a href="#partenaires">Boutiques partenaires</a>
+                </div>
+                <div class="help-nav-box">
+                    <h4><i class="fas fa-file-contract"></i> Conditions</h4>
+                    <a href="#cgv">Conditions générales de vente</a>
+                    <a href="#cgu">Conditions d'utilisation</a>
+                    <a href="#confidentialite">Politique de confidentialité</a>
+                    <a href="#mentions">Mentions légales</a>
+                </div>
+            </aside>
+
+            <!-- Contenu -->
+            <div class="help-main">
+
+                <div class="help-hero">
+                    <div class="help-hero-txt">
+                        <span class="kicker">Besoin d'aide ?</span>
+                        <h1>Centre d'aide BusinessEnLigne</h1>
+                        <p>Tout ce qu'il faut savoir pour commander, payer, être livré, se faire rembourser ou vendre sur la plateforme. Réponses claires et rapides.</p>
+                    </div>
+                    <form class="help-search" id="helpSearch" role="search">
+                        <i class="fas fa-search"></i>
+                        <input type="search" id="helpSearchInput" placeholder="Rechercher une aide : livraison, paiement, retours…" autocomplete="off">
+                    </form>
+                </div>
+
+                <!-- ---------------- CENTRE D'AIDE ---------------- -->
+                <article class="help-section" id="centre">
+                    <h2><i class="fas fa-circle-question"></i> Centre d'aide</h2>
+                    <p>Les questions les plus fréquentes de nos clients et de nos vendeurs. Cliquez sur une question pour dérouler la réponse.</p>
+                    <details class="faq" open>
+                        <summary>Comment passer une commande ?</summary>
+                        <p>Parcourez le catalogue, ouvrez la fiche d'un article puis cliquez sur <b>Ajouter au panier</b> ou <b>Acheter maintenant</b>. Ouvrez le panier, vérifiez vos articles puis cliquez sur <b>Passer la commande</b>. Indiquez votre adresse, votre numéro de téléphone et le mode de paiement.</p>
+                    </details>
+                    <details class="faq">
+                        <summary>Comment suivre ma commande ?</summary>
+                        <p>Rendez-vous sur <a href="#suivi">Suivi de commande</a> et saisissez la référence reçue après votre achat (format <b>BE-XXXXXXXX</b>). Vous pouvez aussi retrouver toutes vos commandes dans <a href="compte.html#commandes">Mes commandes</a>.</p>
+                    </details>
+                    <details class="faq">
+                        <summary>Quels moyens de paiement acceptez-vous ?</summary>
+                        <p>Mobile Money (M-Pesa, Orange Money, Airtel Money), carte bancaire, virement et espèces à la livraison. Voir <a href="#paiement">Moyens de paiement</a>.</p>
+                    </details>
+                    <details class="faq">
+                        <summary>Puis-je retourner un article ?</summary>
+                        <p>Oui. Vous disposez de 30 jours pour changer d'avis. Consultez la rubrique <a href="#retours">Retours et remboursements</a> pour connaître la procédure.</p>
+                    </details>
+                    <details class="faq">
+                        <summary>Comment devenir vendeur ?</summary>
+                        <p>Créez un compte, complétez les informations de votre boutique dans <a href="compte.html#boutique">Mon magasin</a>, puis publiez vos articles depuis <a href="publier.html">Publier un article</a>. Voir le <a href="#vendeur">Programme vendeur</a>.</p>
+                    </details>
+                </article>
+
+                <!-- ---------------- SUIVI ---------------- -->
+                <article class="help-section" id="suivi">
+                    <h2><i class="fas fa-box-open"></i> Suivi de commande</h2>
+                    <p>Saisissez la référence de votre commande pour connaître son état. La référence vous est envoyée juste après le paiement.</p>
+                    <form class="help-form" id="trackForm">
+                        <div class="f-row">
+                            <label for="trackRef">Référence de commande</label>
+                            <input type="text" id="trackRef" placeholder="BE-12345678" autocomplete="off">
+                        </div>
+                        <button type="submit" class="btn btn-cta"><i class="fas fa-magnifying-glass-location"></i> Suivre ma commande</button>
+                    </form>
+                    <div id="trackResult"></div>
+                </article>
+
+                <!-- ---------------- RETOURS ---------------- -->
+                <article class="help-section" id="retours">
+                    <h2><i class="fas fa-rotate-left"></i> Retours et remboursements</h2>
+                    <p>Vous avez <b>30 jours</b> après la réception pour demander un retour, sans avoir à vous justifier.</p>
+                    <ol class="help-steps">
+                        <li><b>Demandez le retour</b> depuis <a href="compte.html#commandes">Mes commandes</a> ou par téléphone au +243 997 555 148.</li>
+                        <li><b>Préparez le colis</b> avec l'article dans son état d'origine (emballage, accessoires, étiquettes).</li>
+                        <li><b>Déposez le colis</b> au point de retrait indiqué ou attendez l'enlèvement à domicile.</li>
+                        <li><b>Remboursement</b> sous 3 à 7 jours ouvrés sur votre Mobile Money ou votre compte, une fois l'article contrôlé.</li>
+                    </ol>
+                    <div class="help-note"><i class="fas fa-circle-info"></i> Les articles personnalisés, l'hygiène et les produits numériques ne sont pas repris, sauf défaut.</div>
+                </article>
+
+                <!-- ---------------- LIVRAISON ---------------- -->
+                <article class="help-section" id="livraison">
+                    <h2><i class="fas fa-truck-fast"></i> Modes de livraison</h2>
+                    <table class="help-table">
+                        <thead><tr><th>Mode</th><th>Délai</th><th>Zone</th></tr></thead>
+                        <tbody>
+                            <tr><td><b>Standard</b></td><td>24 à 72 h</td><td>Lubumbashi et grandes villes de la RDC</td></tr>
+                            <tr><td><b>Express</b></td><td>Le jour même (commande avant 18h)</td><td>Lubumbashi</td></tr>
+                            <tr><td><b>Prime</b></td><td>24 à 48 h garanties</td><td>Zones éligibles Prime</td></tr>
+                            <tr><td><b>Retrait en boutique</b></td><td>Sous 24 h</td><td>Chez le vendeur</td></tr>
+                        </tbody>
+                    </table>
+                    <p>Nos livreurs vous appellent avant la livraison. Pensez à indiquer un numéro joignable et un point de repère précis.</p>
+                </article>
+
+                <!-- ---------------- FRAIS DE PORT ---------------- -->
+                <article class="help-section" id="frais-port">
+                    <h2><i class="fas fa-coins"></i> Frais de port</h2>
+                    <table class="help-table">
+                        <thead><tr><th>Commande</th><th>Livraison Standard</th></tr></thead>
+                        <tbody>
+                            <tr><td>Moins de 150 000 FC</td><td>1 500 FC</td></tr>
+                            <tr><td>150 000 FC et plus</td><td><b>Offerte</b></td></tr>
+                            <tr><td>Articles Prime</td><td><b>Offerte et prioritaire</b></td></tr>
+                            <tr><td>Retrait en boutique</td><td><b>Gratuit</b></td></tr>
+                        </tbody>
+                    </table>
+                    <p>Les frais éventuels sont toujours affichés dans le panier avant la validation de la commande.</p>
+                </article>
+
+                <!-- ---------------- PAIEMENT ---------------- -->
+                <article class="help-section" id="paiement">
+                    <h2><i class="fas fa-credit-card"></i> Moyens de paiement</h2>
+                    <div class="help-grid">
+                        <div class="help-tile"><i class="fas fa-mobile-screen-button"></i><b>Mobile Money</b><span>M-Pesa, Orange Money, Airtel Money</span></div>
+                        <div class="help-tile"><i class="fas fa-credit-card"></i><b>Carte bancaire</b><span>Visa, Mastercard</span></div>
+                        <div class="help-tile"><i class="fas fa-money-bill-wave"></i><b>Espèces</b><span>À la livraison</span></div>
+                        <div class="help-tile"><i class="fas fa-building-columns"></i><b>Virement bancaire</b><span>Pour les grosses commandes</span></div>
+                    </div>
+                    <div class="help-note"><i class="fas fa-shield-halved"></i> Paiement 100 % sécurisé. Ne communiquez jamais votre code Mobile Money à un tiers.</div>
+                </article>
+
+                <!-- ---------------- MOBILE MONEY ---------------- -->
+                <article class="help-section" id="mobile-money">
+                    <h2><i class="fas fa-mobile-screen-button"></i> Paiement par Mobile Money</h2>
+                    <ol class="help-steps">
+                        <li>Choisissez <b>Mobile Money</b> au moment de payer.</li>
+                        <li>Sélectionnez votre opérateur (M-Pesa, Orange Money ou Airtel Money).</li>
+                        <li>Saisissez le numéro de téléphone lié à votre compte.</li>
+                        <li>Validez avec le code reçu par SMS ou via l'application de votre opérateur.</li>
+                    </ol>
+                    <p>Le paiement est confirmé en quelques secondes. En cas de problème, contactez le service client au <b>+243 997 555 148</b>.</p>
+                </article>
+
+                <!-- ---------------- PRIME ---------------- -->
+                <article class="help-section" id="prime">
+                    <h2><i class="fas fa-check-circle"></i> Livraison Prime</h2>
+                    <p>Prime, c'est la livraison rapide, gratuite et illimitée sur des milliers d'articles.</p>
+                    <ul class="help-list">
+                        <li><i class="fas fa-truck"></i> Livraison le jour même sur les articles éligibles</li>
+                        <li><i class="fas fa-box-open"></i> Retours gratuits et simplifiés</li>
+                        <li><i class="fas fa-tag"></i> Accès prioritaire aux ventes Flash et offres exclusives</li>
+                        <li><i class="fas fa-headset"></i> Service client prioritaire 7j/7</li>
+                    </ul>
+                    <button class="btn btn-cta" id="primeBtn" type="button"><i class="fas fa-bolt"></i> Essayer Prime</button>
+                </article>
+
+                <!-- ---------------- VENDEUR ---------------- -->
+                <article class="help-section" id="vendeur">
+                    <h2><i class="fas fa-store"></i> Programme vendeur</h2>
+                    <p>Vendez vos articles à des milliers d'acheteurs partout en République Démocratique du Congo.</p>
+                    <ol class="help-steps">
+                        <li><b>Créez votre compte</b> gratuitement depuis <a href="connexion.html">Connexion / Inscription</a>.</li>
+                        <li><b>Complétez votre vitrine</b> : logo, description, contact, paiement et livraison dans <a href="compte.html#boutique">Mon magasin</a>.</li>
+                        <li><b>Publiez vos articles</b> avec photos, prix et stock depuis <a href="publier.html">Publier un article</a>.</li>
+                        <li><b>Recevez vos commandes</b> et suivez vos ventes depuis votre tableau de bord.</li>
+                    </ol>
+                    <p><a class="btn btn-cta" href="publier.html"><i class="fas fa-square-plus"></i> Commencer à vendre</a></p>
+                </article>
+
+                <!-- ---------------- PARTENAIRES ---------------- -->
+                <article class="help-section" id="partenaires">
+                    <h2><i class="fas fa-handshake"></i> Boutiques partenaires</h2>
+                    <p>Vous avez déjà une boutique physique ou une marque ? Devenez partenaire officiel et bénéficiez de la confiance de la plateforme.</p>
+                    <ul class="help-list">
+                        <li><i class="fas fa-badge-check"></i> Badge <b>Boutique vérifiée</b> sur votre vitrine</li>
+                        <li><i class="fas fa-chart-line"></i> Mise en avant dans le catalogue et les catégories</li>
+                        <li><i class="fas fa-tags"></i> Tarifs préférentiels sur la livraison</li>
+                        <li><i class="fas fa-headset"></i> Un conseiller dédié à votre activité</li>
+                    </ul>
+                    <p>Écrivez-nous à <a href="mailto:rodriguedisasi15@gmail.com">rodriguedisasi15@gmail.com</a> avec le nom de votre boutique pour être recontacté.</p>
+                </article>
+
+                <!-- ---------------- CGV ---------------- -->
+                <article class="help-section" id="cgv">
+                    <h2><i class="fas fa-file-contract"></i> Conditions générales de vente</h2>
+                    <p>Les présentes conditions régissent toute commande passée sur BusinessEnLigne.</p>
+                    <h3>1. Prix</h3>
+                    <p>Les prix sont indiqués en francs congolais (FC), toutes taxes comprises, hors frais de livraison. BusinessEnLigne se réserve le droit de modifier ses prix à tout moment ; le prix appliqué est celui affiché au moment de la commande.</p>
+                    <h3>2. Commande</h3>
+                    <p>Toute commande vaut acceptation des présentes conditions. Un e-mail ou un SMS de confirmation de commande est adressé à l'acheteur.</p>
+                    <h3>3. Paiement</h3>
+                    <p>Le paiement s'effectue par Mobile Money, carte bancaire, virement ou espèces à la livraison. La commande est préparée dès la confirmation du paiement.</p>
+                    <h3>4. Livraison</h3>
+                    <p>Les délais de livraison sont indicatifs. BusinessEnLigne ne peut être tenue responsable des retards dus au transporteur ou à un cas de force majeure.</p>
+                    <h3>5. Droit de rétractation</h3>
+                    <p>L'acheteur dispose de 30 jours pour retourner un article, dans son état d'origine, conformément à la rubrique <a href="#retours">Retours et remboursements</a>.</p>
+                </article>
+
+                <!-- ---------------- CGU ---------------- -->
+                <article class="help-section" id="cgu">
+                    <h2><i class="fas fa-file-lines"></i> Conditions d'utilisation</h2>
+                    <p>L'utilisation du site implique le respect des règles suivantes.</p>
+                    <h3>Compte utilisateur</h3>
+                    <p>Vous êtes responsable de la confidentialité de vos identifiants et de l'exactitude des informations fournies.</p>
+                    <h3>Comportement</h3>
+                    <p>Il est interdit de publier des contenus illicites, trompeurs, contrefaits ou portant atteinte aux droits de tiers. Tout manquement peut entraîner la suspension du compte.</p>
+                    <h3>Propriété intellectuelle</h3>
+                    <p>Les marques, textes et visuels de la plateforme ne peuvent être réutilisés sans autorisation. Les vendeurs garantissent détenir les droits sur les photos et descriptions publiées.</p>
+                </article>
+
+                <!-- ---------------- CONFIDENTIALITÉ ---------------- -->
+                <article class="help-section" id="confidentialite">
+                    <h2><i class="fas fa-user-shield"></i> Politique de confidentialité</h2>
+                    <p>Nous collectons uniquement les données nécessaires au traitement des commandes : nom, contact, adresse de livraison et historique d'achat.</p>
+                    <h3>Utilisation</h3>
+                    <p>Vos données servent à traiter les commandes, assurer la livraison, le service client et la sécurité des paiements. Elles ne sont jamais revendues.</p>
+                    <h3>Conservation et droits</h3>
+                    <p>Vous pouvez demander l'accès, la correction ou la suppression de vos données en écrivant à <a href="mailto:rodriguedisasi15@gmail.com">rodriguedisasi15@gmail.com</a>.</p>
+                </article>
+
+                <!-- ---------------- MENTIONS ---------------- -->
+                <article class="help-section" id="mentions">
+                    <h2><i class="fas fa-scale-balanced"></i> Mentions légales</h2>
+                    <ul class="help-list plain">
+                        <li><b>Éditeur du site :</b> BusinessEnLigne</li>
+                        <li><b>Responsable de publication :</b> Rodrigue Disasi</li>
+                        <li><b>Adresse :</b> Avenue de la Libération, Lubumbashi, République Démocratique du Congo</li>
+                        <li><b>Téléphone :</b> +243 997 555 148</li>
+                        <li><b>Email :</b> <a href="mailto:rodriguedisasi15@gmail.com">rodriguedisasi15@gmail.com</a></li>
+                        <li><b>Hébergement :</b> plateforme d'hébergement web</li>
+                    </ul>
+                    <p>© 2026 BusinessEnLigne. Tous droits réservés.</p>
+                </article>
+
+                <!-- ---------------- CONTACT ---------------- -->
+                <article class="help-section" id="contact">
+                    <h2><i class="fas fa-headset"></i> Nous contacter</h2>
+                    <p>Notre service client vous répond du lundi au samedi, de 08h00 à 19h00.</p>
+                    <ul class="info help-contact">
+                        <li><i class="fas fa-phone-alt"></i><div><b>Téléphone</b><br>+243 997 555 148</div></li>
+                        <li><i class="fas fa-envelope"></i><div><b>Email</b><br><a href="mailto:rodriguedisasi15@gmail.com">rodriguedisasi15@gmail.com</a></div></li>
+                        <li><i class="fas fa-map-marker-alt"></i><div><b>Adresse</b><br>Avenue de la Libération, Lubumbashi, RDC</div></li>
+                        <li><i class="fas fa-clock"></i><div><b>Horaires</b><br>Lun – Sam : 08h00 à 19h00</div></li>
+                    </ul>
+                    <p><a class="btn btn-cta" href="index.html#contact"><i class="fas fa-paper-plane"></i> Ouvrir le formulaire de contact</a></p>
+                </article>
+
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ============ FOOTER ============ -->
+<footer>
+    <div class="foot-top">
+        <div class="foot-col">
+            <h4>Conditions</h4>
+            <ul>
+                <li><a href="aide.html#cgv">Conditions générales de vente</a></li>
+                <li><a href="aide.html#cgu">Conditions d'utilisation</a></li>
+                <li><a href="aide.html#confidentialite">Politique de confidentialité</a></li>
+                <li><a href="aide.html#mentions">Mentions légales</a></li>
+            </ul>
+        </div>
+        <div class="foot-col">
+            <h4>Besoin d'aide ?</h4>
+            <ul>
+                <li><a href="aide.html#centre">Centre d'aide</a></li>
+                <li><a href="index.html#contact">Nous contacter</a></li>
+                <li><a href="aide.html#suivi">Suivi de commande</a></li>
+                <li><a href="aide.html#retours">Retours et remboursements</a></li>
+            </ul>
+        </div>
+        <div class="foot-col">
+            <h4>Livraison &amp; paiement</h4>
+            <ul>
+                <li><a href="aide.html#livraison">Modes de livraison</a></li>
+                <li><a href="aide.html#frais-port">Frais de port</a></li>
+                <li><a href="aide.html#paiement">Moyens de paiement</a></li>
+                <li><a href="aide.html#mobile-money">Mobile Money</a></li>
+            </ul>
+        </div>
+        <div class="foot-col">
+            <h4>Nos services</h4>
+            <ul>
+                <li><a href="index.html#deals">Ventes Flash</a></li>
+                <li><a href="aide.html#prime">Prime</a></li>
+                <li><a href="aide.html#vendeur">Programme vendeur</a></li>
+                <li><a href="aide.html#partenaires">Boutiques partenaires</a></li>
+            </ul>
+        </div>
+        <div class="foot-col">
+            <h4>Nos catégories</h4>
+            <ul>
+                <li><a href="electronique.html">Électronique</a></li>
+                <li><a href="mode.html">Mode</a></li>
+                <li><a href="maison.html">Maison &amp; Cuisine</a></li>
+                <li><a href="sport.html">Sport</a></li>
+                <li><a href="tous.html">Tous les produits</a></li>
+            </ul>
+        </div>
+    </div>
+    <div class="foot-mid">
+        <a class="logo" href="index.html"><span class="logo-top"><b class="lg-biz">business</b><span class="lg-on">enligne</span></span></a>
+        <button class="lang-btn" type="button" data-lang-open><i class="fas fa-globe"></i> <span class="lang-txt">Français</span></button>
+        <button class="lang-btn"><i class="fas fa-map-marker-alt"></i> Lubumbashi</button>
+    </div>
+    <div class="foot-bottom">
+        © 2026 BusinessEnLigne. Tous droits réservés. | Panier sauvegardé en base locale (LocalStorage) |
+        Réalisé par <b style="color:#fff">Rodrigue Disasi</b>
+    </div>
+</footer>
+
+<!-- ============ PANIER ============ -->
+<aside class="cart-drawer" id="cartDrawer">
+    <div class="cart-head">
+        <h2><i class="fas fa-shopping-cart"></i> Votre panier</h2>
+        <button id="closeCart" aria-label="Fermer"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="cart-body" id="cartBody"></div>
+    <div class="cart-foot">
+        <div class="cart-sub"><span>Sous-total</span><span id="cartSub">0 FC</span></div>
+        <div class="cart-ship" id="cartShip">Livraison calculée à l'étape suivante</div>
+        <button class="btn btn-cta" id="checkoutBtn">Passer la commande</button>
+    </div>
+</aside>
+
+<div class="toast-wrap" id="toastWrap"></div>
+
+<!-- Couche réseau : parle au serveur (connexion, produits, commandes). Doit précéder javascript.js -->
+<script src="api.js"></script>
+<!-- Logique du site : catalogue, recherche, filtres, panier, fiches produit -->
+<script src="javascript.js"></script>
+
+<!-- Logique propre au centre d'aide : sommaire actif, recherche, suivi de commande -->
+<script>
+(function(){
+    var sections = Array.prototype.slice.call(document.querySelectorAll('.help-section'));
+    var navLinks = Array.prototype.slice.call(document.querySelectorAll('.help-nav a'));
+
+    /* Le lien du sommaire correspondant à la section visible est mis en avant. */
+    function markActive(id){
+        navLinks.forEach(function(a){ a.classList.toggle('active', a.getAttribute('href') === '#' + id); });
+    }
+    if ('IntersectionObserver' in window){
+        var seen = {};
+        var obs = new IntersectionObserver(function(entries){
+            entries.forEach(function(en){ seen[en.target.id] = en.isIntersecting ? en.boundingClientRect.top : null; });
+            var visible = Object.keys(seen).filter(function(k){ return seen[k] !== null && seen[k] !== undefined; });
+            if (visible.length) markActive(visible[0]);
+        }, { rootMargin: '-120px 0px -55% 0px', threshold: 0 });
+        sections.forEach(function(s){ obs.observe(s); });
+    }
+    window.addEventListener('hashchange', function(){
+        var id = location.hash.slice(1);
+        if (id) markActive(id);
+    });
+    if (location.hash) markActive(location.hash.slice(1));
+
+    /* Recherche interne : filtre les sections et met en avant les résultats. */
+    var search = document.getElementById('helpSearch');
+    if (search){
+        search.addEventListener('submit', function(e){
+            e.preventDefault();
+            var q = (document.getElementById('helpSearchInput').value || '').trim().toLowerCase();
+            if (!q){
+                sections.forEach(function(s){ s.hidden = false; });
+                return;
+            }
+            var found = null;
+            sections.forEach(function(s){
+                var hit = s.textContent.toLowerCase().indexOf(q) !== -1;
+                s.hidden = !hit;
+                if (hit && !found) found = s;
+            });
+            if (found) found.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        });
+    }
+
+    /* Suivi de commande : lit les commandes enregistrées dans le navigateur. */
+    var track = document.getElementById('trackForm');
+    if (track){
+        track.addEventListener('submit', function(e){
+            e.preventDefault();
+            var ref = (document.getElementById('trackRef').value || '').trim().toUpperCase();
+            var out = document.getElementById('trackResult');
+            if (!ref){ out.innerHTML = ''; return; }
+            var orders = [];
+            try { orders = JSON.parse(localStorage.getItem('businessenligne_orders')) || []; } catch (err) {}
+            var order = orders.filter(function(o){ return String(o.ref).toUpperCase() === ref; })[0];
+            if (order){
+                var items = (order.items || []).map(function(i){
+                    return '<li>' + (i.qty || 1) + ' × ' + (i.name || i.title || 'Article') + '</li>';
+                }).join('');
+                out.innerHTML = '<div class="track-card ok">' +
+                    '<i class="fas fa-circle-check"></i>' +
+                    '<div><b>Commande ' + ref + ' trouvée</b>' +
+                    '<span>Statut : en préparation · Livraison estimée sous 24 à 48h</span>' +
+                    (items ? '<ul class="track-items">' + items + '</ul>' : '') +
+                    '</div></div>';
+            } else {
+                out.innerHTML = '<div class="track-card">' +
+                    '<i class="fas fa-circle-info"></i>' +
+                    '<div><b>Aucune commande trouvée pour « ' + ref + ' »</b>' +
+                    '<span>Vérifiez la référence, ou connectez-vous et ouvrez ' +
+                    '<a href="compte.html#commandes">Mes commandes</a>.</span></div></div>';
+            }
+        });
+    }
+
+    /* Bouton Prime du centre d'aide. */
+    var prime = document.getElementById('primeBtn');
+    if (prime){
+        prime.addEventListener('click', function(){
+            if (typeof toast === 'function') toast('🎉 Bienvenue sur Prime ! Livraison offerte dès aujourd\'hui.');
+        });
+    }
+})();
+</script>
+</body>
+</html>

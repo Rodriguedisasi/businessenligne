@@ -3612,13 +3612,14 @@ function initLangChange(){
             refresh();
         } else if (page === 'admin'){
             initAdminPage();
-} else {
+        } else if (page === 'home'){
             renderReviews();
             renderAll();
             renderCatShops();
         }
-        if ($('#modal').classList.contains('open')){
-            const id = $('#modal').dataset.id;
+        const modal = $('#modal');
+        if (modal && modal.classList.contains('open')){
+            const id = modal.dataset.id;
             if (id) openModal(id);
         }
     });
