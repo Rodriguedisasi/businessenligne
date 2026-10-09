@@ -127,8 +127,30 @@ const MIME = {
     '.json': 'application/json; charset=utf-8',
     '.svg': 'image/svg+xml',
     '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg',
+    '.jpe': 'image/jpeg', '.jfif': 'image/jpeg', '.pjpeg': 'image/jpeg',
     '.gif': 'image/gif', '.webp': 'image/webp', '.ico': 'image/x-icon',
+    '.cur': 'image/x-icon', '.avif': 'image/avif', '.bmp': 'image/bmp',
+    '.dib': 'image/bmp', '.tif': 'image/tiff', '.tiff': 'image/tiff',
+    '.heic': 'image/heic', '.heif': 'image/heif', '.apng': 'image/apng',
+    '.jxl': 'image/jxl', '.psd': 'image/vnd.adobe.photoshop',
     '.woff': 'font/woff', '.woff2': 'font/woff2', '.ttf': 'font/ttf'
+};
+
+/* Repli pour un format d'image qu'on n'a pas listé : on sert tout de même
+   la bonne famille MIME à partir de l'extension, sinon le navigateur
+   refuserait d'afficher la photo. */
+function mimeOfExt(ext){
+    if (MIME[ext]) return MIME[ext];
+    const bare = ext.replace(/^\./, '');
+    if (/^[a-z0-9]+$/.test(bare)) return 'image/' + bare;
+    return 'application/octet-stream';
+}
+
+/* Sous-type MIME -> extension de fichier. Quelques formats ont un nom de
+   fichier habituel qui diffère du sous-type (jpeg -> jpg, svg+xml -> svg…). */
+const IMG_EXT = {
+    'jpeg': 'jpg', 'svg+xml': 'svg', 'x-icon': 'ico',
+    'vnd.microsoft.icon': 'ico', 'vnd.adobe.photoshop': 'psd', 'x-png': 'png'
 };
 
 /* Ce que le site a le droit de servir au navigateur.
@@ -138,7 +160,9 @@ const MIME = {
    passe hachés. Le front ne charge aucun .json, on ne les sert donc pas. */
 const PUBLIC_EXT = new Set([
     '.html', '.css',
-    '.png', '.jpg', '.jpeg', '.gif', '.webp', '.svg', '.ico',
+    '.png', '.jpg', '.jpeg', '.jpe', '.jfif', '.pjpeg', '.gif', '.webp',
+    '.svg', '.ico', '.cur', '.avif', '.bmp', '.dib', '.tif', '.tiff',
+    '.heic', '.heif', '.apng', '.jxl', '.psd',
     '.woff', '.woff2', '.ttf'
 ]);
 
@@ -1291,15 +1315,18 @@ const routes = {
         const { dataUrl } = await readBody(req);
         if (!dataUrl) return err(res, 400, 'Aucune image reçue');
 
-        const m = /^data:image\/(png|jpeg|jpg|gif|webp);base64,([A-Za-z0-9+/=]+)$/.exec(String(dataUrl));
-        if (!m) return err(res, 400, 'Format d\'image non accepté (png, jpg, gif, webp)');
+        /* Tous les formats d'image sont acceptés : on se fie au type MIME
+           transporté dans l'URL de données (« image/… ;base64,… »). */
+        const m = /^data:(image\/[a-z0-9.+-]+);base64,([A-Za-z0-9+/=]+)$/i.exec(String(dataUrl));
+        if (!m) return err(res, 400, 'Seules les images sont acceptées');
+        const subtype = m[1].slice(6).toLowerCase();
         const buf = Buffer.from(m[2], 'base64');
         if (buf.length > 3 * 1024 * 1024) return err(res, 413, 'Image trop lourde (max 3 Mo)');
 
-        const ext = m[1] === 'jpeg' ? 'jpg' : m[1];
+        const ext = IMG_EXT[subtype] || subtype.replace(/[^a-z0-9]/g, '') || 'jpg';
         /* suffixe aleatoire : plusieurs photos peuvent etre envoyees en meme milliseconde */
         const name = `img-${auth.user.id}-${Date.now()}-${crypto.randomBytes(4).toString('hex')}.${ext}`;
-        await photos.put(name, buf, 'image/' + ext);
+        await photos.put(name, buf, 'image/' + subtype);
         ok(res, { url: '/uploads/' + name });
     },
 
@@ -1863,7 +1890,11 @@ async function serveUpload(req, res, rel){
 
     const ext = path.extname(name).toLowerCase();
     res.writeHead(200, {
-        'Content-Type': MIME[ext] || 'application/octet-stream',
+        'Content-Type': mimeOfExt(ext),
+        /* les photos sont du contenu envoyé par les vendeurs : on empêche
+           tout script embarqué (SVG notamment) de s'exécuter. */
+        'X-Content-Type-Options': 'nosniff',
+        'Content-Security-Policy': "default-src 'none'; img-src 'self'; style-src 'unsafe-inline'; sandbox",
         /* le nom contient un horodatage : le fichier ne change jamais */
         'Cache-Control': 'public, max-age=86400, immutable'
     });
@@ -1897,7 +1928,7 @@ function serveStatic(req, res, pathname){
         return send404(res);
 
     res.writeHead(200, {
-        'Content-Type': MIME[ext] || 'application/octet-stream',
+        'Content-Type': mimeOfExt(ext),
         'Cache-Control': ext === '.html' ? 'no-cache' : 'public, max-age=300'
     });
     fs.createReadStream(file).pipe(res);

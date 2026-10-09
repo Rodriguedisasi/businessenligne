@@ -110,19 +110,45 @@ const BE = (() => {
     const shops = async (params = {}) => (await req('GET', '/api/shops' + qs(params))).shops;
     const shop  = async username => req('GET', '/api/shops/' + encodeURIComponent(username));
 
-    /* ---------------- IMAGES ---------------- */
+    /* ---------------- IMAGES ----------------
+       Toute image est acceptée, quel que soit son format : on se fie au
+       type MIME du fichier, et si le système ne le fournit pas, on le
+       déduit de l'extension du nom de fichier. */
+    const IMG_MIME = {
+        png:'image/png', jpg:'image/jpeg', jpeg:'image/jpeg', jpe:'image/jpeg',
+        jfif:'image/jpeg', pjpeg:'image/jpeg', gif:'image/gif', webp:'image/webp',
+        avif:'image/avif', bmp:'image/bmp', dib:'image/bmp', tif:'image/tiff',
+        tiff:'image/tiff', heic:'image/heic', heif:'image/heif', svg:'image/svg+xml',
+        ico:'image/x-icon', cur:'image/x-icon', apng:'image/apng', jxl:'image/jxl',
+        psd:'image/vnd.adobe.photoshop', raw:'image/x-raw', dng:'image/x-adobe-dng',
+        cr2:'image/x-canon-cr2', nef:'image/x-nikon-nef', arw:'image/x-sony-arw',
+        wbmp:'image/vnd.wap.wbmp', xbm:'image/x-xbitmap', xpm:'image/x-xpixmap'
+    };
+    const extOf = name => {
+        const m = /\.([a-z0-9]+)$/i.exec(String(name || ''));
+        return m ? m[1].toLowerCase() : '';
+    };
+    function mimeOf(file){
+        const t = String(file.type || '').toLowerCase();
+        if (t.startsWith('image/')) return t;
+        return IMG_MIME[extOf(file.name)] || '';
+    }
     async function upload(file){
         if (!file) throw new Error('Aucun fichier sélectionné');
-        if (!/^image\/(png|jpeg|gif|webp)$/.test(file.type))
-            throw new Error('Image non acceptée (png, jpg, gif ou webp)');
+        const mime = mimeOf(file);
+        if (!mime) throw new Error('Seules les images sont acceptées');
         if (file.size > 3 * 1024 * 1024)
             throw new Error('Image trop lourde (3 Mo maximum)');
-        const dataUrl = await new Promise((res, rej) => {
+        let dataUrl = await new Promise((res, rej) => {
             const fr = new FileReader();
             fr.onload = () => res(fr.result);
             fr.onerror = rej;
             fr.readAsDataURL(file);
         });
+        /* certains navigateurs omettent le type d'un fichier : on impose
+           celui qu'on a déduit pour que le serveur le reconnaisse. */
+        if (typeof dataUrl === 'string')
+            dataUrl = dataUrl.replace(/^data:[^;,]*;base64,/i, 'data:' + mime + ';base64,');
         return (await req('POST', '/api/upload', { dataUrl })).url;
     }
 

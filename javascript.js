@@ -121,6 +121,12 @@ const photosOf = p => {
     return list.length ? list : [imgOf(p)];
 };
 const safeUrl = u => String(u || '').replace(/["'<>]/g, '');
+/* Images : on accepte tous les formats. Le filtre accepte tout type MIME
+   « image/… », et se rabat sur l'extension quand le navigateur ne fournit
+   pas le type (fichiers récents type HEIC, formats bruts, etc.). */
+const IMAGE_ACCEPT = 'image/*,.png,.jpg,.jpeg,.jpe,.jfif,.gif,.webp,.avif,.bmp,.dib,.tif,.tiff,.heic,.heif,.svg,.ico,.cur,.apng,.jxl,.psd,.raw,.dng,.cr2,.nef,.arw';
+const IMAGE_EXT = /\.(png|jpe?g|jpe|jfif|gif|webp|avif|bmp|dib|tiff?|heic|heif|svg|ico|cur|apng|jxl|psd|raw|dng|cr2|nef|arw|xbm|xpm|wbmp)$/i;
+const isImageFile = f => /^image\//.test(String((f && f.type) || '')) || IMAGE_EXT.test(String((f && f.name) || ''));
 /* Contrôles de saisie réutilisés par tous les formulaires du site. */
 const HTTP_URL = /^https?:\/\/[^\s"'<>]{4,400}$/i;
 const isMail   = v => /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(String(v || '').trim());
@@ -1522,7 +1528,7 @@ function makeImagePicker(zone, onChange){
     };
     const file = document.createElement('input');
     file.type = 'file';
-    file.accept = 'image/png,image/jpeg,image/gif,image/webp';
+    file.accept = IMAGE_ACCEPT;
     file.hidden = true;
     zone.after(file);
 
@@ -1581,7 +1587,7 @@ function makeShopGallery(zone, initial, onChange){
     ['dragenter', 'dragover'].forEach(ev => zone.addEventListener(ev, e => { e.preventDefault(); zone.classList.add('over'); }));
     ['dragleave', 'drop'].forEach(ev => zone.addEventListener(ev, e => { e.preventDefault(); zone.classList.remove('over'); }));
     zone.addEventListener('drop', e => {
-        const list = Array.from(e.dataTransfer.files || []).filter(f => /^image\//.test(f.type));
+        const list = Array.from(e.dataTransfer.files || []).filter(isImageFile);
         if (list.length) send(list);
     });
     file.onchange = () => { const list = Array.from(file.files || []); if (list.length) send(list); };
@@ -2041,7 +2047,7 @@ function makePhotoPicker(o){
         ['dragenter', 'dragover'].forEach(ev => zone.addEventListener(ev, e => { e.preventDefault(); zone.classList.add('over'); }));
         ['dragleave', 'drop'].forEach(ev => zone.addEventListener(ev, e => { e.preventDefault(); zone.classList.remove('over'); }));
         zone.addEventListener('drop', e => {
-            const list = Array.from(e.dataTransfer.files || []).filter(f => /^image\//.test(f.type));
+            const list = Array.from(e.dataTransfer.files || []).filter(isImageFile);
             if (list.length) send(list);
         });
     }
