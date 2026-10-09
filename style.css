@@ -3549,4 +3549,43 @@ footer{margin-top:24px;padding-top:32px;}
 /* la sélection de texte prend la teinte de marque */
 [data-mode="dark"] ::selection{background:color-mix(in srgb,var(--brand) 55%,#000);color:#fff;}
 
+/* --- héros d'accueil : profondeur et halo de marque en filigrane --- */
+[data-mode="dark"] .hero{
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.06),0 30px 70px -40px rgba(0,0,0,.9);
+}
+[data-mode="dark"] .hero::after{
+    content:"";position:absolute;right:-130px;top:-150px;width:480px;height:480px;border-radius:50%;
+    background:radial-gradient(circle,var(--brand-glow),transparent 68%);pointer-events:none;
+}
+[data-mode="dark"] .hero-caption{z-index:2;}
+[data-mode="dark"] .hero-caption .kicker{text-shadow:0 1px 14px var(--brand-glow);}
+
+/* --- fiche produit : encart d'achat et panneau photo plus riches --- */
+[data-mode="dark"] .modal-card{
+    box-shadow:0 40px 90px -40px rgba(0,0,0,.9),inset 0 1px 0 rgba(255,255,255,.05);
+}
+[data-mode="dark"] .modal-img{
+    background:linear-gradient(165deg,color-mix(in srgb,var(--brand) 5%,var(--bg-2)),var(--bg-img));
+}
+[data-mode="dark"] .buy-box{
+    background:linear-gradient(180deg,color-mix(in srgb,var(--brand) 6%,var(--bg-2)),var(--bg-2));
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.05);
+}
+
+/* --- panier : en-tête en dégradé d'encre, tiroir plus profond --- */
+[data-mode="dark"] .cart-drawer{box-shadow:-40px 0 90px -30px rgba(0,0,0,.85);}
+[data-mode="dark"] .cart-head{
+    background:linear-gradient(120deg,var(--navy-800),var(--navy-950));
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.06);
+}
+[data-mode="dark"] .cart-foot{background:var(--bg-2);box-shadow:0 -12px 30px -24px rgba(0,0,0,.9);}
+
+/* --- pied de page : filet lumineux de marque en haut --- */
+[data-mode="dark"] footer{
+    background:
+        radial-gradient(60% 120px at 20% 0,color-mix(in srgb,var(--brand) 9%,transparent),transparent 70%),
+        var(--navy-900);
+}
+[data-mode="dark"] .foot-mid{border-top-color:color-mix(in srgb,var(--brand) 22%,rgba(255,255,255,.07));}
+
 
