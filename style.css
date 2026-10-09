@@ -3717,3 +3717,98 @@ footer{margin-top:24px;padding-top:32px;}
 [data-mode="dark"] .mr-del{color:#ff7b7b;}
 [data-mode="dark"] .mr-head .rev-face{background:color-mix(in srgb,var(--brand) 30%,#141210);color:var(--brand-soft);}
 .p-rating-new{display:inline-flex;align-items:center;gap:6px;color:var(--txt-3);font-size:12px;font-weight:600;}.p-rating-new i{color:var(--line-2);}
+
+/* ==========================================================
+   VITRINE « PREMIUM » — passe de raffinement (v2)
+   ------------------------------------------------------------
+   Bannière, identité, KPI, onglets, panneaux, cartes latérales
+   et annuaire des magasins. Purement cosmétique : respecte le
+   mode clair/sombre et suit automatiquement la couleur d'accent.
+   ========================================================== */
+
+/* --- bannière : halo de marque, glacis et lettrine teintée --- */
+.shop-cover{
+    background:
+        radial-gradient(120% 130% at 10% -10%, color-mix(in srgb,var(--brand) 34%,transparent) 0%, transparent 58%),
+        radial-gradient(80% 120% at 96% 4%, rgba(255,255,255,.16) 0%, transparent 52%),
+        linear-gradient(135deg, var(--navy-900) 0%, var(--navy-800) 52%, color-mix(in srgb,var(--brand) 20%,var(--navy-700)) 100%);
+    border:1px solid var(--line-2);border-bottom:0;
+    box-shadow:inset 0 -80px 110px -60px rgba(0,0,0,.72), inset 0 1px 0 rgba(255,255,255,.06);
+}
+.shop-cover::after{color:color-mix(in srgb,var(--brand) 26%,transparent);}
+
+/* --- bandeau d'identité : profondeur et avatar annelé --- */
+.shop-id{box-shadow:var(--shadow-2);}
+.shop-id .avatar{
+    background:linear-gradient(150deg,var(--navy-800),color-mix(in srgb,var(--brand) 30%,var(--navy-700)));
+    box-shadow:0 18px 36px -16px rgba(0,0,0,.55), 0 0 0 1px var(--line-2), inset 0 1px 0 rgba(255,255,255,.10);
+}
+
+/* --- KPI « À propos » : chiffres en teinte de marque (et lisibles en sombre) --- */
+#shArticles,#shLikes,#shSince{color:var(--brand-dark) !important;font-family:var(--font-display);letter-spacing:-.02em;}
+
+/* --- barre de statistiques : tuiles premium --- */
+.shop-statbar{
+    background:linear-gradient(180deg,color-mix(in srgb,var(--brand) 5%,var(--bg)),var(--bg));
+    box-shadow:var(--shadow-2);
+}
+.sb-item{transition:background .22s var(--ease);}
+.sb-item:hover{background:color-mix(in srgb,var(--brand) 8%,var(--bg-2));}
+.sb-item i{
+    background:linear-gradient(140deg,var(--brand-soft),color-mix(in srgb,var(--brand) 24%,var(--bg)));
+    color:var(--brand-dark);
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.5);
+}
+
+/* --- onglets : pilule et onglet actif en dégradé de marque --- */
+.shop-tabs{border-radius:var(--radius-pill);padding:6px;box-shadow:0 10px 26px -18px rgba(0,0,0,.5);}
+.shop-tabs a{border-radius:var(--radius-pill);}
+.shop-tabs a.active{
+    background:linear-gradient(135deg,var(--brand),var(--brand-dark));
+    color:var(--on-brand);
+    box-shadow:0 10px 22px -10px var(--brand-glow);
+}
+
+/* --- panneaux et cartes latérales : profondeur maîtrisée --- */
+.shop-panel{box-shadow:var(--shadow-2);}
+.sh-card{box-shadow:var(--shadow-1);transition:box-shadow .25s var(--ease),border-color .25s var(--ease),transform .25s var(--ease);}
+.sh-card:hover{transform:translateY(-2px);box-shadow:var(--shadow-2);border-color:color-mix(in srgb,var(--brand) 32%,var(--line-2));}
+.sh-card-h{position:relative;padding-left:12px;}
+.sh-card-h::before{
+    content:"";position:absolute;left:0;top:2px;bottom:12px;width:3px;border-radius:99px;
+    background:linear-gradient(180deg,var(--brand),var(--brand-dark));
+}
+
+/* --- étiquettes et pastilles : survol raffiné --- */
+.sh-tag{transition:border-color .2s var(--ease),color .2s var(--ease);}
+.sh-tag:hover{border-color:color-mix(in srgb,var(--brand) 45%,var(--line-2));color:var(--txt);}
+.cov-badge{box-shadow:0 6px 18px -10px rgba(0,0,0,.6);}
+.cov-badge.v{background:linear-gradient(135deg,var(--brand),var(--brand-dark));}
+
+/* --- raccourcis mobiles : verre dépoli --- */
+@media (max-width:900px){
+    .sh-quick{
+        background:color-mix(in srgb,var(--bg) 82%,transparent);
+        -webkit-backdrop-filter:blur(16px) saturate(160%);
+        backdrop-filter:blur(16px) saturate(160%);
+    }
+}
+
+/* --- annuaire « Magasins en ligne » : fiches plus premium --- */
+.shop-card.shop-big{
+    box-shadow:var(--shadow-1);
+    transition:transform .28s var(--ease),box-shadow .28s var(--ease),border-color .28s var(--ease);
+}
+.shop-card.shop-big:hover{
+    transform:translateY(-4px);box-shadow:var(--shadow-2);
+    border-color:color-mix(in srgb,var(--brand) 45%,var(--line-2));
+}
+.sb-cover{background:linear-gradient(135deg,var(--brand) 0%,var(--brand-dark) 55%,color-mix(in srgb,var(--brand) 32%,#1b2841) 100%);}
+.sb-cover-fade{background:linear-gradient(180deg,rgba(0,0,0,.30) 0%,rgba(0,0,0,0) 55%,rgba(0,0,0,.18) 100%);}
+
+/* --- finitions en mode sombre --- */
+[data-mode="dark"] .shop-id{box-shadow:var(--shadow-2),inset 0 1px 0 rgba(255,255,255,.05);}
+[data-mode="dark"] .sb-item i{color:var(--brand-soft);background:color-mix(in srgb,var(--brand) 16%,#141210);box-shadow:none;}
+[data-mode="dark"] #shArticles,[data-mode="dark"] #shLikes,[data-mode="dark"] #shSince{color:var(--brand-soft) !important;}
+[data-mode="dark"] .sh-card-h::before{background:linear-gradient(180deg,var(--brand),color-mix(in srgb,var(--brand) 40%,transparent));}
+[data-mode="dark"] .shop-tabs a.active{background:linear-gradient(135deg,var(--brand),var(--brand-dark));border-color:transparent;}
