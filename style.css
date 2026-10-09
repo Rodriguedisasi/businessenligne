@@ -342,11 +342,18 @@ button,.chip,.dchip,.p-card,.cat-card,.mini-row,.acct-tabs a{
 
 /* ================= HEADER ================= */
 .header{
+    position:sticky;top:0;z-index:500;
+    box-shadow:0 1px 0 rgba(255,255,255,.06),0 10px 30px -22px rgba(0,0,0,.7);
+}
+/* Le flou « verre dépoli » vit sur un pseudo-élément : poser un
+   backdrop-filter sur .header en ferait le bloc conteneur des enfants
+   position:fixed (menu compte mobile), qui ne serait alors plus ancré
+   au bas de l'écran. */
+.header::before{
+    content:"";position:absolute;inset:0;z-index:-1;pointer-events:none;
     background:color-mix(in srgb,var(--navy-900) 88%,transparent);
     -webkit-backdrop-filter:blur(20px) saturate(160%);
     backdrop-filter:blur(20px) saturate(160%);
-    position:sticky;top:0;z-index:500;
-    box-shadow:0 1px 0 rgba(255,255,255,.06),0 10px 30px -22px rgba(0,0,0,.7);
 }
 .hdr-top{
     display:flex;align-items:center;gap:14px;
@@ -2112,6 +2119,12 @@ body.auth-body.has-theme-btn .hdr-top{
     grid-template-columns:1fr auto auto;
     grid-template-areas:"logo theme cart" "redirect redirect redirect";
 }
+
+/* langue et « voir la boutique » n'ont pas de case prévue dans la grille
+   mobile : sans cette règle ils sont répartis automatiquement et gonflent
+   l'en-tête (magasin, publier, connexion, admin). Sur petit écran ils
+   restent accessibles depuis le pied de page. */
+.hdr-top .h-lang,.hdr-top .h-plain{display:none;}
 
 /* le compte et le panier deviennent des icônes faciles à toucher */
 .h-account,.h-cart,.h-theme{
