@@ -37,11 +37,13 @@ function readTheme(){
     try {
         const s = JSON.parse(localStorage.getItem(THEME_KEY) || '{}');
         return {
-            mode: THEME_MODES.some(m => m.id === s.mode) ? s.mode : 'auto',
+            /* le site est sombre par défaut : c'est le parti pris « premium ».
+               L'utilisateur reste libre de passer en clair ou en automatique. */
+            mode: THEME_MODES.some(m => m.id === s.mode) ? s.mode : 'dark',
             accent: THEME_ACCENTS.some(a => a.id === s.accent) ? s.accent : 'orange'
         };
     } catch (e) {
-        return { mode: 'auto', accent: 'orange' };
+        return { mode: 'dark', accent: 'orange' };
     }
 }
 

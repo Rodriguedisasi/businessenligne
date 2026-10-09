@@ -3492,3 +3492,61 @@ footer{margin-top:24px;padding-top:32px;}
     .rv-score b{font-size:38px;}
 }
 
+/* ==========================================================
+   MODE SOMBRE — FINITIONS « PREMIUM »
+   ------------------------------------------------------------
+   Coquille purement cosmétique, active uniquement en mode
+   sombre : profondeur de fond, halo de la couleur de marque
+   sur les cartes au survol, en-tête en dégradé d'encre et
+   boutons légèrement lumineux. Rien n'est modifié en clair.
+   ========================================================== */
+[data-mode="dark"] body{
+    background-image:
+        radial-gradient(60% 50% at 15% -6%,color-mix(in srgb,var(--brand) 8%,transparent),transparent 60%),
+        radial-gradient(52% 46% at 100% -4%,rgba(255,255,255,.045),transparent 55%);
+    background-attachment:fixed;
+}
+
+/* les surfaces reçoivent un fin trait de lumière sur leur arête haute */
+[data-mode="dark"] .box,
+[data-mode="dark"] .p-card,
+[data-mode="dark"] .cat-card,
+[data-mode="dark"] .mini-row,
+[data-mode="dark"] .prime-banner{
+    box-shadow:var(--shadow-1),inset 0 1px 0 rgba(255,255,255,.05);
+}
+
+/* une carte s'allume de la couleur de marque quand on la survole */
+[data-mode="dark"] .p-card:hover{
+    border-color:color-mix(in srgb,var(--brand) 52%,var(--line-2));
+    box-shadow:0 0 0 1px var(--brand-glow),0 24px 48px -24px var(--brand-glow);
+}
+[data-mode="dark"] .cat-card:hover{
+    border-color:color-mix(in srgb,var(--brand) 52%,var(--line-2));
+    box-shadow:0 22px 44px -22px var(--brand-glow);
+}
+
+/* l'en-tête gagne un dégradé d'encre et un verre plus profond */
+[data-mode="dark"] .header::before{
+    background:linear-gradient(180deg,
+        color-mix(in srgb,var(--navy-800) 92%,transparent),
+        color-mix(in srgb,var(--navy-950) 94%,transparent));
+    -webkit-backdrop-filter:blur(22px) saturate(180%);
+    backdrop-filter:blur(22px) saturate(180%);
+}
+
+/* le bouton principal devient lumineux sur fond sombre */
+[data-mode="dark"] .btn-cta{
+    box-shadow:0 12px 30px -14px rgba(0,0,0,.55),inset 0 1px 0 rgba(255,255,255,.7);
+}
+[data-mode="dark"] .btn-cta:hover{
+    box-shadow:0 18px 38px -16px rgba(0,0,0,.7),inset 0 1px 0 #fff;
+}
+
+/* le halo de la bannière « Offres du jour » est un peu plus franc */
+[data-mode="dark"] .deal-head{box-shadow:var(--shadow-2),inset 0 1px 0 rgba(255,255,255,.06);}
+
+/* la sélection de texte prend la teinte de marque */
+[data-mode="dark"] ::selection{background:color-mix(in srgb,var(--brand) 55%,#000);color:#fff;}
+
+
