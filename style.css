@@ -3621,4 +3621,59 @@ footer{margin-top:24px;padding-top:32px;}
 }
 [data-mode="dark"] .admin-table tbody tr:hover{background:color-mix(in srgb,var(--brand) 7%,var(--bg-2));}
 
+/* ==========================================================
+   MODE SOMBRE — LISIBILITÉ (CONTRASTE AA) & ACCENTS
+   ------------------------------------------------------------
+   1) Le texte tertiaire mesurait 4,1:1 sur les fonds sombres,
+      sous le seuil AA : on l'éclaircit jusqu'à ~5,2:1.
+   2) Les teintes de marque « foncées » (prévues pour du texte
+      sur fond clair) et les fonds teintés « papier » sont
+      inversés pour rester lisibles sur fond sombre.
+   ========================================================== */
+[data-mode="dark"]{
+    --txt-3:#948d84;
+    --brand-soft-2:color-mix(in srgb,var(--brand) 15%,#141210);
+    --brand-dark:#ffb638;      /* orange = accent par défaut */
+}
+[data-mode="dark"][data-accent="emerald"]{--brand-dark:#2fce9a;}
+[data-mode="dark"][data-accent="azure"]{--brand-dark:#5aa2f0;}
+[data-mode="dark"][data-accent="rose"]{--brand-dark:#f26a91;}
+[data-mode="dark"][data-accent="violet"]{--brand-dark:#a888f5;}
+
+/* la pastille « meilleur choix » : encre sur teinte claire (le blanc
+   n'était plus lisible sur la teinte de marque éclaircie) */
+[data-mode="dark"] .badge-best{color:var(--on-brand);}
+
+/* pastilles sélectionnées et avatars : surface teintée sombre, texte clair */
+[data-mode="dark"] .shop-badge.on,
+[data-mode="dark"] .pick-group .chk:has(input:checked){
+    background:color-mix(in srgb,var(--brand) 16%,#141210);
+    border-color:color-mix(in srgb,var(--brand) 42%,transparent);
+    color:var(--brand-soft);
+}
+[data-mode="dark"] .ms-avatar{
+    background:color-mix(in srgb,var(--brand) 18%,#141210);
+    color:var(--brand-soft);
+}
+
+/* --- page compte : carte d'identité plus profonde --- */
+[data-mode="dark"] .acct-head{
+    box-shadow:var(--shadow-3),inset 0 1px 0 rgba(255,255,255,.06);
+}
+[data-mode="dark"] .acct-head .avatar{
+    background:var(--bg-2);
+    color:var(--on-dark);
+    box-shadow:0 0 0 1px var(--line-2),var(--shadow-1);
+}
+
+/* --- bannière boutique : halo de marque et lettrine teintée --- */
+[data-mode="dark"] .shop-cover{
+    background:
+        radial-gradient(130% 120% at 12% 0%,rgba(255,255,255,.10) 0%,transparent 55%),
+        radial-gradient(90% 140% at 88% 6%,color-mix(in srgb,var(--brand) 24%,transparent),transparent 62%),
+        linear-gradient(135deg,var(--navy-900) 0%,var(--navy-800) 58%,#1b2841 100%);
+    box-shadow:inset 0 -80px 100px -50px rgba(0,0,0,.78),inset 0 1px 0 rgba(255,255,255,.06);
+}
+[data-mode="dark"] .shop-cover::after{color:color-mix(in srgb,var(--brand) 24%,transparent);}
+
 
