@@ -657,45 +657,73 @@ function shopPhotoList(u){
 /* Suppression en cascade d'un compte et de tout ce qui s'y rattache :
    ses articles, les J'aime reçus, ses J'aime, ses commandes et ses sessions. */
 async function deleteUserCascade(id){
-    for (const p of await db.all('products', { owner_id: id })) await db.remove('likes', { product_id: p.id });
+    for (const p of await db.all('products', { owner_id: id })){
+        await db.remove('likes', { product_id: p.id });
+        await db.remove('reviews', { product_id: p.id });
+    }
     await db.remove('likes', { user_id: id });
+    await db.remove('reviews', { user_id: id });
     await db.remove('products', { owner_id: id });
     await db.remove('orders', { user_id: id });
     await db.remove('sessions', { user_id: id });
     await db.remove('users', { id });
 }
 
-/* Mise en forme d'un article ; likes/likedByMe/owner sont fournis par l'appelant
-   (voir decorateAll) afin d'éviter une requête par article. */
-function shapeProduct(p, likes, likedByMe, owner){
+/* Mise en forme d'un article ; likes/likedByMe/owner/stats sont fournis par
+   l'appelant (voir decorateAll) afin d'éviter une requête par article.
+   « stats » = { count, sum } : la note et le nombre d'avis affichés viennent
+   uniquement des vrais avis déposés, jamais d'une valeur inventée. */
+function shapeProduct(p, likes, likedByMe, owner, stats){
     const off = p.old_price ? Math.round((1 - p.price / p.old_price) * 100) : 0;
+    const count = stats ? stats.count : 0;
     return {
         id: p.id, title: p.title, cat: p.category, price: p.price, oldPrice: p.old_price || null,
         off, stock: p.stock, image: p.image, images: readPhotos(p.images, p.image), desc: p.description, badge: p.badge,
         details: readDetails(p.details),
-        prime: !!p.prime, rating: p.rating, reviews: p.reviews, createdAt: p.created_at,
+        prime: !!p.prime,
+        rating: count ? Math.round((stats.sum / count) * 10) / 10 : 0,
+        reviews: count,
+        createdAt: p.created_at,
         likes, likedByMe,
         published: p.published === undefined ? 1 : !!p.published,
         owner: owner ? { username: owner.username, shopName: owner.shop_name, avatar: owner.avatar, city: owner.shop_city, verified: !!owner.shop_verified } : null
     };
 }
 
+/* Mise en forme d'un avis (avec son auteur), pour les fiches article. */
+function shapeReview(r, author, meId){
+    return {
+        id: r.id,
+        rating: Number(r.rating) || 0,
+        body: r.body || '',
+        createdAt: r.created_at,
+        mine: meId != null && sameId(r.user_id, meId),
+        author: author ? {
+            username: author.username, shopName: author.shop_name,
+            avatar: author.avatar, verified: !!author.shop_verified
+        } : null
+    };
+}
+
 /* Un seul article */
 async function decorate(p, meId){
-    const [owner, likes, mine] = await Promise.all([
+    const [owner, likes, mine, rows] = await Promise.all([
         db.one('users', { id: p.owner_id }),
         db.count('likes', { product_id: p.id }),
-        meId ? db.one('likes', { user_id: meId, product_id: p.id }) : null
+        meId ? db.one('likes', { user_id: meId, product_id: p.id }) : null,
+        db.all('reviews', { product_id: p.id })
     ]);
-    return shapeProduct(p, likes, !!mine, owner);
+    const sum = rows.reduce((s, r) => s + (Number(r.rating) || 0), 0);
+    return shapeProduct(p, likes, !!mine, owner, { count: rows.length, sum });
 }
 
 /* Une liste d'articles : lectures groupées au lieu de 2 requêtes par article. */
 async function decorateAll(rows, meId){
     if (!rows.length) return [];
-    const [owners, allLikes] = await Promise.all([
+    const [owners, allLikes, allReviews] = await Promise.all([
         Promise.all([...new Set(rows.map(p => p.owner_id))].map(id => db.one('users', { id }))),
-        db.all('likes', {})
+        db.all('likes', {}),
+        db.all('reviews', {})
     ]);
     const ownerById = new Map();
     owners.forEach(o => { if (o) ownerById.set(Number(o.id), o); });
@@ -704,7 +732,15 @@ async function decorateAll(rows, meId){
     const mine = new Set(meId
         ? allLikes.filter(l => sameId(l.user_id, meId)).map(l => Number(l.product_id))
         : []);
-    return rows.map(p => shapeProduct(p, counts.get(Number(p.id)) || 0, mine.has(Number(p.id)), ownerById.get(Number(p.owner_id)) || null));
+    const stats = new Map();
+    for (const r of allReviews){
+        const k = Number(r.product_id);
+        const s = stats.get(k) || { count: 0, sum: 0 };
+        s.count++; s.sum += Number(r.rating) || 0;
+        stats.set(k, s);
+    }
+    return rows.map(p => shapeProduct(p, counts.get(Number(p.id)) || 0, mine.has(Number(p.id)),
+        ownerById.get(Number(p.owner_id)) || null, stats.get(Number(p.id)) || { count: 0, sum: 0 }));
 }
 
 /* Les articles d'une commande sont stockés en JSON dans le document ;
@@ -1035,6 +1071,7 @@ const routes = {
         if (!p) return err(res, 404, 'Article introuvable');
         if (!sameId(p.owner_id, auth.user.id)) return err(res, 403, "Vous ne pouvez supprimer que vos propres articles");
         await db.remove('likes', { product_id: p.id });
+        await db.remove('reviews', { product_id: p.id });
         await db.remove('products', { id: p.id });
         ok(res, { ok: true, id: p.id });
     },
@@ -1058,6 +1095,77 @@ const routes = {
         const rows = (await Promise.all(mine.map(l => db.one('products', { id: Number(l.product_id) }))))
             .filter(Boolean);
         ok(res, { products: await decorateAll(rows, auth.user.id) });
+    },
+
+    /* ---------- AVIS CLIENTS ----------
+       Tout le monde peut lire les avis d'un article ; seul un compte connecté
+       peut en écrire un. Un avis par personne et par article : reposter
+       remplace le précédent au lieu d'en ajouter un second. */
+    'GET /api/products/:id/reviews': async (req, res, url, m) => {
+        const auth = await currentUser(req);
+        const p = await db.one('products', { id: Number(m.id) });
+        if (!p) return err(res, 404, 'Article introuvable');
+        const rows = await db.all('reviews', { product_id: p.id }, { orderBy: 'created_at DESC' });
+        const authors = await Promise.all([...new Set(rows.map(r => Number(r.user_id)))].map(id => db.one('users', { id })));
+        const byId = new Map();
+        authors.forEach(u => { if (u) byId.set(Number(u.id), u); });
+        const meId = auth ? auth.user.id : null;
+        const list = rows.map(r => shapeReview(r, byId.get(Number(r.user_id)), meId));
+        const sum = list.reduce((s, r) => s + r.rating, 0);
+        ok(res, { reviews: list, count: list.length, avg: list.length ? Math.round((sum / list.length) * 10) / 10 : 0 });
+    },
+
+    'POST /api/products/:id/reviews': async (req, res, url, m) => {
+        const auth = await currentUser(req);
+        if (!auth) return err(res, 401, 'Connectez-vous pour laisser un avis');
+        const p = await db.one('products', { id: Number(m.id) });
+        if (!p) return err(res, 404, 'Article introuvable');
+        const b = await readBody(req);
+        const rating = Math.round(Number(b.rating));
+        if (!(rating >= 1 && rating <= 5)) return err(res, 400, 'Choisissez une note de 1 à 5 étoiles');
+        const body = String(b.body || '').trim().slice(0, 1000);
+        if (body.length < 3) return err(res, 400, 'Votre commentaire est trop court (3 caractères minimum)');
+
+        const existing = await db.one('reviews', { product_id: p.id, user_id: auth.user.id });
+        const row = existing
+            ? await db.update('reviews', existing.id, { rating, body, created_at: nowISO() })
+            : await db.insert('reviews', { product_id: p.id, user_id: auth.user.id, rating, body, created_at: nowISO() });
+        ok(res, { review: shapeReview(row, auth.user, auth.user.id) });
+    },
+
+    'DELETE /api/products/:id/reviews': async (req, res, url, m) => {
+        const auth = await currentUser(req);
+        if (!auth) return err(res, 401, 'Non connecté');
+        const p = await db.one('products', { id: Number(m.id) });
+        if (!p) return err(res, 404, 'Article introuvable');
+        const removed = await db.remove('reviews', { product_id: p.id, user_id: auth.user.id });
+        if (!removed) return err(res, 404, 'Aucun avis à supprimer');
+        ok(res, { ok: true });
+    },
+
+    /* Les derniers avis toutes fiches confondues : alimente la section
+       « Ce que disent nos clients » avec de vrais avis, pas des exemples. */
+    'GET /api/reviews': async (req, res, url) => {
+        const auth = await currentUser(req);
+        const limit = Math.min(24, Math.max(1, Number(url.searchParams.get('limit')) || 6));
+        const all = await db.all('reviews', {});
+        const rows = all
+            .filter(r => String(r.body || '').trim())
+            .sort((a, b) => String(b.created_at).localeCompare(String(a.created_at)))
+            .slice(0, limit);
+        const [users, products] = await Promise.all([db.all('users'), db.all('products')]);
+        const uById = new Map(users.map(u => [Number(u.id), u]));
+        const pById = new Map(products.map(p => [Number(p.id), p]));
+        const meId = auth ? auth.user.id : null;
+        const reviews = rows.map(r => {
+            const prod = pById.get(Number(r.product_id));
+            return {
+                ...shapeReview(r, uById.get(Number(r.user_id)), meId),
+                product: prod ? { id: prod.id, title: prod.title, image: prod.image } : null
+            };
+        });
+        const sum = all.reduce((s, r) => s + (Number(r.rating) || 0), 0);
+        ok(res, { reviews, total: all.length, avg: all.length ? Math.round((sum / all.length) * 10) / 10 : 0 });
     },
 
     /* ---------- COMMANDES ---------- */
@@ -1697,6 +1805,7 @@ const routes = {
             else if (action === 'show'){ await db.update('products', id, { published: 1 }); done++; }
             else if (action === 'delete'){
                 await db.remove('likes', { product_id: id });
+                await db.remove('reviews', { product_id: id });
                 await db.remove('products', { id });
                 done++;
             }
@@ -1709,6 +1818,7 @@ const routes = {
         const p = await db.one('products', { id: Number(m.id) });
         if (!p) return err(res, 404, 'Article introuvable');
         await db.remove('likes', { product_id: p.id });
+        await db.remove('reviews', { product_id: p.id });
         await db.remove('products', { id: p.id });
         ok(res, { ok: true, id: p.id });
     },

@@ -109,7 +109,7 @@ function unavailableReason(){
 }
 
 /* Collections Firestore : documents dont l'id est numérique auto-incrémenté */
-const NUMERIC = new Set(['users', 'products', 'orders']);
+const NUMERIC = new Set(['users', 'products', 'orders', 'reviews']);
 const PAIR    = new Set(['likes']);
 
 function docId(table, obj){
@@ -156,7 +156,8 @@ function makeFirestoreDriver(firestore){
         products:  [{ field: 'created_at', dir: 'desc' }],
         orders:    [{ field: 'created_at', dir: 'desc' }],
         sessions:  [{ field: 'created_at', dir: 'desc' }],
-        likes:     [{ field: 'created_at', dir: 'desc' }]
+        likes:     [{ field: 'created_at', dir: 'desc' }],
+        reviews:   [{ field: 'created_at', dir: 'desc' }]
     };
 
     /* Firestore conserve exactement le type ecrit lors de l'insertion : le meme
@@ -322,7 +323,7 @@ function makeFirestoreDriver(firestore){
         },
 
         async reset(){
-            for (const table of ['likes', 'orders', 'products', 'sessions', 'users']){
+            for (const table of ['reviews', 'likes', 'orders', 'products', 'sessions', 'users']){
                 const snap = await col(table).get();
                 await commit(snap.docs.map(d => ({ ref: d.ref, del: true })));
             }

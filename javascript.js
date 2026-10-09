@@ -98,12 +98,9 @@ const CATEGORIES = [
 const catOf = c => PRODUCTS.filter(p => p.cat === c);
 const allFile = 'tous.html';
 
-const REVIEWS = [
-    { n:'Marc D.', img:'https://randomuser.me/api/portraits/men/1.jpg', r:5, t:'Livraison reçue en 3 jours à Lubumbashi, emballage nickel. Le service client répond vite sur WhatsApp.' },
-    { n:'Sarah K.', img:'https://randomuser.me/api/portraits/women/2.jpg', r:5, t:'J\'ai commandé une tablette, exactement la description. Je recommande pour le rapport qualité/prix.' },
-    { n:'Junior B.', img:'https://randomuser.me/api/portraits/men/32.jpg', r:4, t:'Le panier et le paiement mobile Money sont simples. Un délai de livraison un peu long mais correct.' },
-    { n:'Nathalie M.', img:'https://randomuser.me/api/portraits/women/44.jpg', r:5, t:'Les vêtements sont de très bonne qualité. J\'ai demandé un échange de taille, retour gratuit accepté.' }
-];
+/* Les avis affichés (« Ce que disent nos clients ») ne sont plus des exemples
+   écrits en dur : ils viennent de la base, via BE.recentReviews(). Voir
+   renderReviews() plus bas. */
 
 /* ---------------- UTILS ---------------- */
 let FC = new Intl.NumberFormat(BE_LOCALE);
@@ -168,7 +165,9 @@ function paintInfo(p){
     const rows = [
         [t('Catégorie'), p.cat],
         p.owner && p.owner.shopName ? [t('Boutique'), p.owner.shopName] : null,
-        [t('Note'), t('★ {0} sur 5 · {1} avis', [String(p.rating).replace('.', ','), nfmt(Number(p.reviews || 0))])],
+        Number(p.reviews) > 0
+            ? [t('Note'), t('★ {0} sur 5 · {1} avis', [String(p.rating).replace('.', ','), nfmt(Number(p.reviews))])]
+            : [t('Note'), t('Pas encore noté')],
         [t("J'aime"), t(p.likes > 1 ? '{0} personnes' : '{0} personne', [nfmt(Number(p.likes || 0))])],
         [t('Photos'), t(photos > 1 ? '{0} photo(s) dans la galerie' : '{0} photo', [nfmt(photos)])],
         [t('Disponibilité'), p.stock > 0
@@ -425,7 +424,9 @@ function cardHTML(p){
     <article class="p-card" data-id="${p.id}">
         ${badge}
         <div class="p-img-wrap">${galleryHTML(photosOf(p), p.name)}</div>
-        <div class="p-rating">${starsHTML(p.rating)} <span class="n">${String(p.rating).replace('.', ',')}</span> <span class="c">(${nfmt(Number(p.reviews || 0))})</span></div>
+        ${Number(p.reviews) > 0
+            ? `<div class="p-rating">${starsHTML(p.rating)} <span class="n">${String(p.rating).replace('.', ',')}</span> <span class="c">(${nfmt(Number(p.reviews))})</span></div>`
+            : `<div class="p-rating p-rating-new"><i class="far fa-star"></i> ${t("Pas encore d'avis")}</div>`}
         <h3 class="p-title">${p.name}</h3>
         <div class="p-price">${fmt(p.price)}${p.old ? `<span class="old">${fmt(p.old)}</span><span class="off">-${nfmt(off)}%</span>` : ''}</div>
         <div class="p-extra">${t('ou 3x {0} sans frais', [fmt(Math.round(p.price / 3))])}</div>
@@ -535,16 +536,11 @@ function renderAll(){
             <img src="${c.img}" alt="${t(c.name)}" loading="lazy">
             <b>${t(c.name)}</b><span>${t('{0} articles', [nfmt(catOf(c.name).length)])}</span>
         </a>`).join('');
-    $('#revGrid').innerHTML = REVIEWS.map(r =>
-        `<div class="rev">
-            <div class="rev-top">
-                <img src="${r.img}" alt="${r.n}">
-                <div><b>${r.n}</b><span>${t('Achat vérifié')}</span></div>
-            </div>
-            ${starsHTML(r.r)}
-            <p style="margin-top:6px">${r.t}</p>
-            <div class="verified">${t('Avis vérifié le mois dernier')}</div>
-        </div>`).join('');
+    $('#catGrid').innerHTML = CATEGORIES.map(c =>
+        `<a href="${c.file}" class="cat-card">
+            <img src="${c.img}" alt="${t(c.name)}" loading="lazy">
+            <b>${t(c.name)}</b><span>${t('{0} articles', [nfmt(catOf(c.name).length)])}</span>
+        </a>`).join('');
     renderGrid();
 }
 /* ==========================================================
@@ -674,8 +670,8 @@ function openModal(id){
     }
     const st = $('#mStars');
     st.outerHTML = starsHTML(p.rating).replace('class="stars"', 'class="stars" id="mStars"');
-    $('#mRating').textContent = t('{0} sur 5', [String(p.rating).replace('.', ',')]);
-    $('#mCount').textContent = t('({0} avis)', [nfmt(Number(p.reviews || 0))]);
+    $('#mRating').textContent = Number(p.reviews) > 0 ? t('{0} sur 5', [String(p.rating).replace('.', ',')]) : t('Pas encore noté');
+    $('#mCount').textContent = Number(p.reviews) > 0 ? t('({0} avis)', [nfmt(Number(p.reviews))]) : '';
     $('#mTitle').textContent = p.name;
     $('#mPrice').innerHTML = `${fmt(p.price)}${p.old ? `<span class="old">${fmt(p.old)}</span><span class="off">-${nfmt(off)}%</span>` : ''}`;
     $('#mDesc').textContent = p.desc || '';
@@ -683,6 +679,7 @@ function openModal(id){
     paintInfo(p);
     $('#mList').innerHTML = featsOf(p).map(f => `<li><i class="fas fa-check"></i><span>${esc(f)}</span></li>`).join('');
     paintSeller(p);
+    paintReviews(p);
     $('#mStock').innerHTML = p.stock <= 10
         ? `<span style="color:#b12704">${t('Plus que {0} en stock', [nfmt(p.stock)])}</span>`
         : `<span style="color:#007600">${t('En stock')}</span>`;
@@ -724,6 +721,138 @@ function paintSeller(p){
             </span>
             <span class="ms-go"><i class="fas fa-arrow-right"></i></span>
         </a>`;
+}
+
+/* ---------------- AVIS SUR LA FICHE ARTICLE ----------------
+   Le bloc est injecté dans la fiche (pas dans le HTML de chaque page) :
+   une seule implémentation pour toutes les pages. Il affiche les avis
+   réels de l'article et, pour un compte connecté, un formulaire pour
+   déposer ou modifier le sien (un seul avis par personne et par article). */
+let mrData = null;
+
+function reviewRowHTML(r){
+    const a = r.author || {};
+    const name = a.shopName || a.username || t('Client');
+    return `<div class="mr-item">
+        <div class="mr-head">
+            ${revFace(a, 38)}
+            <div class="mr-who">
+                <b>${esc(name)}${a.verified ? ' <i class="fas fa-badge-check sc-v"></i>' : ''}</b>
+                ${starsHTML(r.rating)}
+            </div>
+            <time>${dj(r.createdAt, { day: 'numeric', month: 'short', year: 'numeric' })}</time>
+        </div>
+        <p>${esc(r.body)}</p>
+        ${r.mine ? `<button type="button" class="mr-del" data-del-review="${r.id}"><i class="fas fa-trash-alt"></i> ${t('Supprimer')}</button>` : ''}
+    </div>`;
+}
+
+async function loadModalReviews(p){
+    const list = $('#mrList');
+    if (!list) return;
+    const avg = $('#mrAvg');
+    try {
+        const data = await BE.productReviews(p.id);
+        mrData = data;
+        if (avg) avg.innerHTML = data.count
+            ? `${starsHTML(data.avg)} <span>${String(data.avg).replace('.', ',')} · ${nfmt(data.count)} ${t('avis')}</span>`
+            : `<span class="muted">${t('Aucun avis')}</span>`;
+        list.innerHTML = data.reviews.length
+            ? data.reviews.map(reviewRowHTML).join('')
+            : `<p class="mr-empty">${t('Aucun avis pour cet article. Soyez le premier à en laisser un !')}</p>`;
+        list.querySelectorAll('[data-del-review]').forEach(btn => {
+            btn.onclick = async () => {
+                if (!confirm(t('Supprimer votre avis ?'))) return;
+                btn.disabled = true;
+                try {
+                    await BE.deleteReview(p.id);
+                    toast('🗑️ ' + t('Avis supprimé.'));
+                    await loadModalReviews(p);
+                    renderReviewForm(p);
+                    renderReviews();
+                } catch (err){ btn.disabled = false; toast('❌ ' + err.message); }
+            };
+        });
+    } catch (e){
+        list.innerHTML = `<p class="mr-empty">${t('Avis momentanément indisponibles.')}</p>`;
+    }
+}
+
+function renderReviewForm(p){
+    const wrap = $('#mrForm');
+    if (!wrap) return;
+    if (!(window.BE && BE.isLogged && BE.isLogged())){
+        wrap.innerHTML = `<p class="mr-login">
+            <i class="fas fa-lock"></i> ${t('Connectez-vous pour laisser un avis.')}
+            <a href="connexion.html">${t('Se connecter')}</a></p>`;
+        return;
+    }
+    const mine = mrData ? mrData.reviews.find(r => r.mine) : null;
+    const cur = mine ? Number(mine.rating) : 0;
+    wrap.innerHTML = `
+        <form class="mr-write" id="mrWrite" novalidate>
+            <b>${mine ? t('Modifier votre avis') : t('Laisser un avis')}</b>
+            <div class="mr-stars" id="mrStars" role="radiogroup" aria-label="${t('Votre note')}">
+                ${[1, 2, 3, 4, 5].map(n => `<button type="button" class="${n <= cur ? 'on' : ''}" data-rate="${n}" aria-label="${n}/5"><i class="fas fa-star"></i></button>`).join('')}
+            </div>
+            <textarea id="mrBody" rows="3" maxlength="1000" placeholder="${t('Partagez votre expérience sur cet article…')}">${mine ? esc(mine.body) : ''}</textarea>
+            <div class="mr-actions">
+                <span class="mr-msg" id="mrMsg"></span>
+                <button type="submit" class="btn btn-cta btn-sm"><i class="fas fa-paper-plane"></i> ${mine ? t('Mettre à jour') : t('Publier')}</button>
+            </div>
+        </form>`;
+    let rating = cur;
+    const stars = $('#mrStars');
+    const paint = v => Array.from(stars.children).forEach((b, i) => b.classList.toggle('on', i < v));
+    stars.onclick = e => {
+        const b = e.target.closest('button');
+        if (!b) return;
+        rating = Number(b.dataset.rate);
+        paint(rating);
+    };
+    $('#mrWrite').onsubmit = async e => {
+        e.preventDefault();
+        const msg = $('#mrMsg');
+        const body = $('#mrBody').value.trim();
+        if (!rating) { msg.textContent = t('Choisissez une note de 1 à 5 étoiles.'); return; }
+        if (body.length < 3) { msg.textContent = t('Votre commentaire est trop court.'); return; }
+        const btn = e.target.querySelector('button[type="submit"]');
+        btn.disabled = true; msg.textContent = t('Envoi…');
+        try {
+            await BE.addReview(p.id, { rating, body });
+            toast('⭐ ' + t('Merci, votre avis a été publié.'));
+            await loadModalReviews(p);
+            renderReviewForm(p);
+            renderReviews();
+        } catch (err){
+            btn.disabled = false;
+            msg.textContent = err.message || t('Une erreur est survenue.');
+        }
+    };
+}
+
+/* Prépare (ou rafraîchit) le bloc d'avis d'une fiche article. */
+function paintReviews(p){
+    const info = $('.modal-info');
+    if (!info) return;
+    let box = $('#mReviews');
+    if (!box){
+        box = document.createElement('div');
+        box.id = 'mReviews';
+        box.className = 'm-reviews';
+        info.appendChild(box);
+    }
+    box.dataset.pid = p.id;
+    box.innerHTML = `
+        <h4 class="mr-title">${t('Avis clients')} <span class="mr-avg" id="mrAvg"></span></h4>
+        <div class="mr-list" id="mrList"><p class="mr-empty">${t('Chargement des avis…')}</p></div>
+        <div class="mr-form" id="mrForm"></div>`;
+    if (!window.BE || !BE.productReviews){
+        $('#mrList').innerHTML = `<p class="mr-empty">${t('Les avis nécessitent une connexion au serveur.')}</p>`;
+        return;
+    }
+    loadModalReviews(p);
+    renderReviewForm(p);
 }
 
 /* ---------------- CHECKOUT ---------------- */
@@ -1153,19 +1282,65 @@ grid.innerHTML = '<span class="sh-sk on"></span>'.repeat(8);
     }
 }
 
-function renderReviews(){
+/* Avatar rond d'un auteur d'avis : sa photo, sinon l'initiale de sa boutique. */
+function revFace(a, size){
+    const name = (a && (a.shopName || a.username)) || t('Client');
+    const style = size ? ` style="width:${size}px;height:${size}px"` : '';
+    return a && a.avatar
+        ? `<img src="${esc(a.avatar)}" alt="${esc(name)}" loading="lazy"${style}>`
+        : `<span class="rev-face"${style}>${esc(String(name).charAt(0).toUpperCase())}</span>`;
+}
+
+/* Section « Ce que disent nos clients » : lit les vrais avis récents. */
+async function renderReviews(){
     const el = $('#revGrid');
     if (!el) return;
-    el.innerHTML = REVIEWS.map(r =>
-        `<div class="rev">
+    const box = el.closest('.box');
+    const summary = box ? box.querySelector('.box-head .see-all') : null;
+
+    /* site ouvert sans serveur (fichier local) : on n'invente aucun avis */
+    if (!window.BE || !BE.recentReviews){
+        if (summary) summary.textContent = '';
+        el.innerHTML = `<p class="rev-empty">${t('Les avis sont disponibles en ligne, une fois le serveur connecté.')}</p>`;
+        return;
+    }
+
+    let data;
+    try { data = await BE.recentReviews({ limit: 6 }); }
+    catch (e){
+        el.innerHTML = `<p class="rev-empty">${t('Avis momentanément indisponibles.')}</p>`;
+        return;
+    }
+
+    if (summary){
+        summary.textContent = data.total
+            ? t('{0} / 5 sur {1} avis', [String(data.avg).replace('.', ','), nfmt(data.total)])
+            : t('Aucun avis pour le moment');
+    }
+
+    const list = data.reviews || [];
+    if (!list.length){
+        el.innerHTML = `<div class="rev-empty">
+            <i class="fas fa-comment-dots"></i>
+            <p>${t('Aucun avis pour le moment. Connectez-vous et soyez le premier à partager votre expérience !')}</p>
+        </div>`;
+        return;
+    }
+
+    el.innerHTML = list.map(r => {
+        const a = r.author || {};
+        const name = a.shopName || a.username || t('Client');
+        return `<div class="rev">
             <div class="rev-top">
-                <img src="${r.img}" alt="${r.n}">
-                <div><b>${r.n}</b><span>${t('Achat vérifié')}</span></div>
+                ${revFace(a)}
+                <div><b>${esc(name)}</b><span class="rev-sub">@${esc(a.username || '')}</span></div>
             </div>
-            ${starsHTML(r.r)}
-            <p style="margin-top:6px">${r.t}</p>
-            <div class="verified">${t('Avis vérifié le mois dernier')}</div>
-        </div>`).join('');
+            ${starsHTML(r.rating)}
+            <p style="margin-top:6px">${esc(r.body)}</p>
+            ${r.product ? `<div class="rev-prod"><i class="fas fa-tag"></i> ${esc(r.product.title)}</div>` : ''}
+            <div class="verified">${dj(r.createdAt, { day: 'numeric', month: 'long', year: 'numeric' })}</div>
+        </div>`;
+    }).join('');
 }
 
 /* ==========================================================

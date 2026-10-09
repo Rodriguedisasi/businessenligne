@@ -137,10 +137,25 @@ CREATE TABLE IF NOT EXISTS orders (
     status     TEXT    NOT NULL DEFAULT 'Confirmée',
     created_at TEXT    NOT NULL
 );
+/* ---------- Avis clients ----------
+   Un avis est écrit par un compte connecté (user_id) sur un article
+   (product_id). La contrainte UNIQUE impose un seul avis par personne et
+   par article : reposter un avis le remplace au lieu de le dupliquer. */
+CREATE TABLE IF NOT EXISTS reviews (
+    id         INTEGER PRIMARY KEY AUTOINCREMENT,
+    product_id INTEGER NOT NULL,
+    user_id    INTEGER NOT NULL,
+    rating     INTEGER NOT NULL DEFAULT 5,
+    body       TEXT    NOT NULL DEFAULT '',
+    created_at TEXT    NOT NULL,
+    UNIQUE (product_id, user_id)
+);
 CREATE INDEX IF NOT EXISTS idx_prod_owner  ON products(owner_id);
 CREATE INDEX IF NOT EXISTS idx_prod_cat    ON products(category);
 CREATE INDEX IF NOT EXISTS idx_likes_prod  ON likes(product_id);
 CREATE INDEX IF NOT EXISTS idx_sess_user   ON sessions(user_id);
+CREATE INDEX IF NOT EXISTS idx_rev_product ON reviews(product_id);
+CREATE INDEX IF NOT EXISTS idx_rev_user    ON reviews(user_id);
 `;
 
 /* ==========================================================
@@ -281,8 +296,8 @@ function makeSqliteDriver(){
             return Number(db.prepare(`SELECT COUNT(*) AS n FROM ${table}${w.sql}`).get(...w.args).n);
         },
         reset(){
-            ['likes', 'orders', 'products', 'sessions', 'users'].forEach(t => db.exec(`DELETE FROM ${t}`));
-            db.exec("DELETE FROM sqlite_sequence WHERE name IN ('products','orders')");
+            ['reviews', 'likes', 'orders', 'products', 'sessions', 'users'].forEach(t => db.exec(`DELETE FROM ${t}`));
+            db.exec("DELETE FROM sqlite_sequence WHERE name IN ('products','orders','reviews')");
         }
     };
 
@@ -295,10 +310,10 @@ function makeSqliteDriver(){
 function makeJsonDriver(){
     if (!ensureDataDir())
         throw new Error("Impossible de créer le dossier de données « " + DATA_DIR + " » (système de fichiers en lecture seule ?). Renseignez DATA_DIR vers un dossier inscriptible, ou utilisez DB_DRIVER=firebase.");
-    const EMPTY = { users: [], sessions: [], products: [], likes: [], orders: [], seq: { products: 0, orders: 0 } };
+    const EMPTY = { users: [], sessions: [], products: [], likes: [], orders: [], reviews: [], seq: { products: 0, orders: 0, reviews: 0 } };
     let db = fs.existsSync(JSON_FILE) ? JSON.parse(fs.readFileSync(JSON_FILE, 'utf8')) : JSON.parse(JSON.stringify(EMPTY));
-    ['users', 'sessions', 'products', 'likes', 'orders'].forEach(t => { if (!db[t]) db[t] = []; });
-    if (!db.seq) db.seq = { products: 0, orders: 0 };
+    ['users', 'sessions', 'products', 'likes', 'orders', 'reviews'].forEach(t => { if (!db[t]) db[t] = []; });
+    if (!db.seq) db.seq = { products: 0, orders: 0, reviews: 0 };
 
     const save = () => fs.writeFileSync(JSON_FILE, JSON.stringify(db, null, 2));
     const match = (row, where) => Object.entries(where || {}).every(([k, v]) => row[k] === v);

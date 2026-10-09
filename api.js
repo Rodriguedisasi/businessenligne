@@ -99,6 +99,14 @@ const BE = (() => {
     const toggleLike = async id => req('POST', '/api/products/' + id + '/like', {});
     const likes = async () => (await req('GET', '/api/likes')).products;
 
+    /* ---------------- AVIS CLIENTS ----------------
+       productReviews(id) -> { reviews, count, avg } d'un article
+       recentReviews({limit}) -> derniers avis toutes fiches (accueil) */
+    const productReviews = id => req('GET', '/api/products/' + id + '/reviews');
+    const addReview = async (id, payload) => (await req('POST', '/api/products/' + id + '/reviews', payload)).review;
+    const deleteReview = id => req('DELETE', '/api/products/' + id + '/reviews');
+    const recentReviews = params => req('GET', '/api/reviews' + qs(params));
+
     /* ---------------- COMMANDES ---------------- */
     const order = async (items, payment) => (await req('POST', '/api/orders', { items, payment })).order;
     const orders = async () => (await req('GET', '/api/orders')).orders;
@@ -186,6 +194,7 @@ const BE = (() => {
         register, login, logout, updateProfile,
         products, product, publish, editProduct, deleteProduct,
         toggleLike, likes, order, orders, shops, shop, upload,
+        productReviews, addReview, deleteReview, recentReviews,
         overview, adminUsers, adminProducts, adminOrders, adminCatalog,
         adminUser, removePhoto,
         patchUser, deleteUser, createUser, bulkUsers,
