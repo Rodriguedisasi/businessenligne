@@ -424,7 +424,9 @@ function checkShopField(f, raw){
            http(s) : c'est ce que renvoie le téléverseur du site. */
         case 'urlList': return { value: readList(raw, null, f.max).filter(isPhotoUrl).join('|') };
         case 'hours':  return { value: hoursField(raw) };
-        case 'url':    return isHttpUrl(raw) ? { value: flat(raw, f.max) } : { error: 'Lien invalide (commencez par https://)' };
+        /* un lien est facultatif : vide = effacé ; sinon il doit être une vraie URL */
+        case 'url':    return !String(raw == null ? '' : raw).trim() ? { value: '' }
+                            : isHttpUrl(raw) ? { value: flat(raw, f.max) } : { error: 'Lien invalide (commencez par https://)' };
         case 'email':  return !raw ? { value: '' } : isEmail(raw) ? { value: flat(raw, f.max) } : { error: 'Adresse email invalide' };
         case 'tel':    return !raw ? { value: '' } : digitsOf(raw).length >= 6 && digitsOf(raw).length <= 15
                                 ? { value: flat(raw, f.max) } : { error: 'Numéro de téléphone invalide' };
