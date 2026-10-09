@@ -1682,7 +1682,10 @@ function validateShopForm(){
     ['shopFacebook', 'shopInstagram', 'shopTiktok', 'shopYoutube', 'shopWebsite'].forEach(k => {
         const row = document.getElementById('p-' + k);
         const val = (form.querySelector(`[data-shop="${k}"]`) || {}).value || '';
-        if (row && val && !HTTP_URL.test(val.trim())){ row.classList.add('invalid'); bad.push(row.id); }
+        if (val && !HTTP_URL.test(val.trim())){
+            if (row) row.classList.add('invalid');
+            bad.push('p-' + k);
+        }
     });
 
     /* le premier champ fautif est ramené dans l'écran */
@@ -2241,8 +2244,8 @@ async function initPublishPage(){
             mark('v-price', Number.isFinite(price) && price > 0) &&
             mark('v-oldPrice', oldPrice === null || (Number.isFinite(oldPrice) && oldPrice > price)) &&
             mark('v-stock', $('#vStock').value === '' || (parseInt($('#vStock').value, 10) >= 0)) &&
-            mark('v-desc',  $('#vDesc').value.trim().length >= 10) &&
-            mark('v-image', shots.every(u => /^https?:\/\/|^\/uploads\//.test(u))) &&
+            mark('v-desc',  $('#vDesc').value.trim().length === 0 || $('#vDesc').value.trim().length >= 10) &&
+            mark('v-image', shots.length === 0 || shots.every(u => /^https?:\/\/|^\/uploads\//.test(u))) &&
             mark('v-details', !det.bad);
         if (!ok) return toast('⚠️ Merci de corriger les champs en rouge.');
 

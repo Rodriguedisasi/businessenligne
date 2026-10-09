@@ -962,19 +962,9 @@ const routes = {
         const b = await readBody(req);
 
         if (!b.title || String(b.title).trim().length < 3) return err(res, 400, 'Le titre doit contenir au moins 3 caractères');
-        if (!b.cat)   return err(res, 400, 'Choisissez une catégorie');
-        const price = Math.round(Number(b.price));
-        if (!Number.isFinite(price) || price <= 0) return err(res, 400, 'Le prix doit être un nombre supérieur à 0');
-        const oldPrice = b.oldPrice ? Math.round(Number(b.oldPrice)) : null;
-        if (oldPrice !== null && oldPrice <= price) return err(res, 400, 'L\'ancien prix doit être supérieur au prix de vente');
-        const stock = b.stock === undefined || b.stock === '' ? 10 : Math.round(Number(b.stock));
-        if (!Number.isFinite(stock) || stock < 0) return err(res, 400, 'Le stock doit être un nombre positif ou nul');
-        if (Array.isArray(b.images) && b.images.length > MAX_PHOTOS)
-            return err(res, 400, `${MAX_PHOTOS} photos maximum par article`);
-        if (Array.isArray(b.details) && b.details.length > MAX_DETAILS)
-            return err(res, 400, `${MAX_DETAILS} détails maximum par article`);
 
         const photos = photosField(b.images, b.image);
+        const details = detailsField(b.details);
         const product = await db.insert('products', {
             owner_id: auth.user.id,
             title: String(b.title).trim().slice(0, 120),
@@ -984,7 +974,7 @@ const routes = {
             stock,
             image: photos.image,
             images: photos.images,
-            details: detailsField(b.details),
+            details,
             description: String(b.desc || '').trim().slice(0, 2000),
             badge: ['deal', 'new', 'best', ''].includes(b.badge) ? b.badge : '',
             prime: b.prime ? 1 : 0,
@@ -1586,17 +1576,6 @@ const routes = {
         const b = await readBody(req);
 
         if (!b.title || String(b.title).trim().length < 3) return err(res, 400, 'Le titre doit contenir au moins 3 caractères');
-        if (!b.cat)   return err(res, 400, 'Choisissez une catégorie');
-        const price = Math.round(Number(b.price));
-        if (!Number.isFinite(price) || price <= 0) return err(res, 400, 'Le prix doit être un nombre supérieur à 0');
-        const oldPrice = b.oldPrice ? Math.round(Number(b.oldPrice)) : null;
-        if (oldPrice !== null && oldPrice <= price) return err(res, 400, 'L\'ancien prix doit être supérieur au prix de vente');
-        const stock = b.stock === undefined || b.stock === '' ? 10 : Math.round(Number(b.stock));
-        if (!Number.isFinite(stock) || stock < 0) return err(res, 400, 'Le stock doit être un nombre positif ou nul');
-        if (Array.isArray(b.images) && b.images.length > MAX_PHOTOS)
-            return err(res, 400, `${MAX_PHOTOS} photos maximum par article`);
-        if (Array.isArray(b.details) && b.details.length > MAX_DETAILS)
-            return err(res, 400, `${MAX_DETAILS} détails maximum par article`);
 
         /* l'article est depose pour le compte d'une boutique : celle choisie dans
            le formulaire, sinon la boutique de l'administrateur */
