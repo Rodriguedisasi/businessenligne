@@ -4,8 +4,8 @@
   "buildCommand": "node build-static.js",
   "outputDirectory": "public",
   "rewrites": [
-    { "source": "^/api/(.*)$", "destination": "/api/index?__bePath=/api/$1" },
-    { "source": "^/uploads/(.*)$", "destination": "/api/index?__bePath=/uploads/$1" }
+    { "source": "/api/(.*)", "destination": "/api/index?__bePath=/api/$1" },
+    { "source": "/uploads/(.*)", "destination": "/api/index?__bePath=/uploads/$1" }
   ],
   "functions": {
     "api/**/*.js": { "maxDuration": 60 }
