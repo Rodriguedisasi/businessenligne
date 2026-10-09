@@ -2329,6 +2329,64 @@ function socialLinks(shop){
         : '';
 }
 
+/* Sélection « coups de cœur » : promotions, meilleures ventes et
+   articles les mieux notés de la boutique, dans cet ordre de priorité. */
+function shopFeatureList(products){
+    const score = p =>
+        (p.old && p.old > p.price ? 100 : 0)
+        + (p.badge === 'best' ? 40 : p.badge === 'deal' ? 30 : 0)
+        + Number(p.rating || 0) * 4
+        + Math.min(Number(p.reviews || 0), 50) / 10
+        + Number(p.likes || 0) / 20;
+    return products.map(normalize).slice().sort((a, b) => score(b) - score(a)).slice(0, 8);
+}
+
+/* Synthèse des avis d'une boutique, agrégée à partir des notes des
+   articles. Affiche la moyenne, la répartition par étoile et les
+   articles les mieux notés. */
+function shopReviewsHTML(products, shop){
+    const rated = products.map(normalize).filter(p => Number(p.reviews) > 0);
+    const totalR = rated.reduce((s, p) => s + Number(p.reviews), 0);
+    let avg = 0;
+    if (totalR) avg = rated.reduce((s, p) => s + Number(p.rating || 0) * Number(p.reviews), 0) / totalR;
+    else if (Number(shop.rating)) avg = Number(shop.rating);
+    if (!totalR && !avg) return '';
+
+    const buckets = [5, 4, 3, 2, 1].map(n => ({ n, c: 0 }));
+    rated.forEach(p => {
+        const key = Math.min(5, Math.max(1, Math.round(Number(p.rating) || 0)));
+        const b = buckets.find(x => x.n === key);
+        if (b) b.c += Number(p.reviews);
+    });
+    const maxB = Math.max(1, ...buckets.map(b => b.c));
+    const bars = buckets.map(b => `<div class="rv-bar">
+            <span class="rv-lab">${b.n}<i class="fas fa-star"></i></span>
+            <span class="rv-track"><i style="width:${(b.c / maxB) * 100}%"></i></span>
+            <span class="rv-n">${nfmt(b.c)}</span></div>`).join('');
+
+    const top = rated.slice()
+        .sort((a, b) => (b.rating - a.rating) || (b.reviews - a.reviews))
+        .slice(0, 3);
+    const topRows = top.map(p => {
+        const img = p.image || (p.images && p.images[0]) || '';
+        return `<a href="#" class="rv-prod" data-open-product="${p.id}">
+            <span class="rv-prod-img">${img ? `<img src="${esc(img)}" alt="" loading="lazy">` : `<i class="fas fa-box"></i>`}</span>
+            <span class="rv-prod-info"><b>${esc(p.name)}</b>
+                <span class="rv-prod-meta">${starsHTML(p.rating)} <em>${String(p.rating).replace('.', ',')} · ${nfmt(p.reviews)} ${t('avis')}</em></span></span>
+            <i class="fas fa-chevron-right"></i></a>`;
+    }).join('');
+
+    return `<div class="rv-summary">
+            <div class="rv-score">
+                <b>${avg.toFixed(1).replace('.', ',')}</b>
+                <span class="stars">${starsHTML(avg)}</span>
+                <em>${nfmt(totalR)} ${t(totalR > 1 ? 'avis clients' : 'avis client')}</em>
+            </div>
+            <div class="rv-bars">${bars}</div>
+        </div>`
+        + (top.length ? `<div class="rv-top"><h4>${t('Les mieux notés')}</h4>${topRows}</div>` : '');
+}
+
 async function initShopPage(){
     refreshAccountUI();
 
@@ -2529,6 +2587,19 @@ async function initShopPage(){
             : esc(shop.shopName.charAt(0).toUpperCase());
         if (shop.banner) $('#shBanner').src = shop.banner;
 
+        /* couverture : initiale en filigrane si le vendeur n'a pas de bannière,
+           pastille « ouvert » sur l'avatar, onglets collés sous l'en-tête. */
+        const cover = document.querySelector('.shop-cover');
+        if (cover) cover.dataset.ini = shop.banner ? '' : shop.shopName.charAt(0).toUpperCase();
+        $('#shAvatar').classList.toggle('is-open', shop.openNow === true);
+        const setTabsTop = () => {
+            const hdr = document.querySelector('.header');
+            document.documentElement.style.setProperty('--shop-tabs-top',
+                (hdr ? Math.round(hdr.getBoundingClientRect().height) : 72) + 'px');
+        };
+        setTabsTop();
+        window.addEventListener('resize', setTabsTop);
+
         /* Boutique suspendue : la page reste visible (on ne cache rien
            discrètement), mais on explique pourquoi elle est fermée. Le
            motif est celui écrit par l'administration. */
@@ -2624,17 +2695,9 @@ async function initShopPage(){
             if (!a) return;
             e.preventDefault();
             $$('#shopTabs a').forEach(x => x.classList.toggle('active', x === a));
-            ['apropos', 'infos', 'livraison', 'horaires', 'galerie'].forEach(k =>
+            ['apropos', 'infos', 'livraison', 'horaires', 'avis', 'galerie'].forEach(k =>
                 $('#panel-' + k).hidden = k !== a.dataset.tab);
         });
-        /* un onglet sans contenu ne doit pas être proposé */
-        const has = {
-            infos: !!($('#shInfos').innerHTML || ''),
-            livraison: !!($('#shShip').innerHTML || ''),
-            horaires: !!($('#shHours').innerHTML || ''),
-            galerie: !!($('#shGal').innerHTML || '')
-        };
-        Object.keys(has).forEach(k => { if (!has[k]) $('[data-tab="' + k + '"]')?.remove(); });
 
         /* ---------- À PROPOS ---------- */
         $('#shAbout').innerHTML = shop.shopAbout
@@ -2758,12 +2821,25 @@ async function initShopPage(){
         ].filter(Boolean).join('');
         $('#shSocial').hidden = !$('#shSocial').innerHTML;
 
-        /* raccourci « voir tous les horaires » */
+        /* raccourcis internes : onglets, fiche article, filtres */
         $('#shopBody').addEventListener('click', e => {
             const go = e.target.closest('[data-tab-go]');
-            if (!go) return;
-            e.preventDefault();
-            $('[data-tab="' + go.dataset.tabGo + '"]')?.click();
+            if (go){
+                e.preventDefault();
+                $('[data-tab="' + go.dataset.tabGo + '"]')?.click();
+                return;
+            }
+            const prod = e.target.closest('[data-open-product]');
+            if (prod){
+                e.preventDefault();
+                openModal(prod.dataset.openProduct);
+                return;
+            }
+            const toFilters = e.target.closest('[data-go-filters]');
+            if (toFilters){
+                e.preventDefault();
+                $('#shopFilters')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
         });
 
         /* ---------- articles ---------- */
@@ -2773,14 +2849,20 @@ async function initShopPage(){
         const queryBox = $('#shQuery');
         const sorter = $('#shSort');
 
+        const isPromo = p => p.old && p.old > p.price;
         const paintChips = () => {
-            $('#shopFilters').innerHTML = cats.map(c =>
+            const base = cats.map(c =>
                 `<a href="#" class="chip ${c === activeCat ? 'active' : ''}" data-sc="${esc(c)}">${c === 'Toutes' ? t('Tous les articles') : esc(t(c))} (${nfmt(products.filter(p => c === 'Toutes' || p.cat === c).length)})</a>`).join('');
+            const promoN = products.filter(isPromo).length;
+            const promo = promoN
+                ? `<a href="#" class="chip chip-promo ${activeCat === '__promos' ? 'active' : ''}" data-sc="__promos"><i class="fas fa-tags"></i>${t('Promotions')} (${nfmt(promoN)})</a>`
+                : '';
+            $('#shopFilters').innerHTML = base + promo;
         };
         const paintGrid = () => {
             const q = queryBox.value.trim().toLowerCase();
             let list = products.map(normalize)
-                .filter(p => activeCat === 'Toutes' || p.cat === activeCat)
+                .filter(p => activeCat === 'Toutes' ? true : activeCat === '__promos' ? (p.old && p.old > p.price) : p.cat === activeCat)
                 .filter(p => !q || (p.name + ' ' + p.desc).toLowerCase().includes(q));
             const cmp = {
                 recent: (a, b) => String(b.createdAt || '').localeCompare(String(a.createdAt || '')),
@@ -2810,6 +2892,52 @@ async function initShopPage(){
         sorter.addEventListener('change', () => { sortMode = sorter.value; paintGrid(); });
         paintChips();
         paintGrid();
+
+        /* ---------- coups de cœur ---------- */
+        const feature = $('#shFeature');
+        if (feature){
+            const picks = shopFeatureList(products);
+            if (picks.length >= 4){
+                feature.hidden = false;
+                $('#shFeatureTrack').innerHTML = picks.map(cardHTML).join('');
+                initGalleries($('#shFeatureTrack'));
+            }
+        }
+
+        /* ---------- avis clients ---------- */
+        const reviewsHTML = shopReviewsHTML(products, shop);
+        if (reviewsHTML) $('#shReviews').innerHTML = reviewsHTML;
+
+        /* un onglet sans contenu ne doit pas être proposé */
+        const has = {
+            infos: !!($('#shInfos').innerHTML || ''),
+            livraison: !!($('#shShip').innerHTML || ''),
+            horaires: !!($('#shHours').innerHTML || ''),
+            avis: !!($('#shReviews').innerHTML || ''),
+            galerie: !!($('#shGal').innerHTML || '')
+        };
+        Object.keys(has).forEach(k => { if (!has[k]) $('[data-tab="' + k + '"]')?.remove(); });
+
+        /* ---------- barre d'actions rapides (mobile) ---------- */
+        const quick = $('#shQuick');
+        if (quick){
+            const qCall = $('#sqCall'), qWa = $('#sqWa'), qFollow = $('#sqFollow');
+            if (shop.phone){ qCall.hidden = false; qCall.href = telLink(shop.phone); }
+            if (shop.shopWhatsapp || shop.phone){
+                qWa.hidden = false;
+                qWa.href = waLink(shop.shopWhatsapp || shop.phone,
+                    t('Bonjour {0}, je trouve vos articles sur BusinessEnLigne.', [shop.shopName]));
+            }
+            const qPaint = on => {
+                qFollow.classList.toggle('on', on);
+                qFollow.innerHTML = (on ? '<i class="fas fa-heart"></i>' : '<i class="far fa-heart"></i>')
+                    + `<span>${on ? t('Vous suivez') : t('Suivre')}</span>`;
+            };
+            qPaint(followed);
+            qFollow.onclick = () => follow.click();
+            $('#sqArticles').onclick = () =>
+                $('#shopFilters')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
 
         /* un lien vers « magasin.html?u=…&p=12 » ouvre l'article : c'est ce que
            font les vignettes d'aperçu sur la carte de la boutique. */

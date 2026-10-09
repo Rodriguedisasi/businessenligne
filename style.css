@@ -3267,3 +3267,179 @@ footer{margin-top:24px;padding-top:32px;}
     .help-table{font-size:12.5px;}
     .help-table th,.help-table td{padding:9px 8px;}
 }
+
+/* ==========================================================
+   VITRINE PREMIUM — ACCUEIL BOUTIQUE, COUPS DE CŒUR, AVIS
+   Cette section raffine la page magasin : bannière, avatar,
+   onglets collants, coups de cœur, avis et raccourcis mobiles.
+   ========================================================== */
+
+/* --- bannière de la boutique --- */
+.shop-cover{
+    height:240px;
+    background:
+        radial-gradient(130% 120% at 12% 0%,rgba(255,255,255,.14) 0%,transparent 55%),
+        linear-gradient(135deg,var(--navy-900) 0%,var(--navy-800) 58%,#1b2841 100%);
+    box-shadow:inset 0 -70px 90px -50px rgba(0,0,0,.6);
+}
+.shop-cover img{opacity:.62;transition:transform .7s var(--ease);}
+.shop-cover:hover img{transform:scale(1.04);}
+.shop-cover::after{
+    content:attr(data-ini);
+    position:absolute;right:28px;bottom:-18px;
+    font-family:var(--font-display);font-weight:800;
+    font-size:150px;line-height:1;letter-spacing:-.05em;
+    color:rgba(255,255,255,.09);pointer-events:none;user-select:none;
+}
+.shop-cover-fade{background:linear-gradient(180deg,rgba(0,0,0,.03) 30%,rgba(0,0,0,.6));}
+.shop-id h1{font-size:30px;}
+
+/* --- avatar : anneau et état « ouvert » --- */
+.shop-id .avatar{
+    border-radius:26px;
+    border-width:4px;
+    box-shadow:0 14px 30px -12px rgba(0,0,0,.45),0 0 0 1px var(--line-2);
+    transition:box-shadow .3s var(--ease);
+}
+.shop-id .avatar.is-open{box-shadow:0 14px 30px -12px rgba(0,0,0,.45),0 0 0 3px var(--ok-soft),0 0 0 1px var(--line-2);}
+
+/* --- barre de statistiques --- */
+.shop-statbar{box-shadow:var(--shadow-1);}
+.sb-item{transition:background .2s var(--ease);}
+.sb-item:hover{background:var(--bg-2);}
+.sb-item i{
+    width:34px;height:34px;margin:0 auto 6px;border-radius:50%;
+    display:grid;place-items:center;background:var(--brand-soft);
+    font-size:13px;
+}
+
+/* --- disposition : colonne latérale sous l'en-tête --- */
+.shop-aside{top:calc(var(--shop-tabs-top,72px) + 12px);}
+
+/* --- onglets collants --- */
+.shop-tabs{
+    position:sticky;top:var(--shop-tabs-top,72px);z-index:30;
+    background:var(--bg);
+    box-shadow:0 8px 20px -14px rgba(0,0,0,.4);
+    transition:box-shadow .25s var(--ease);
+}
+
+/* --- coups de cœur --- */
+.sh-feature{
+    background:linear-gradient(135deg,var(--brand-soft-2),var(--bg) 62%);
+    border:1px solid var(--line-2);border-radius:var(--radius-lg);
+    padding:18px 18px 14px;box-shadow:var(--shadow-1);
+    animation:sh-rise .5s var(--ease) both;
+}
+.sh-feature-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px;}
+.sh-feature-title{
+    font-family:var(--font-display);font-size:16px;font-weight:700;
+    display:flex;align-items:center;gap:9px;
+}
+.sh-feature-title i{color:var(--brand);}
+.sh-feature-all{
+    font-size:12.5px;font-weight:700;color:var(--brand-dark);
+    display:inline-flex;align-items:center;gap:6px;white-space:nowrap;
+}
+.sh-feature-all i{font-size:10px;}
+.sh-feature-track{
+    display:flex;gap:13px;overflow-x:auto;scroll-snap-type:x mandatory;
+    padding:2px 2px 10px;scrollbar-width:thin;
+}
+.sh-feature-track .p-card{
+    flex:0 0 205px;width:205px;scroll-snap-align:start;
+}
+.sh-feature-track .p-card .owner-tag{display:none;}
+.sh-feature-track .p-img-wrap{height:160px;}
+
+/* --- onglet « Avis » --- */
+.rv-summary{
+    display:flex;gap:30px;align-items:center;flex-wrap:wrap;
+    padding-bottom:20px;margin-bottom:20px;border-bottom:1px solid var(--line-soft);
+}
+.rv-score{text-align:center;min-width:130px;}
+.rv-score b{
+    display:block;font-family:var(--font-display);font-size:46px;line-height:1;
+    letter-spacing:-.03em;
+}
+.rv-score > .stars{display:block;font-size:13px;color:#f0a500;margin:8px 0 5px;}
+.rv-score em{font-size:12px;color:var(--txt-3);font-style:normal;}
+.rv-bars{flex:1;min-width:230px;display:flex;flex-direction:column;gap:7px;}
+.rv-bar{display:grid;grid-template-columns:40px 1fr 46px;align-items:center;gap:10px;font-size:12px;}
+.rv-lab{color:var(--txt-2);display:inline-flex;align-items:center;gap:3px;justify-content:flex-end;}
+.rv-lab i{font-size:10px;color:#f0a500;}
+.rv-track{height:9px;border-radius:99px;background:var(--bg-2);overflow:hidden;}
+.rv-track i{display:block;height:100%;border-radius:99px;min-width:2px;
+    background:linear-gradient(90deg,#f6bd4a,#ef9d00);}
+.rv-n{text-align:right;color:var(--txt-3);font-variant-numeric:tabular-nums;}
+.rv-top h4{font-family:var(--font-display);font-size:14px;font-weight:700;margin-bottom:11px;}
+.rv-prod{
+    display:flex;align-items:center;gap:12px;padding:11px 13px;
+    border:1px solid var(--line-2);border-radius:var(--radius-sm);margin-bottom:9px;
+    background:var(--bg);transition:border-color .2s var(--ease),transform .2s var(--ease);
+}
+.rv-prod:last-child{margin-bottom:0;}
+.rv-prod:hover{border-color:var(--brand);transform:translateX(3px);text-decoration:none;}
+.rv-prod-img{
+    width:48px;height:48px;flex:none;border-radius:11px;overflow:hidden;
+    background:var(--bg-2);display:grid;place-items:center;color:var(--txt-3);
+}
+.rv-prod-img img{width:100%;height:100%;object-fit:cover;}
+.rv-prod-info{flex:1;min-width:0;}
+.rv-prod-info b{
+    display:block;font-size:13.5px;color:var(--txt);
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+.rv-prod-meta{display:flex;align-items:center;gap:8px;margin-top:4px;}
+.rv-prod-meta .stars{font-size:11px;color:#f0a500;}
+.rv-prod-meta em{font-size:11.5px;color:var(--txt-3);font-style:normal;}
+.rv-prod > i{color:var(--txt-3);font-size:11px;}
+
+/* --- filtre « Promotions » --- */
+.chip-promo{border-color:var(--brand-2);color:var(--brand-dark);font-weight:700;}
+.chip-promo i{font-size:10px;margin-right:5px;}
+.chip-promo.active{background:var(--brand);border-color:var(--brand);color:var(--on-brand);}
+
+/* --- apparition douce des blocs --- */
+@keyframes sh-rise{
+    from{opacity:0;transform:translateY(12px);}
+    to{opacity:1;transform:none;}
+}
+#shopBody > .box{animation:sh-rise .45s var(--ease) both;}
+
+/* --- raccourcis rapides (téléphone) --- */
+.sh-quick{display:none;}
+@media (max-width:900px){
+    .sh-quick{
+        display:flex;position:fixed;left:0;right:0;bottom:calc(60px + env(safe-area-inset-bottom));
+        z-index:470;gap:6px;padding:8px 10px;
+        background:var(--bg);border-top:1px solid var(--line-2);
+        box-shadow:0 -8px 22px -14px rgba(0,0,0,.5);
+    }
+    .sq-btn{
+        flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;
+        border:0;background:transparent;color:var(--txt-2);cursor:pointer;
+        font:inherit;font-size:10.5px;font-weight:700;padding:6px 4px;
+        border-radius:var(--radius-sm);text-decoration:none;
+        transition:background .2s var(--ease),color .2s var(--ease);
+    }
+    .sq-btn:hover{background:var(--bg-2);text-decoration:none;}
+    .sq-btn i{font-size:17px;}
+    .sq-btn.on{color:var(--brand);}
+    .sq-cta{background:var(--brand);color:var(--on-brand);}
+    .sq-cta:hover{background:var(--brand-dark);color:var(--on-brand);}
+    body.modal-open .sh-quick{display:none;}
+}
+
+@media (max-width:900px){
+    .shop-cover{height:150px;}
+    .shop-cover::after{font-size:84px;right:16px;bottom:-10px;}
+    .shop-id h1{font-size:21px;}
+    .sb-item i{width:28px;height:28px;font-size:12px;}
+    .shop-tabs{top:var(--shop-tabs-top,64px);}
+    .sh-feature{padding:14px 14px 10px;}
+    .sh-feature-track .p-card{flex-basis:168px;width:168px;}
+    .sh-feature-track .p-img-wrap{height:140px;}
+    .rv-score b{font-size:38px;}
+}
+

@@ -127,6 +127,13 @@
     <div id="shSuspended" class="sh-suspended" hidden></div>
 
     <div id="shopBody" hidden>
+        <!-- ============ BARRE D'ACTIONS RAPIDES (MOBILE) ============ -->
+        <div class="sh-quick" id="shQuick">
+            <button class="sq-btn" id="sqFollow" type="button"><i class="far fa-heart"></i><span>Suivre</span></button>
+            <a class="sq-btn" id="sqCall" hidden><i class="fas fa-phone"></i><span>Appeler</span></a>
+            <a class="sq-btn" id="sqWa" hidden target="_blank" rel="noopener"><i class="fab fa-whatsapp"></i><span>WhatsApp</span></a>
+            <button class="sq-btn sq-cta" id="sqArticles" type="button"><i class="fas fa-bag-shopping"></i><span>Articles</span></button>
+        </div>
         <!-- ============ À PROPOS ============ -->
         <div class="box" style="margin:16px 0">
             <div class="box-head"><h3>À propos de la boutique</h3>
@@ -143,12 +150,22 @@
         <!-- ============ CORPS : CONTENU + COLONNE LATÉRALE ============ -->
         <div class="shop-layout">
             <div class="shop-main">
+                <!-- ============ COUPS DE CŒUR ============ -->
+                <section class="sh-feature" id="shFeature" hidden>
+                    <div class="sh-feature-head">
+                        <h3 class="sh-feature-title"><i class="fas fa-fire"></i> Coups de cœur</h3>
+                        <a href="#" class="sh-feature-all" data-go-filters>Voir tout <i class="fas fa-chevron-right"></i></a>
+                    </div>
+                    <div class="sh-feature-track" id="shFeatureTrack"></div>
+                </section>
+
                 <!-- onglets -->
                 <nav class="shop-tabs" id="shopTabs">
                     <a href="#" class="active" data-tab="apropos">À propos</a>
                     <a href="#" data-tab="infos">Informations</a>
                     <a href="#" data-tab="livraison">Livraison &amp; paiement</a>
                     <a href="#" data-tab="horaires">Horaires</a>
+                    <a href="#" data-tab="avis">Avis</a>
                     <a href="#" data-tab="galerie">Galerie</a>
                 </nav>
 
@@ -167,6 +184,10 @@
 
                 <div class="shop-panel" id="panel-horaires" hidden>
                     <div class="hours-table" id="shHours"></div>
+                </div>
+
+                <div class="shop-panel" id="panel-avis" hidden>
+                    <div id="shReviews"></div>
                 </div>
 
                 <div class="shop-panel" id="panel-galerie" hidden>
