@@ -1146,6 +1146,9 @@ Object.assign(DICT, {
     'Délai de retour':                       ['Return period'],
     'Moyens de paiement non précisés.':      ['Payment methods not specified.'],
     'Paiement : {0}':                        ['Payment: {0}'],
+    'Moyen de paiement':                     ['Payment method', 'Njia ya malipo', 'Nzela ya mboko'],
+    'Autre Mobile Money':                    ['Other Mobile Money', 'Mobile Money nyingine', 'Mobile Money mosusu'],
+    'Espèces à la livraison':                ['Cash on delivery', 'Pesa taslimu wakati wa kufikisha', 'Mbongo na tango ya kokabola'],
     "Cette boutique n'a pas encore précisé ses conditions de livraison.":
         ['This shop has not specified its delivery terms yet.'],
     "Cette boutique n'a pas encore renseigné ses informations.":

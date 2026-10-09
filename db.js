@@ -190,6 +190,9 @@ const MIGRATIONS = {
     products: [
         ['images', "TEXT NOT NULL DEFAULT ''"],
         ['details', "TEXT NOT NULL DEFAULT ''"]
+    ],
+    orders: [
+        ['payment', "TEXT NOT NULL DEFAULT ''"]
     ]
 };
 

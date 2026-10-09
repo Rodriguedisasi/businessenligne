@@ -284,11 +284,15 @@ async function shopIsBlockedId(id){
 const SHOP_CATEGORIES = ['Électronique', 'Mode', 'Maison', 'Sport', 'Beauté', 'Enfants', 'Livres'];
 
 const SHOP_PAYMENTS = [
-    { id: 'momo',     label: 'Mobile Money' },
-    { id: 'especes',  label: 'Espèces' },
-    { id: 'carte',    label: 'Carte bancaire' },
-    { id: 'virement', label: 'Virement bancaire' },
-    { id: 'credit',   label: 'Paiement échelonné' }
+    { id: 'airtel',    label: 'Airtel Money' },
+    { id: 'orange',    label: 'Orange Money' },
+    { id: 'mpesa',     label: 'M-Pesa (Vodacom)' },
+    { id: 'afrimoney', label: 'Afrimoney (Africell)' },
+    { id: 'momo',      label: 'Autre Mobile Money' },
+    { id: 'carte',     label: 'Carte bancaire' },
+    { id: 'virement',  label: 'Virement bancaire' },
+    { id: 'especes',   label: 'Espèces à la livraison' },
+    { id: 'credit',    label: 'Paiement échelonné' }
 ];
 
 const SHOP_FEATURES = [
@@ -1066,18 +1070,19 @@ const routes = {
     /* ---------- COMMANDES ---------- */
     'POST /api/orders': async (req, res) => {
         const auth = await currentUser(req);
-        const { items } = await readBody(req);
+        const { items, payment } = await readBody(req);
         if (!Array.isArray(items) || !items.length) return err(res, 400, 'Panier vide');
 
         const { total, lines } = await buildOrderLines(items);
         if (!lines.length) return err(res, 400, 'Aucun article valide dans le panier');
 
+        const pay = PAYMENT_IDS.includes(payment) ? payment : '';
         const order = await db.insert('orders', {
             user_id: auth ? auth.user.id : null,
             ref: newOrderRef(), total, items: JSON.stringify(lines),
-            status: 'Confirmée', created_at: nowISO()
+            payment: pay, status: 'Confirmée', created_at: nowISO()
         });
-        ok(res, { order: { id: order.id, ref: order.ref, total: order.total, status: order.status, createdAt: order.created_at, items: lines } });
+        ok(res, { order: { id: order.id, ref: order.ref, total: order.total, payment: order.payment, status: order.status, createdAt: order.created_at, items: lines } });
     },
 
     'GET /api/orders': async (req, res) => {
@@ -1085,7 +1090,7 @@ const routes = {
         if (!auth) return err(res, 401, 'Non connecté');
         const rows = await db.all('orders', { user_id: auth.user.id }, { orderBy: 'created_at DESC', limit: 50 });
         const list = rows.map(o => ({
-            id: o.id, ref: o.ref, total: o.total, status: o.status,
+            id: o.id, ref: o.ref, total: o.total, status: o.status, payment: o.payment || '',
             createdAt: o.created_at, items: parseItems(o.items)
         }));
         ok(res, { orders: list });
@@ -1782,7 +1787,7 @@ const routes = {
         const orders = rows.map(o => {
             const u = o.user_id == null ? null : buyerById.get(Number(o.user_id));
             return {
-                id: o.id, ref: o.ref, total: o.total, status: o.status, createdAt: o.created_at,
+                id: o.id, ref: o.ref, total: o.total, status: o.status, payment: o.payment || '', createdAt: o.created_at,
                 items: parseItems(o.items),
                 buyer: u ? { username: u.username, shopName: u.shop_name } : null
             };
@@ -1812,7 +1817,7 @@ const routes = {
     /* ---------- ADMIN : enregistrer une commande (téléphone, whatsapp…) ---------- */
     'POST /api/admin/orders': async (req, res) => {
         if (!await requireAdmin(req, res)) return;
-        const { userId, items } = await readBody(req);
+        const { userId, items, payment } = await readBody(req);
         if (!Array.isArray(items) || !items.length) return err(res, 400, 'Panier vide');
 
         const { total, lines } = await buildOrderLines(items);
@@ -1821,11 +1826,12 @@ const routes = {
         const buyer = userId ? await db.one('users', { id: Number(userId) }) : null;
         if (userId && !buyer) return err(res, 404, 'Acheteur introuvable');
 
+        const pay = PAYMENT_IDS.includes(payment) ? payment : '';
         const order = await db.insert('orders', {
             user_id: buyer ? buyer.id : null, ref: newOrderRef(), total,
-            items: JSON.stringify(lines), status: 'Confirmée', created_at: nowISO()
+            items: JSON.stringify(lines), payment: pay, status: 'Confirmée', created_at: nowISO()
         });
-        ok(res, { order: { id: order.id, ref: order.ref, total: order.total, status: order.status, createdAt: order.created_at, items: lines } });
+        ok(res, { order: { id: order.id, ref: order.ref, total: order.total, payment: order.payment, status: order.status, createdAt: order.created_at, items: lines } });
     },
 
     /* ---------- ADMIN : catalogue complet (pour les formulaires) ---------- */

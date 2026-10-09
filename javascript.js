@@ -727,15 +727,36 @@ function paintSeller(p){
 }
 
 /* ---------------- CHECKOUT ---------------- */
+/* Le moyen de paiement choisi dans le panier (réseau Mobile Money par
+   défaut). Le sélecteur est injecté par initPaySelect(). */
+function selectedPayment(){
+    const sel = $('#paySelect');
+    return sel && sel.value ? sel.value : (SHOP_PAYMENTS[0] && SHOP_PAYMENTS[0].id) || '';
+}
+function initPaySelect(){
+    const foot = $('.cart-foot');
+    const btn  = $('#checkoutBtn');
+    if (!foot || !btn || $('#paySelect')) return;
+    const block = document.createElement('div');
+    block.className = 'pay-pick';
+    block.innerHTML =
+        `<label class="pay-pick-label" for="paySelect"><i class="fas fa-mobile-screen"></i>${t('Moyen de paiement')}</label>
+         <select id="paySelect" class="pay-pick-select">
+             ${SHOP_PAYMENTS.map(p => `<option value="${esc(p.id)}">${esc(t(p.label))}</option>`).join('')}
+         </select>`;
+    foot.insertBefore(block, btn);
+}
+
 async function checkout(){
     if (!cart.length){ toast(t('🛒 Votre panier est vide')); return; }
     const items = cart.map(l => ({ id: l.id, qty: l.qty }));
     const total = cartTotal();
 
     /* 1) on tente d'enregistrer la commande côté serveur */
+    const payment = selectedPayment();
     if (window.BE && BE.isOnline()){
         try {
-            const o = await BE.order(items);
+            const o = await BE.order(items, payment);
             cart = [];
             saveCart();
             closeAll();
@@ -751,6 +772,7 @@ async function checkout(){
     const order = {
         ref: 'BE-' + Date.now().toString().slice(-8),
         date: new Date().toISOString(),
+        payment,
         items: cart.map(l => {
             const p = PRODUCTS.find(x => String(x.id) === String(l.id));
             return { id: p.id, name: p.name, price: p.price, qty: l.qty };
@@ -1420,11 +1442,15 @@ const SHOP_DAYS = [
 ];
 
 const SHOP_PAYMENTS = [
-    { id: 'momo',     label: 'Mobile Money',      icon: 'fa-mobile-screen' },
-    { id: 'especes',  label: 'Espèces',           icon: 'fa-money-bill-wave' },
-    { id: 'carte',    label: 'Carte bancaire',    icon: 'fa-credit-card' },
-    { id: 'virement', label: 'Virement bancaire', icon: 'fa-building-columns' },
-    { id: 'credit',   label: 'Paiement échelonné', icon: 'fa-calendar-days' }
+    { id: 'airtel',    label: 'Airtel Money',           icon: 'fa-mobile-screen' },
+    { id: 'orange',    label: 'Orange Money',           icon: 'fa-mobile-screen' },
+    { id: 'mpesa',     label: 'M-Pesa (Vodacom)',       icon: 'fa-mobile-screen' },
+    { id: 'afrimoney', label: 'Afrimoney (Africell)',   icon: 'fa-mobile-screen' },
+    { id: 'momo',      label: 'Autre Mobile Money',     icon: 'fa-mobile-screen' },
+    { id: 'carte',     label: 'Carte bancaire',         icon: 'fa-credit-card' },
+    { id: 'virement',  label: 'Virement bancaire',      icon: 'fa-building-columns' },
+    { id: 'especes',   label: 'Espèces à la livraison', icon: 'fa-money-bill-wave' },
+    { id: 'credit',    label: 'Paiement échelonné',     icon: 'fa-calendar-days' }
 ];
 
 const SHOP_FEATURES = [
@@ -1718,7 +1744,7 @@ function paintShopPreview(me, score){
         `<p class="mi-pills">
             ${badge('fa-truck', t('Livraison'), me.shopDelivery)}
             ${badge('fa-hand-hold', t('Retrait'), me.shopPickup)}
-            ${badge('fa-mobile-screen', t('Mobile Money'), (me.shopPayments || []).includes('momo'))}
+            ${badge('fa-mobile-screen', t('Mobile Money'), (me.shopPayments || []).some(id => ['airtel','orange','mpesa','afrimoney','momo'].includes(id)))}
             ${badge('fa-rotate-left', t('Retours'), me.shopReturns)}
             ${badge('fa-shield-halved', t('Boutique vérifiée'), me.shopVerified)}
         </p>`,
@@ -1944,6 +1970,7 @@ async function initAccountPage(){
                 </div>
             </div>
             <div class="oc-items">${o.items.map(i => `${nfmt(i.qty)} × ${i.title}`).join(' · ')}</div>
+            ${o.payment ? `<div class="oc-items" style="margin-top:4px"><i class="fas fa-mobile-screen"></i> ${t('Paiement : {0}', [t(payLabel(o.payment))])}</div>` : ''}
         </div>`).join('');
     };
 
@@ -3440,7 +3467,7 @@ async function initAdminPage(){
             return;
         }
         body.innerHTML = list.map(o => `<tr>
-            <td><b>${o.ref}</b></td>
+            <td><b>${o.ref}</b>${o.payment ? `<div class="muted" style="font-size:12px"><i class="fas fa-mobile-screen"></i> ${t(payLabel(o.payment))}</div>` : ''}</td>
             <td>${o.buyer ? o.buyer.shopName + ' <span class="muted">@' + o.buyer.username + '</span>' : `<i class="muted">${t('visiteur')}</i>`}</td>
             <td class="muted">${o.items.map(i => nfmt(i.qty) + ' × ' + i.title).join('<br>')}</td>
             <td class="num"><b>${fmt(o.total)}</b></td>
@@ -3549,6 +3576,7 @@ function initCommon(){
     const modalClose = $('#modalClose');    if (modalClose) modalClose.onclick = closeAll;
     const cartIcon = $('#cartIcon');        if (cartIcon) cartIcon.onclick = e => { e.preventDefault(); openCart(); };
     const checkoutBtn = $('#checkoutBtn');  if (checkoutBtn) checkoutBtn.onclick = checkout;
+    initPaySelect();
     document.addEventListener('keydown', e => { if (e.key === 'Escape') closeAll(); });
 
     /* --- délégation : ajout au panier / fiche produit / suppression --- */

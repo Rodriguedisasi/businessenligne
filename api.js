@@ -100,7 +100,7 @@ const BE = (() => {
     const likes = async () => (await req('GET', '/api/likes')).products;
 
     /* ---------------- COMMANDES ---------------- */
-    const order = async items => (await req('POST', '/api/orders', { items })).order;
+    const order = async (items, payment) => (await req('POST', '/api/orders', { items, payment })).order;
     const orders = async () => (await req('GET', '/api/orders')).orders;
 
     /* ---------------- BOUTIQUES ---------------- */
