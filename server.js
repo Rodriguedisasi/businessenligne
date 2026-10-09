@@ -965,6 +965,9 @@ const routes = {
 
         const photos = photosField(b.images, b.image);
         const details = detailsField(b.details);
+        const price    = Math.round(Number(b.price) || 0);
+        const oldPrice = b.oldPrice ? Math.round(Number(b.oldPrice)) : null;
+        const stock    = Math.max(0, Math.round(Number(b.stock) || 0));
         const product = await db.insert('products', {
             owner_id: auth.user.id,
             title: String(b.title).trim().slice(0, 120),
@@ -1585,6 +1588,9 @@ const routes = {
         if (!owner) return err(res, 404, 'Boutique de destination introuvable');
 
         const photos = photosField(b.images, b.image);
+        const price    = Math.round(Number(b.price) || 0);
+        const oldPrice = b.oldPrice ? Math.round(Number(b.oldPrice)) : null;
+        const stock    = Math.max(0, Math.round(Number(b.stock) || 0));
         const product = await db.insert('products', {
             owner_id: owner.id,
             title: String(b.title).trim().slice(0, 120),
