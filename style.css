@@ -2050,6 +2050,11 @@ footer{
     .h-theme .h-theme-ic{font-size:18px;}
     .logo{font-size:20px;}
     .logo::before{width:32px;height:32px;border-radius:11px;font-size:14px;}
+    /* la page administration : le titre se resserre (ellipse) plutôt que
+       de passer sur deux lignes et de faire grossir le bandeau */
+    .admin-title{flex-shrink:1;min-width:0;}
+    .admin-title div{min-width:0;overflow:hidden;}
+    .admin-title b{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
     .hero{border-radius:0 0 var(--radius-lg) var(--radius-lg);}
     .hero-caption{width:62%;}
     .hero-caption h1{font-size:clamp(28px,4.2vw,40px);}
@@ -2476,8 +2481,39 @@ form input[type=date],form textarea,form select{font-size:16px;}
     -webkit-overflow-scrolling:touch;
     border:1px solid var(--line-soft);border-radius:var(--radius-sm);
 }
-.cell-user{min-width:150px;}
-.cell-actions{flex-wrap:wrap;}
+/* les onglets restent dans la largeur de la page : le défilé horizontal
+   se fait à l'intérieur du bandeau, sans gonfler le corps de 4 px */
+.admin-tabs{margin:14px 0 12px;padding:0;}
+/* sur un téléphone les tableaux d'administration deviennent des cartes
+   empilées : les boutons de modération restent accessibles sans devoir
+   faire défiler le tableau sur toute sa largeur */
+.admin-table thead{display:none;}
+.admin-table,.admin-table tbody,.admin-table tr,.admin-table td{
+    display:block;width:100%;min-width:0;max-width:none;box-sizing:border-box;
+}
+.admin-table tr{
+    display:grid;grid-template-columns:1fr 1fr;gap:7px 12px;
+    padding:11px 13px;margin-bottom:8px;
+    background:var(--card);border:1px solid var(--line-soft);border-radius:var(--radius-sm);
+    transition:border-color var(--dur) var(--ease);
+}
+.admin-table tr.row-banned{background:var(--danger-soft);border-color:var(--danger);}
+.admin-table tr.row-banned td{background:none;}
+.admin-table tr:last-child{margin-bottom:0;}
+.admin-table tr>td{
+    display:flex;flex-direction:column;justify-content:center;gap:3px;
+    padding:0;border:0;background:none;text-align:left;
+}
+.admin-table tr>td:first-child{grid-column:1/-1;}
+.admin-table tr>td:last-child{grid-column:1/-1;margin-top:2px;}
+.admin-table td[data-label]::before{
+    content:attr(data-label);
+    font-size:10px;font-weight:800;letter-spacing:.09em;text-transform:uppercase;
+    color:var(--txt-3);
+}
+.admin-table td[colspan]{grid-column:1/-1;text-align:center;padding:18px 8px;}
+.admin-table .cell-actions{flex-wrap:wrap;}
+.cell-user{min-width:0;}
 .mini-row{gap:8px;}
 .bar-row span{width:64px;font-size:12px;}
 .bar-row b{width:30px;font-size:12px;}

@@ -3114,14 +3114,14 @@ async function initAdminPage(){
                     </div>
                 </div>
             </td>
-            <td class="muted">${u.email}</td>
-            <td>${u.shopCity || '—'}</td>
-            <td class="num">${nfmt(u.productCount)}</td>
-            <td class="num">${nfmt(u.likesReceived)}</td>
-            <td class="num">${nfmt(u.sales || 0)}</td>
-            <td class="num"><b>${fmt(u.revenue)}</b></td>
-            <td class="num muted">${fmt(u.spent)}</td>
-            <td class="muted">${dj(u.createdAt)}</td>
+            <td class="muted" data-label="${t('Email')}">${u.email}</td>
+            <td data-label="${t('Ville')}">${u.shopCity || '—'}</td>
+            <td class="num" data-label="${t('Articles')}">${nfmt(u.productCount)}</td>
+            <td class="num" data-label="${t('J\'aime')}">${nfmt(u.likesReceived)}</td>
+            <td class="num" data-label="${t('Ventes')}">${nfmt(u.sales || 0)}</td>
+            <td class="num" data-label="${t('Chiffre d\'affaires')}"><b>${fmt(u.revenue)}</b></td>
+            <td class="num muted" data-label="${t('Dépensé')}">${fmt(u.spent)}</td>
+            <td class="muted" data-label="${t('Inscrit')}">${dj(u.createdAt)}</td>
 <td class="cell-actions">
                 <a class="btn btn-outline btn-sm" href="magasin.html?u=${encodeURIComponent(u.username)}" title="${t('Voir la boutique')}"><i class="fas fa-eye"></i></a>
                 <button class="btn btn-outline btn-sm" data-u-mod="${u.id}" title="${t('Modérer la boutique')}"><i class="fas fa-shield-halved"></i></button>
@@ -3525,12 +3525,12 @@ async function initAdminPage(){
                     <div><b>${esc(p.title)}</b><span>#${p.id} · ${t('{0} photo(s)', [nfmt((p.images || []).length)])}</span></div>
                 </div>
             </td>
-            <td>${p.owner ? esc(p.owner.shopName) : '—'}</td>
-            <td>${esc(p.cat)}</td>
-            <td class="num"><b>${fmt(p.price)}</b>${p.oldPrice ? `<br><s class="muted">${fmt(p.oldPrice)}</s>` : ''}</td>
-            <td class="num">${p.stock === 0 ? `<i class="tag-out">${t('Rupture')}</i>` : p.stock <= 3 ? `<i class="tag-low">${nfmt(p.stock)}</i>` : nfmt(p.stock)}</td>
-            <td class="num"><i class="fas fa-heart" style="color:#cc0c39"></i> ${nfmt(p.likes)}</td>
-            <td>
+            <td data-label="${t('Boutique')}">${p.owner ? esc(p.owner.shopName) : '—'}</td>
+            <td data-label="${t('Catégorie')}">${esc(p.cat)}</td>
+            <td class="num" data-label="${t('Prix')}"><b>${fmt(p.price)}</b>${p.oldPrice ? `<br><s class="muted">${fmt(p.oldPrice)}</s>` : ''}</td>
+            <td class="num" data-label="${t('Stock')}">${p.stock === 0 ? `<i class="tag-out">${t('Rupture')}</i>` : p.stock <= 3 ? `<i class="tag-low">${nfmt(p.stock)}</i>` : nfmt(p.stock)}</td>
+            <td class="num" data-label="${t('J\'aime')}"><i class="fas fa-heart" style="color:#cc0c39"></i> ${nfmt(p.likes)}</td>
+            <td data-label="${t('Statut')}">
                 ${p.published ? `<i class="tag-admin">${t('Publié')}</i>` : `<i class="tag-out">${t('Masqué')}</i>`}
                 <br><span class="muted" style="font-size:11px">${dj(p.createdAt)}</span>
             </td>
@@ -3598,12 +3598,12 @@ async function initAdminPage(){
             return;
         }
         body.innerHTML = list.map(o => `<tr>
-            <td><b>${o.ref}</b>${o.payment ? `<div class="muted" style="font-size:12px"><i class="fas fa-mobile-screen"></i> ${t(payLabel(o.payment))}</div>` : ''}</td>
-            <td>${o.buyer ? o.buyer.shopName + ' <span class="muted">@' + o.buyer.username + '</span>' : `<i class="muted">${t('visiteur')}</i>`}</td>
-            <td class="muted">${o.items.map(i => nfmt(i.qty) + ' × ' + i.title).join('<br>')}</td>
-            <td class="num"><b>${fmt(o.total)}</b></td>
-            <td class="muted">${dj(o.createdAt, { day: 'numeric', month: 'short', year: 'numeric' })}</td>
-            <td>
+            <td data-label="${t('Référence')}"><b>${o.ref}</b>${o.payment ? `<div class="muted" style="font-size:12px"><i class="fas fa-mobile-screen"></i> ${t(payLabel(o.payment))}</div>` : ''}</td>
+            <td data-label="${t('Acheteur')}">${o.buyer ? o.buyer.shopName + ' <span class="muted">@' + o.buyer.username + '</span>' : `<i class="muted">${t('visiteur')}</i>`}</td>
+            <td class="muted" data-label="${t('Articles')}">${o.items.map(i => nfmt(i.qty) + ' × ' + i.title).join('<br>')}</td>
+            <td class="num" data-label="${t('Total')}"><b>${fmt(o.total)}</b></td>
+            <td class="muted" data-label="${t('Date')}">${dj(o.createdAt, { day: 'numeric', month: 'short', year: 'numeric' })}</td>
+            <td data-label="${t('Statut')}">
                 <select class="status-sel" data-o-status="${o.id}">
                     ${STATUTS.map(s => `<option value="${s}"${s === o.status ? ' selected' : ''}>${t(s)}</option>`).join('')}
                 </select>
