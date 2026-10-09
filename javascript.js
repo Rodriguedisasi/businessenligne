@@ -2961,6 +2961,32 @@ async function initShopPage(){
    ========================================================== */
 const STATUTS = ['Confirmée', 'En préparation', 'Expédiée', 'Livrée', 'Annulée'];
 
+/* ---------- export CSV ----------
+   Un champ est entouré de guillemets dès qu'il contient un séparateur,
+   un guillemet ou un saut de ligne ; les guillemets internes sont doublés.
+   On sépare par « ; » (attendu par Excel en français) et on ajoute un BOM
+   pour que les accents s'affichent correctement à l'ouverture. */
+function csvCell(value){
+    const s = value == null ? '' : String(value);
+    return /[";\r\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+}
+function downloadCSV(filename, columns, rows){
+    const head = columns.map(c => csvCell(c.label)).join(';');
+    const body = rows.map(r => columns.map(c =>
+        csvCell(typeof c.value === 'function' ? c.value(r) : r[c.key])).join(';')).join('\r\n');
+    const csv = '\ufeff' + head + (body ? '\r\n' + body : '');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+const csvStamp = () => new Date().toISOString().slice(0, 10);
+
 async function initAdminPage(){
     refreshAccountUI();
     const me = await BE.loadMe(true);
@@ -3095,9 +3121,11 @@ async function initAdminPage(){
        ====================================================== */
     const uQuery = { q: '', sort: 'recent' };
     let userTimer;
+    let usersCache = [];
 
     async function loadUsers(){
         const list = await BE.adminUsers(uQuery);
+        usersCache = list;
         $('#usersCount').textContent = nfmt(list.length) + ' ' + t(list.length > 1 ? 'comptes' : 'compte');
         const body = $('#usersTable tbody');
         if (!list.length){
@@ -3371,11 +3399,33 @@ async function initAdminPage(){
     };
     $('#userSort').onchange = e => { uQuery.sort = e.target.value; loadUsers().catch(er => toast(er.message)); };
 
+    $('#usersExport').onclick = () => {
+        if (!usersCache.length) return toast('ℹ️ ' + t('Aucune donnée à exporter.'));
+        downloadCSV('comptes-' + csvStamp() + '.csv', [
+            { label: t('Boutique'),               value: u => u.shopName },
+            { label: t('Identifiant'),            value: u => '@' + u.username },
+            { label: t('Email'),                  value: u => u.email },
+            { label: t('Ville'),                  value: u => u.shopCity || '' },
+            { label: t('Téléphone'),              value: u => u.phone || '' },
+            { label: t('Articles'),               value: u => u.productCount || 0 },
+            { label: t("J'aime reçus"),           value: u => u.likesReceived || 0 },
+            { label: t('Ventes'),                 value: u => u.sales || 0 },
+            { label: t("Chiffre d'affaires (FC)"),value: u => u.revenue || 0 },
+            { label: t('Achats (FC)'),            value: u => u.spent || 0 },
+            { label: t('Rôle'),                   value: u => u.isAdmin ? t('administrateur') : t('vendeur') },
+            { label: t('Compte suspendu'),        value: u => u.banned ? t('oui') : t('non') },
+            { label: t('Boutique suspendue'),     value: u => u.shopSuspended ? t('oui') : t('non') },
+            { label: t('Inscription'),            value: u => u.createdAt ? dj(u.createdAt, { day: 'numeric', month: '2-digit', year: 'numeric' }) : '' }
+        ], usersCache);
+        toast('⬇️ ' + t('Export CSV des comptes généré.'));
+    };
+
     /* ======================================================
        ARTICLES  —  ajouter, modifier, publier, supprimer
        ====================================================== */
     const pQuery = { q: '', cat: 'Toutes' };
     let admEditId = null;                 /* article en cours de modification */
+    let productsCache = [];
 
     /* le même sélecteur de photos et de détails que sur publier.html */
     const admPhotos = makePhotoPicker({
@@ -3512,6 +3562,7 @@ async function initAdminPage(){
 
     async function loadProducts(){
         const list = await BE.adminProducts(pQuery);
+        productsCache = list;
         $('#productsCount').textContent = nfmt(list.length) + ' ' + t(list.length > 1 ? 'articles' : 'article');
         const body = $('#productsTable tbody');
         if (!list.length){
@@ -3586,27 +3637,53 @@ async function initAdminPage(){
     };
     $('#prodCat').onchange = e => { pQuery.cat = e.target.value; loadProducts().catch(er => toast(er.message)); };
 
+    $('#prodExport').onclick = () => {
+        if (!productsCache.length) return toast('ℹ️ ' + t('Aucune donnée à exporter.'));
+        downloadCSV('articles-' + csvStamp() + '.csv', [
+            { label: t('Référence'),           value: p => '#' + p.id },
+            { label: t('Titre'),               value: p => p.title },
+            { label: t('Boutique'),            value: p => p.owner ? p.owner.shopName : '' },
+            { label: t('Identifiant boutique'),value: p => p.owner ? '@' + p.owner.username : '' },
+            { label: t('Catégorie'),           value: p => p.cat },
+            { label: t('Prix (FC)'),           value: p => p.price },
+            { label: t('Ancien prix (FC)'),    value: p => p.oldPrice || '' },
+            { label: t('Stock'),               value: p => p.stock },
+            { label: t("J'aime"),              value: p => p.likes || 0 },
+            { label: t('Photos'),              value: p => (p.images || []).length },
+            { label: t('Statut'),              value: p => p.published ? t('publié') : t('masqué') },
+            { label: t('Créé le'),             value: p => p.createdAt ? dj(p.createdAt, { day: 'numeric', month: '2-digit', year: 'numeric' }) : '' }
+        ], productsCache);
+        toast('⬇️ ' + t('Export CSV des articles généré.'));
+    };
+
     /* ======================================================
        COMMANDES
        ====================================================== */
+    const oQuery = { q: '', status: '' };
+    let ordersCache = [];
+
     async function loadOrders(){
-        const list = await BE.adminOrders();
+        const list = await BE.adminOrders(oQuery);
+        ordersCache = list;
         $('#ordersCountAdmin').textContent = nfmt(list.length) + ' ' + t(list.length > 1 ? 'commandes' : 'commande');
         const body = $('#ordersTable tbody');
         if (!list.length){
-            body.innerHTML = `<tr><td colspan="6" class="muted">${t('Aucune commande pour le moment.')}</td></tr>`;
+            body.innerHTML = `<tr><td colspan="7" class="muted">${t('Aucune commande ne correspond à la recherche.')}</td></tr>`;
             return;
         }
-        body.innerHTML = list.map(o => `<tr>
-            <td data-label="${t('Référence')}"><b>${o.ref}</b>${o.payment ? `<div class="muted" style="font-size:12px"><i class="fas fa-mobile-screen"></i> ${t(payLabel(o.payment))}</div>` : ''}</td>
-            <td data-label="${t('Acheteur')}">${o.buyer ? o.buyer.shopName + ' <span class="muted">@' + o.buyer.username + '</span>' : `<i class="muted">${t('visiteur')}</i>`}</td>
-            <td class="muted" data-label="${t('Articles')}">${o.items.map(i => nfmt(i.qty) + ' × ' + i.title).join('<br>')}</td>
+        body.innerHTML = list.map(o => `<tr data-oid="${o.id}">
+            <td data-label="${t('Référence')}"><b>${esc(o.ref)}</b>${o.payment ? `<div class="muted" style="font-size:12px"><i class="fas fa-mobile-screen"></i> ${t(payLabel(o.payment))}</div>` : ''}</td>
+            <td data-label="${t('Acheteur')}">${o.buyer ? esc(o.buyer.shopName) + ' <span class="muted">@' + esc(o.buyer.username) + '</span>' : `<i class="muted">${t('visiteur')}</i>`}</td>
+            <td class="muted" data-label="${t('Articles')}">${o.items.map(i => nfmt(i.qty) + ' × ' + esc(i.title)).join('<br>')}</td>
             <td class="num" data-label="${t('Total')}"><b>${fmt(o.total)}</b></td>
             <td class="muted" data-label="${t('Date')}">${dj(o.createdAt, { day: 'numeric', month: 'short', year: 'numeric' })}</td>
             <td data-label="${t('Statut')}">
                 <select class="status-sel" data-o-status="${o.id}">
                     ${STATUTS.map(s => `<option value="${s}"${s === o.status ? ' selected' : ''}>${t(s)}</option>`).join('')}
                 </select>
+            </td>
+            <td class="cell-actions">
+                <button type="button" class="btn btn-outline btn-sm danger" data-o-del="${o.id}" title="${t('Supprimer cette commande')}"><i class="fas fa-trash-alt"></i></button>
             </td>
         </tr>`).join('');
     }
@@ -3619,6 +3696,43 @@ async function initAdminPage(){
             toast('✅ ' + t('Statut de la commande mis à jour.'));
         } catch (err){ toast('❌ ' + err.message); }
     });
+
+    $('#ordersTable').addEventListener('click', async e => {
+        const btn = e.target.closest('[data-o-del]');
+        if (!btn) return;
+        const row = btn.closest('tr');
+        const ref = row ? row.querySelector('b')?.textContent || '' : '';
+        if (!confirm(t('Supprimer définitivement la commande « {0} » ?', [ref]))) return;
+        try {
+            await BE.deleteOrder(btn.dataset.oDel);
+            toast('🗑️ ' + t('Commande supprimée.'));
+            await refresh();
+            loadOrders();
+        } catch (err){ toast('❌ ' + err.message); }
+    });
+
+    $('#orderSearch').oninput = e => {
+        clearTimeout(searchTimer);
+        oQuery.q = e.target.value.trim();
+        searchTimer = setTimeout(() => loadOrders().catch(er => toast(er.message)), 300);
+    };
+    $('#orderStatus').onchange = e => { oQuery.status = e.target.value; loadOrders().catch(er => toast(er.message)); };
+
+    $('#ordersExport').onclick = () => {
+        if (!ordersCache.length) return toast('ℹ️ ' + t('Aucune donnée à exporter.'));
+        downloadCSV('commandes-' + csvStamp() + '.csv', [
+            { label: t('Référence'),        value: o => o.ref },
+            { label: t('Statut'),           value: o => o.status },
+            { label: t('Acheteur'),         value: o => o.buyer ? o.buyer.shopName : t('visiteur') },
+            { label: t('Identifiant'),      value: o => o.buyer ? '@' + o.buyer.username : '' },
+            { label: t('Articles'),         value: o => o.items.map(i => i.qty + '× ' + i.title).join(' | ') },
+            { label: t("Nombre d'articles"),value: o => o.items.reduce((s, i) => s + Number(i.qty || 0), 0) },
+            { label: t('Total (FC)'),       value: o => o.total },
+            { label: t('Paiement'),         value: o => o.payment ? t(payLabel(o.payment)) : '' },
+            { label: t('Date'),             value: o => o.createdAt ? dj(o.createdAt, { day: 'numeric', month: '2-digit', year: 'numeric' }) : '' }
+        ], ordersCache);
+        toast('⬇️ ' + t('Export CSV des commandes généré.'));
+    };
 
     /* ---------- rechargement des indicateurs ---------- */
     async function refresh(){

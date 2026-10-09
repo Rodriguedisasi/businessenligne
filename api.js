@@ -156,7 +156,7 @@ const BE = (() => {
     const overview      = async () => req('GET', '/api/admin/overview');
     const adminUsers    = async (params = {}) => (await req('GET', '/api/admin/users' + qs(params))).users;
     const adminProducts = async (params = {}) => (await req('GET', '/api/admin/products' + qs(params))).products;
-    const adminOrders   = async () => (await req('GET', '/api/admin/orders')).orders;
+    const adminOrders   = async (params = {}) => (await req('GET', '/api/admin/orders' + qs(params))).orders;
     /* Fiche de modération : le compte, ses articles et toutes ses photos. */
     const adminUser   = id => req('GET', '/api/admin/users/' + id);
     const removePhoto = payload => req('POST', '/api/admin/photos/remove', payload);

@@ -1762,14 +1762,16 @@ const routes = {
         ok(res, { ok: true, kind: b.kind, id, fileDeleted });
     },
 
-    'GET /api/admin/orders': async (req, res) => {
+    'GET /api/admin/orders': async (req, res, url) => {
         if (!await requireAdmin(req, res)) return;
+        const q = (url.searchParams.get('q') || '').toLowerCase().trim();
+        const status = (url.searchParams.get('status') || '').trim();
         const [rows, users] = await Promise.all([
             db.all('orders', {}, { orderBy: 'created_at DESC', limit: 200 }),
             db.all('users')
         ]);
         const buyerById = new Map(users.map(u => [Number(u.id), u]));
-        const orders = rows.map(o => {
+        let orders = rows.map(o => {
             const u = o.user_id == null ? null : buyerById.get(Number(o.user_id));
             return {
                 id: o.id, ref: o.ref, total: o.total, status: o.status, payment: o.payment || '', createdAt: o.created_at,
@@ -1777,6 +1779,12 @@ const routes = {
                 buyer: u ? { username: u.username, shopName: u.shop_name } : null
             };
         });
+        if (status) orders = orders.filter(o => o.status === status);
+        if (q) orders = orders.filter(o =>
+            String(o.ref || '').toLowerCase().includes(q) ||
+            (o.buyer && (String(o.buyer.username).toLowerCase().includes(q) || String(o.buyer.shopName).toLowerCase().includes(q))) ||
+            o.items.some(i => String(i.title || '').toLowerCase().includes(q))
+        );
         ok(res, { orders });
     },
 

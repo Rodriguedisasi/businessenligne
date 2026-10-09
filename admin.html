@@ -150,6 +150,7 @@
                             <option value="revenue">Chiffre d'affaires (ventes)</option>
                             <option value="likes">J'aime reçus</option>
                         </select>
+                        <button type="button" class="btn btn-outline btn-sm" id="usersExport" title="Exporter la liste au format CSV"><i class="fas fa-file-csv"></i> CSV</button>
                     </div>
                 </div>
                 <div class="table-wrap">
@@ -296,6 +297,7 @@
                             <option value="Sport">Sport</option><option value="Beauté">Beauté</option><option value="Enfants">Enfants</option>
                             <option value="Livres">Livres</option>
                         </select>
+                        <button type="button" class="btn btn-outline btn-sm" id="prodExport" title="Exporter la liste au format CSV"><i class="fas fa-file-csv"></i> CSV</button>
                     </div>
                 </div>
                 <div class="table-wrap">
@@ -318,12 +320,24 @@
             <div class="box">
                 <div class="box-head">
                     <h3>Toutes les commandes <span class="see-all" id="ordersCountAdmin"></span></h3>
+                    <div class="admin-tools">
+                        <input type="search" id="orderSearch" placeholder="Rechercher (référence, acheteur, article…)">
+                        <select id="orderStatus">
+                            <option value="">Tous les statuts</option>
+                            <option value="Confirmée">Confirmée</option>
+                            <option value="En préparation">En préparation</option>
+                            <option value="Expédiée">Expédiée</option>
+                            <option value="Livrée">Livrée</option>
+                            <option value="Annulée">Annulée</option>
+                        </select>
+                        <button type="button" class="btn btn-outline btn-sm" id="ordersExport" title="Exporter la liste au format CSV"><i class="fas fa-file-csv"></i> CSV</button>
+                    </div>
                 </div>
                 <div class="table-wrap">
                     <table class="admin-table" id="ordersTable">
                         <thead>
                             <tr><th>Référence</th><th>Acheteur</th><th>Articles</th>
-                                <th class="num">Total</th><th>Date</th><th>Statut</th></tr>
+                                <th class="num">Total</th><th>Date</th><th>Statut</th><th>Actions</th></tr>
                         </thead>
                         <tbody></tbody>
                     </table>
